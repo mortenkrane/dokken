@@ -1,0 +1,91 @@
+[project]
+name = "dokken"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13.7"
+dependencies = [
+    "llama-index>=0.14.4",
+    "llama-index-llms-google-genai>=0.6.2",
+    "mypy>=1.18.2",
+    "pydantic>=2.12.0",
+    "python-dotenv>=1.1.1",
+    "ruff>=0.14.0",
+]
+
+[tool.ruff]
+exclude = [".venv"]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+# See https://beta.ruff.rs/docs/rules/ for more info on the rules
+ignore = [
+    "SIM103",  # Often makes the code hard to read,
+    "A005",    # stdlib-module-shadowing,
+    "PLC0415", # Import outside top-level,
+]
+select = [
+    # Ruff rules
+    "RUF",
+    # flake8-builtins
+    "A",
+    # Pyflakes (F)
+    "F",
+    # pycodestyle (Error / Warning)
+    "E",
+    "W",
+    # Pylint (unknown group, might not exist)
+    "C",
+    # Pylint (Convention, Errors, Refactors, Warnings)
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    # flake8-comprehensions
+    "C4",
+    # Flake8-django
+    "DJ",
+    # flake8-bugbear rules
+    "B",
+    # Import sorting rules
+    "I",
+    # flake8-blind-except
+    "BLE",
+    # flake8-logging-format
+    "G",
+    # flake8-pie
+    "PIE",
+    # flake8-print
+#    "T20",
+    # flake8-return
+    "RET",
+    # flake8-simplify
+    "SIM",
+    # Pyupgrade
+    "UP",
+    # McCabe (cyclomatic complexity)
+    "C901",
+]
+
+[tool.ruff.lint.pylint]
+allow-magic-value-types = ["int", "str", "float"]
+max-args = 7
+max-returns = 10
+max-statements = 50
+
+[tool.ruff.lint.mccabe]
+# Flag errors (`C901`) whenever the complexity level exceeds the threshold.
+max-complexity = 7
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["dokken"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
