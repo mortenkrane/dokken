@@ -96,7 +96,7 @@ def get_module_context(*, module_path: str, base_branch: str = "main") -> str:
         return ""
 
 
-def step_1_check_drift(
+def check_drift(
     *, llm: GoogleGenAI, context: str, current_doc: str
 ) -> DocumentationDriftCheck:
     """
@@ -123,7 +123,7 @@ def step_1_check_drift(
     return check_result
 
 
-def step_2_generate_doc(*, llm: GoogleGenAI, context: str) -> ComponentDocumentation:
+def generate_doc(*, llm: GoogleGenAI, context: str) -> ComponentDocumentation:
     """
     STEP 2: Generate the complete, new structured documentation for the component.
     """
@@ -205,7 +205,7 @@ def generate_documentation(*, target_module_path: str) -> None:
 
     # 2. Step 1: Check for Documentation Drift
     print("--- STEP 1: Checking for documentation drift... ---")
-    drift_check = step_1_check_drift(
+    drift_check = check_drift(
         llm=llm_client, context=code_context, current_doc=current_doc_content
     )
 
@@ -221,7 +221,7 @@ def generate_documentation(*, target_module_path: str) -> None:
 
     # 3. Step 2: Generate New Structured Documentation
     print("--- STEP 2: Generating new structured documentation... ---")
-    new_doc_data = step_2_generate_doc(llm=llm_client, context=code_context)
+    new_doc_data = generate_doc(llm=llm_client, context=code_context)
 
     # 4. Generate Final Markdown (Stabilization)
     final_markdown = generate_markdown(doc_data=new_doc_data)
