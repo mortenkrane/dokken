@@ -6,7 +6,9 @@ from src.formatters import generate_markdown
 from src.records import ComponentDocumentation
 
 
-def test_generate_markdown_basic_structure(sample_component_documentation):
+def test_generate_markdown_basic_structure(
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
     """Test generate_markdown creates correct basic structure."""
     markdown = generate_markdown(doc_data=sample_component_documentation)
 
@@ -15,14 +17,18 @@ def test_generate_markdown_basic_structure(sample_component_documentation):
     assert "## Key Design Decisions (The 'Why')" in markdown
 
 
-def test_generate_markdown_includes_component_name(sample_component_documentation):
+def test_generate_markdown_includes_component_name(
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
     """Test generate_markdown includes the component name as H1 header."""
     markdown = generate_markdown(doc_data=sample_component_documentation)
 
     assert "# Sample Component Overview" in markdown
 
 
-def test_generate_markdown_includes_purpose(sample_component_documentation):
+def test_generate_markdown_includes_purpose(
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
     """Test generate_markdown includes purpose and scope section."""
     markdown = generate_markdown(doc_data=sample_component_documentation)
 
@@ -30,15 +36,18 @@ def test_generate_markdown_includes_purpose(sample_component_documentation):
     assert sample_component_documentation.purpose_and_scope in markdown
 
 
-def test_generate_markdown_includes_dependencies(sample_component_documentation):
+def test_generate_markdown_includes_dependencies(
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
     """Test generate_markdown includes external dependencies section."""
     markdown = generate_markdown(doc_data=sample_component_documentation)
 
     assert "## External Dependencies" in markdown
+    assert sample_component_documentation.external_dependencies is not None
     assert sample_component_documentation.external_dependencies in markdown
 
 
-def test_generate_markdown_without_dependencies():
+def test_generate_markdown_without_dependencies() -> None:
     """Test generate_markdown handles missing external dependencies."""
     doc_data = ComponentDocumentation(
         component_name="Test Component",
@@ -52,7 +61,9 @@ def test_generate_markdown_without_dependencies():
     assert "## External Dependencies" not in markdown
 
 
-def test_generate_markdown_includes_design_decisions(sample_component_documentation):
+def test_generate_markdown_includes_design_decisions(
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
     """Test generate_markdown includes all design decisions."""
     markdown = generate_markdown(doc_data=sample_component_documentation)
 
@@ -61,7 +72,7 @@ def test_generate_markdown_includes_design_decisions(sample_component_documentat
         assert value in markdown
 
 
-def test_generate_markdown_sorts_design_decisions():
+def test_generate_markdown_sorts_design_decisions() -> None:
     """Test generate_markdown sorts design decisions alphabetically."""
     doc_data = ComponentDocumentation(
         component_name="Test",
@@ -88,7 +99,7 @@ def test_generate_markdown_sorts_design_decisions():
     "component_name",
     ["Payment Service", "User Auth Module", "Data Pipeline"],
 )
-def test_generate_markdown_various_component_names(component_name):
+def test_generate_markdown_various_component_names(component_name: str) -> None:
     """Test generate_markdown with various component names."""
     doc_data = ComponentDocumentation(
         component_name=component_name,
@@ -101,7 +112,7 @@ def test_generate_markdown_various_component_names(component_name):
     assert f"# {component_name} Overview" in markdown
 
 
-def test_generate_markdown_empty_design_decisions():
+def test_generate_markdown_empty_design_decisions() -> None:
     """Test generate_markdown handles empty design decisions."""
     doc_data = ComponentDocumentation(
         component_name="Test",
@@ -116,7 +127,7 @@ def test_generate_markdown_empty_design_decisions():
     assert "### Decision:" not in markdown
 
 
-def test_generate_markdown_multiline_content():
+def test_generate_markdown_multiline_content() -> None:
     """Test generate_markdown handles multiline content correctly."""
     doc_data = ComponentDocumentation(
         component_name="Test",
@@ -130,7 +141,7 @@ def test_generate_markdown_multiline_content():
     assert "Explanation line 1\nExplanation line 2" in markdown
 
 
-def test_generate_markdown_special_characters():
+def test_generate_markdown_special_characters() -> None:
     """Test generate_markdown handles special markdown characters."""
     doc_data = ComponentDocumentation(
         component_name="Test*Component*",
@@ -146,7 +157,9 @@ def test_generate_markdown_special_characters():
     assert "`code`" in markdown
 
 
-def test_generate_markdown_deterministic_output(sample_component_documentation):
+def test_generate_markdown_deterministic_output(
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
     """Test generate_markdown produces deterministic output."""
     markdown1 = generate_markdown(doc_data=sample_component_documentation)
     markdown2 = generate_markdown(doc_data=sample_component_documentation)
@@ -154,7 +167,7 @@ def test_generate_markdown_deterministic_output(sample_component_documentation):
     assert markdown1 == markdown2
 
 
-def test_generate_markdown_ends_with_newlines():
+def test_generate_markdown_ends_with_newlines() -> None:
     """Test generate_markdown ends sections with proper newlines."""
     doc_data = ComponentDocumentation(
         component_name="Test",
@@ -168,7 +181,7 @@ def test_generate_markdown_ends_with_newlines():
     assert "## Purpose & Scope\n\nPurpose\n\n" in markdown
 
 
-def test_generate_markdown_section_order():
+def test_generate_markdown_section_order() -> None:
     """Test generate_markdown produces sections in correct order."""
     doc_data = ComponentDocumentation(
         component_name="Test",
@@ -196,7 +209,9 @@ def test_generate_markdown_section_order():
         ("123_NUMERIC", "Numeric prefix"),
     ],
 )
-def test_generate_markdown_decision_formats(decision_key, decision_value):
+def test_generate_markdown_decision_formats(
+    decision_key: str, decision_value: str
+) -> None:
     """Test generate_markdown handles various decision key formats."""
     doc_data = ComponentDocumentation(
         component_name="Test",

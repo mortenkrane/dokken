@@ -1,12 +1,16 @@
 """Shared fixtures for Dokken tests."""
 
+from pathlib import Path
+from typing import Any
+
 import pytest
+from pytest_mock import MockerFixture
 
 from src.records import ComponentDocumentation, DocumentationDriftCheck
 
 
 @pytest.fixture
-def sample_readme_content():
+def sample_readme_content() -> str:
     """Sample README content for testing."""
     return """# Sample Component Overview
 
@@ -32,7 +36,7 @@ We use Redis for caching.
 
 
 @pytest.fixture
-def sample_code_content():
+def sample_code_content() -> str:
     """Sample Python code for testing."""
     return '''def hello_world():
     """Print hello world."""
@@ -46,7 +50,7 @@ def add(a: int, b: int) -> int:
 
 
 @pytest.fixture
-def sample_git_diff():
+def sample_git_diff() -> str:
     """Sample git diff output."""
     diff_text = (
         "diff --git a/src/sample.py b/src/sample.py\n"
@@ -67,7 +71,7 @@ def sample_git_diff():
 
 
 @pytest.fixture
-def sample_module_context(sample_code_content, sample_git_diff):
+def sample_module_context(sample_code_content: str, sample_git_diff: str) -> str:
     """Sample module context for LLM."""
     return f"""--- MODULE PATH: src/sample ---
 
@@ -81,7 +85,7 @@ def sample_module_context(sample_code_content, sample_git_diff):
 
 
 @pytest.fixture
-def sample_drift_check_no_drift():
+def sample_drift_check_no_drift() -> DocumentationDriftCheck:
     """Sample DocumentationDriftCheck with no drift."""
     return DocumentationDriftCheck(
         drift_detected=False,
@@ -90,7 +94,7 @@ def sample_drift_check_no_drift():
 
 
 @pytest.fixture
-def sample_drift_check_with_drift():
+def sample_drift_check_with_drift() -> DocumentationDriftCheck:
     """Sample DocumentationDriftCheck with drift detected."""
     return DocumentationDriftCheck(
         drift_detected=True,
@@ -99,7 +103,7 @@ def sample_drift_check_with_drift():
 
 
 @pytest.fixture
-def sample_component_documentation():
+def sample_component_documentation() -> ComponentDocumentation:
     """Sample ComponentDocumentation."""
     return ComponentDocumentation(
         component_name="Sample Component",
@@ -113,7 +117,7 @@ def sample_component_documentation():
 
 
 @pytest.fixture
-def temp_module_dir(tmp_path):
+def temp_module_dir(tmp_path: Path) -> Path:
     """Create a temporary module directory with Python files."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
@@ -129,7 +133,7 @@ def temp_module_dir(tmp_path):
 
 
 @pytest.fixture
-def temp_readme(tmp_path):
+def temp_readme(tmp_path: Path) -> Path:
     """Create a temporary README.md file."""
     readme_path = tmp_path / "README.md"
     readme_path.write_text("""# Test Component
@@ -142,7 +146,7 @@ Test documentation.
 
 
 @pytest.fixture
-def mock_llm_client(mocker):
+def mock_llm_client(mocker: MockerFixture) -> Any:
     """Mock LLM client."""
     mock_client = mocker.MagicMock()
     mock_client.model = "gemini-2.5-flash"
@@ -151,6 +155,6 @@ def mock_llm_client(mocker):
 
 
 @pytest.fixture
-def mock_console(mocker):
+def mock_console(mocker: MockerFixture) -> Any:
     """Mock Rich console to suppress output during tests."""
     return mocker.patch("src.git.console")

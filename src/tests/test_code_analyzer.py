@@ -1,14 +1,18 @@
 """Tests for src/code_analyzer.py"""
 
 import subprocess
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from pytest_mock import MockerFixture
 
 from src.code_analyzer import get_module_context
 
 
-def test_get_module_context_with_python_files(tmp_path, mocker):
+def test_get_module_context_with_python_files(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
     """Test get_module_context returns context when Python files exist."""
     # Create temp module with Python files
     module_dir = tmp_path / "test_module"
@@ -34,7 +38,9 @@ def test_get_module_context_with_python_files(tmp_path, mocker):
     assert "print('world')" in context
 
 
-def test_get_module_context_no_python_files(tmp_path, mocker):
+def test_get_module_context_no_python_files(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
     """Test get_module_context returns empty string when no Python files exist."""
     # Create temp module without Python files
     module_dir = tmp_path / "empty_module"
@@ -49,7 +55,9 @@ def test_get_module_context_no_python_files(tmp_path, mocker):
     assert "No Python files found" in str(mock_console.print.call_args)
 
 
-def test_get_module_context_calls_git_diff(tmp_path, mocker):
+def test_get_module_context_calls_git_diff(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
     """Test that get_module_context calls git diff for each Python file."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
@@ -78,7 +86,9 @@ def test_get_module_context_calls_git_diff(tmp_path, mocker):
     "base_branch",
     ["main", "develop", "master"],
 )
-def test_get_module_context_with_different_base_branches(tmp_path, mocker, base_branch):
+def test_get_module_context_with_different_base_branches(
+    tmp_path: Path, mocker: MockerFixture, base_branch: str
+) -> None:
     """Test get_module_context uses the specified base branch."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
@@ -98,7 +108,9 @@ def test_get_module_context_with_different_base_branches(tmp_path, mocker, base_
     assert base_branch in call_args
 
 
-def test_get_module_context_includes_file_content(tmp_path, mocker):
+def test_get_module_context_includes_file_content(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
     """Test that get_module_context includes actual file content."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
@@ -118,7 +130,9 @@ def test_get_module_context_includes_file_content(tmp_path, mocker):
     assert "--- CURRENT CODE CONTENT ---" in context
 
 
-def test_get_module_context_includes_git_diff(tmp_path, mocker):
+def test_get_module_context_includes_git_diff(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
     """Test that get_module_context includes git diff output."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
@@ -138,7 +152,7 @@ def test_get_module_context_includes_git_diff(tmp_path, mocker):
     assert "--- CODE CHANGES (GIT DIFF vs. main) ---" in context
 
 
-def test_get_module_context_sorts_files(tmp_path, mocker):
+def test_get_module_context_sorts_files(tmp_path: Path, mocker: MockerFixture) -> None:
     """Test that get_module_context processes files in sorted order."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
@@ -163,7 +177,9 @@ def test_get_module_context_sorts_files(tmp_path, mocker):
     assert a_pos < b_pos < c_pos
 
 
-def test_get_module_context_handles_exception(tmp_path, mocker):
+def test_get_module_context_handles_exception(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
     """Test that get_module_context handles exceptions gracefully."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
@@ -182,7 +198,9 @@ def test_get_module_context_handles_exception(tmp_path, mocker):
     assert "Error getting module context" in str(mock_console.print.call_args)
 
 
-def test_get_module_context_multiple_files(tmp_path, mocker):
+def test_get_module_context_multiple_files(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
     """Test get_module_context handles multiple Python files correctly."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()

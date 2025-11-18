@@ -1,19 +1,22 @@
 """Tests for src/main.py (CLI)"""
 
+from pathlib import Path
+
 import pytest
 from click.testing import CliRunner
+from pytest_mock import MockerFixture
 
 from src.exceptions import DocumentationDriftError
 from src.main import check, cli, generate
 
 
 @pytest.fixture
-def runner():
+def runner() -> CliRunner:
     """Create a Click test runner."""
     return CliRunner()
 
 
-def test_cli_help(runner):
+def test_cli_help(runner: CliRunner) -> None:
     """Test that CLI shows help message."""
     result = runner.invoke(cli, ["--help"])
 
@@ -23,7 +26,7 @@ def test_cli_help(runner):
     assert "generate" in result.output
 
 
-def test_cli_version(runner):
+def test_cli_version(runner: CliRunner) -> None:
     """Test that CLI shows version."""
     result = runner.invoke(cli, ["--version"])
 
@@ -31,7 +34,7 @@ def test_cli_version(runner):
     assert "0.1.0" in result.output
 
 
-def test_check_command_help(runner):
+def test_check_command_help(runner: CliRunner) -> None:
     """Test that check command shows help."""
     result = runner.invoke(cli, ["check", "--help"])
 
@@ -40,7 +43,7 @@ def test_check_command_help(runner):
     assert "CI/CD" in result.output
 
 
-def test_generate_command_help(runner):
+def test_generate_command_help(runner: CliRunner) -> None:
     """Test that generate command shows help."""
     result = runner.invoke(cli, ["generate", "--help"])
 
@@ -48,7 +51,9 @@ def test_generate_command_help(runner):
     assert "Generate fresh documentation" in result.output
 
 
-def test_check_command_with_valid_path(runner, mocker, temp_module_dir):
+def test_check_command_with_valid_path(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test check command with valid module path."""
     mock_check = mocker.patch("src.main.check_documentation_drift")
     mocker.patch("src.main.console")
@@ -59,14 +64,16 @@ def test_check_command_with_valid_path(runner, mocker, temp_module_dir):
     mock_check.assert_called_once_with(target_module_path=str(temp_module_dir))
 
 
-def test_check_command_with_invalid_path(runner):
+def test_check_command_with_invalid_path(runner: CliRunner) -> None:
     """Test check command with non-existent path."""
     result = runner.invoke(cli, ["check", "/nonexistent/path"])
 
     assert result.exit_code != 0
 
 
-def test_check_command_drift_detected(runner, mocker, temp_module_dir):
+def test_check_command_drift_detected(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test check command when drift is detected."""
     mock_check = mocker.patch(
         "src.main.check_documentation_drift",
@@ -83,7 +90,9 @@ def test_check_command_drift_detected(runner, mocker, temp_module_dir):
     mock_check.assert_called_once()
 
 
-def test_check_command_no_drift(runner, mocker, temp_module_dir):
+def test_check_command_no_drift(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test check command when no drift is detected."""
     mock_check = mocker.patch("src.main.check_documentation_drift")
     mocker.patch("src.main.console")
@@ -94,7 +103,9 @@ def test_check_command_no_drift(runner, mocker, temp_module_dir):
     mock_check.assert_called_once()
 
 
-def test_check_command_value_error(runner, mocker, temp_module_dir):
+def test_check_command_value_error(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test check command handles ValueError."""
     mock_check = mocker.patch(
         "src.main.check_documentation_drift",
@@ -108,7 +119,9 @@ def test_check_command_value_error(runner, mocker, temp_module_dir):
     mock_check.assert_called_once()
 
 
-def test_generate_command_with_valid_path(runner, mocker, temp_module_dir):
+def test_generate_command_with_valid_path(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test generate command with valid module path."""
     mock_generate = mocker.patch("src.main.generate_documentation", return_value=None)
     mocker.patch("src.main.console")
@@ -119,14 +132,16 @@ def test_generate_command_with_valid_path(runner, mocker, temp_module_dir):
     mock_generate.assert_called_once_with(target_module_path=str(temp_module_dir))
 
 
-def test_generate_command_with_invalid_path(runner):
+def test_generate_command_with_invalid_path(runner: CliRunner) -> None:
     """Test generate command with non-existent path."""
     result = runner.invoke(cli, ["generate", "/nonexistent/path"])
 
     assert result.exit_code != 0
 
 
-def test_generate_command_success(runner, mocker, temp_module_dir):
+def test_generate_command_success(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test generate command successful execution."""
     markdown = "# Generated Documentation"
     mock_generate = mocker.patch(
@@ -140,7 +155,9 @@ def test_generate_command_success(runner, mocker, temp_module_dir):
     mock_generate.assert_called_once()
 
 
-def test_generate_command_no_output(runner, mocker, temp_module_dir):
+def test_generate_command_no_output(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test generate command when workflow returns None."""
     mock_generate = mocker.patch("src.main.generate_documentation", return_value=None)
     mocker.patch("src.main.console")
@@ -151,7 +168,9 @@ def test_generate_command_no_output(runner, mocker, temp_module_dir):
     mock_generate.assert_called_once()
 
 
-def test_generate_command_value_error(runner, mocker, temp_module_dir):
+def test_generate_command_value_error(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test generate command handles ValueError."""
     mock_generate = mocker.patch(
         "src.main.generate_documentation",
@@ -165,7 +184,9 @@ def test_generate_command_value_error(runner, mocker, temp_module_dir):
     mock_generate.assert_called_once()
 
 
-def test_generate_command_drift_error(runner, mocker, temp_module_dir):
+def test_generate_command_drift_error(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test generate command handles DocumentationDriftError."""
     mock_generate = mocker.patch(
         "src.main.generate_documentation",
@@ -189,7 +210,9 @@ def test_generate_command_drift_error(runner, mocker, temp_module_dir):
         ("generate", generate),
     ],
 )
-def test_commands_require_module_path(runner, command_name, command_func):
+def test_commands_require_module_path(
+    runner: CliRunner, command_name: str, command_func: object
+) -> None:
     """Test that commands require module_path argument."""
     result = runner.invoke(cli, [command_name])
 
@@ -197,7 +220,9 @@ def test_commands_require_module_path(runner, command_name, command_func):
     assert "Missing argument" in result.output or "Error" in result.output
 
 
-def test_check_command_uses_console(runner, mocker, temp_module_dir):
+def test_check_command_uses_console(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test check command uses Rich console for output."""
     mocker.patch("src.main.check_documentation_drift")
     mock_console = mocker.patch("src.main.console")
@@ -208,7 +233,9 @@ def test_check_command_uses_console(runner, mocker, temp_module_dir):
     assert mock_console.print.call_count > 0
 
 
-def test_generate_command_uses_console(runner, mocker, temp_module_dir):
+def test_generate_command_uses_console(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
     """Test generate command uses Rich console for output."""
     mocker.patch("src.main.generate_documentation", return_value="# Docs")
     mock_console = mocker.patch("src.main.console")
@@ -219,13 +246,13 @@ def test_generate_command_uses_console(runner, mocker, temp_module_dir):
     assert mock_console.print.call_count > 0
 
 
-def test_cli_commands_registered():
+def test_cli_commands_registered() -> None:
     """Test that check and generate commands are registered."""
     assert "check" in cli.commands
     assert "generate" in cli.commands
 
 
-def test_check_command_path_validation(runner, tmp_path):
+def test_check_command_path_validation(runner: CliRunner, tmp_path: Path) -> None:
     """Test check command validates that path is a directory."""
     # Create a file instead of directory
     file_path = tmp_path / "not_a_dir.txt"
@@ -236,7 +263,7 @@ def test_check_command_path_validation(runner, tmp_path):
     assert result.exit_code != 0
 
 
-def test_generate_command_path_validation(runner, tmp_path):
+def test_generate_command_path_validation(runner: CliRunner, tmp_path: Path) -> None:
     """Test generate command validates that path is a directory."""
     # Create a file instead of directory
     file_path = tmp_path / "not_a_dir.txt"

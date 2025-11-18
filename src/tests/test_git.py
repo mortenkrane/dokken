@@ -4,16 +4,17 @@ from datetime import datetime
 from unittest.mock import call
 
 import pytest
+from pytest_mock import MockerFixture
 
 from src.git import GIT_BASE_BRANCH, setup_git
 
 
-def test_git_base_branch_constant():
+def test_git_base_branch_constant() -> None:
     """Test that GIT_BASE_BRANCH is set to 'main'."""
     assert GIT_BASE_BRANCH == "main"
 
 
-def test_setup_git_checks_out_main(mocker):
+def test_setup_git_checks_out_main(mocker: MockerFixture) -> None:
     """Test that setup_git checks out the main branch."""
     mock_subprocess = mocker.patch("src.git.subprocess.run")
     mocker.patch("src.git.console")
@@ -29,7 +30,7 @@ def test_setup_git_checks_out_main(mocker):
     assert checkout_call in mock_subprocess.call_args_list
 
 
-def test_setup_git_pulls_latest(mocker):
+def test_setup_git_pulls_latest(mocker: MockerFixture) -> None:
     """Test that setup_git pulls the latest changes."""
     mock_subprocess = mocker.patch("src.git.subprocess.run")
     mocker.patch("src.git.console")
@@ -41,7 +42,7 @@ def test_setup_git_pulls_latest(mocker):
     assert pull_call in mock_subprocess.call_args_list
 
 
-def test_setup_git_creates_branch_with_date(mocker):
+def test_setup_git_creates_branch_with_date(mocker: MockerFixture) -> None:
     """Test that setup_git creates a new branch with current date."""
     mock_subprocess = mocker.patch("src.git.subprocess.run")
     mocker.patch("src.git.console")
@@ -60,7 +61,7 @@ def test_setup_git_creates_branch_with_date(mocker):
     assert branch_call in mock_subprocess.call_args_list
 
 
-def test_setup_git_operations_order(mocker):
+def test_setup_git_operations_order(mocker: MockerFixture) -> None:
     """Test that setup_git executes git operations in the correct order."""
     mock_subprocess = mocker.patch("src.git.subprocess.run")
     mocker.patch("src.git.console")
@@ -87,7 +88,9 @@ def test_setup_git_operations_order(mocker):
         (datetime(2024, 6, 15), "dokken/docs-2024-06-15"),
     ],
 )
-def test_setup_git_branch_name_format(mocker, date, expected_branch):
+def test_setup_git_branch_name_format(
+    mocker: MockerFixture, date: datetime, expected_branch: str
+) -> None:
     """Test that setup_git creates correctly formatted branch names for various dates."""
     mock_subprocess = mocker.patch("src.git.subprocess.run")
     mocker.patch("src.git.console")
@@ -101,7 +104,7 @@ def test_setup_git_branch_name_format(mocker, date, expected_branch):
     assert expected_branch in last_call[0][0]
 
 
-def test_setup_git_prints_status_messages(mocker):
+def test_setup_git_prints_status_messages(mocker: MockerFixture) -> None:
     """Test that setup_git prints status messages to console."""
     mocker.patch("src.git.subprocess.run")
     mock_console = mocker.patch("src.git.console")
@@ -113,7 +116,7 @@ def test_setup_git_prints_status_messages(mocker):
     assert mock_console.status.call_count >= 3
 
 
-def test_setup_git_handles_subprocess_check(mocker):
+def test_setup_git_handles_subprocess_check(mocker: MockerFixture) -> None:
     """Test that setup_git passes check=True to all subprocess calls."""
     mock_subprocess = mocker.patch("src.git.subprocess.run")
     mocker.patch("src.git.console")
@@ -125,7 +128,7 @@ def test_setup_git_handles_subprocess_check(mocker):
         assert call_args[1]["check"] is True
 
 
-def test_setup_git_captures_output(mocker):
+def test_setup_git_captures_output(mocker: MockerFixture) -> None:
     """Test that setup_git captures subprocess output."""
     mock_subprocess = mocker.patch("src.git.subprocess.run")
     mocker.patch("src.git.console")

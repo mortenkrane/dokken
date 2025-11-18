@@ -1,13 +1,16 @@
 """Tests for src/llm.py"""
 
 import os
+from typing import Any
 
 import pytest
+from pytest_mock import MockerFixture
 
 from src.llm import check_drift, generate_doc, initialize_llm
+from src.records import ComponentDocumentation, DocumentationDriftCheck
 
 
-def test_initialize_llm_success(mocker):
+def test_initialize_llm_success(mocker: MockerFixture) -> None:
     """Test initialize_llm creates GoogleGenAI client with correct parameters."""
     mocker.patch.dict(os.environ, {"GOOGLE_API_KEY": "test_api_key"})
     mock_genai = mocker.patch("src.llm.GoogleGenAI")
@@ -18,7 +21,7 @@ def test_initialize_llm_success(mocker):
     assert llm == mock_genai.return_value
 
 
-def test_initialize_llm_missing_api_key(mocker):
+def test_initialize_llm_missing_api_key(mocker: MockerFixture) -> None:
     """Test initialize_llm raises ValueError when GOOGLE_API_KEY is missing."""
     mocker.patch.dict(os.environ, {}, clear=True)
 
@@ -30,7 +33,7 @@ def test_initialize_llm_missing_api_key(mocker):
     "api_key",
     ["key123", "test_key_xyz", "AIzaSyABC123"],
 )
-def test_initialize_llm_with_various_keys(mocker, api_key):
+def test_initialize_llm_with_various_keys(mocker: MockerFixture, api_key: str) -> None:
     """Test initialize_llm works with various API key formats."""
     mocker.patch.dict(os.environ, {"GOOGLE_API_KEY": api_key})
     mock_genai = mocker.patch("src.llm.GoogleGenAI")
@@ -41,8 +44,10 @@ def test_initialize_llm_with_various_keys(mocker, api_key):
 
 
 def test_check_drift_creates_program(
-    mocker, mock_llm_client, sample_drift_check_no_drift
-):
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+) -> None:
     """Test check_drift creates LLMTextCompletionProgram with correct parameters."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -66,8 +71,10 @@ def test_check_drift_creates_program(
 
 
 def test_check_drift_uses_drift_check_prompt(
-    mocker, mock_llm_client, sample_drift_check_no_drift
-):
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+) -> None:
     """Test check_drift uses DRIFT_CHECK_PROMPT template."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -86,8 +93,10 @@ def test_check_drift_uses_drift_check_prompt(
 
 
 def test_check_drift_returns_drift_check_object(
-    mocker, mock_llm_client, sample_drift_check_with_drift
-):
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_with_drift: DocumentationDriftCheck,
+) -> None:
     """Test check_drift returns DocumentationDriftCheck object."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -101,8 +110,10 @@ def test_check_drift_returns_drift_check_object(
 
 
 def test_generate_doc_creates_program(
-    mocker, mock_llm_client, sample_component_documentation
-):
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
     """Test generate_doc creates LLMTextCompletionProgram with correct parameters."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -125,8 +136,10 @@ def test_generate_doc_creates_program(
 
 
 def test_generate_doc_uses_generation_prompt(
-    mocker, mock_llm_client, sample_component_documentation
-):
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
     """Test generate_doc uses DOCUMENTATION_GENERATION_PROMPT template."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -144,8 +157,10 @@ def test_generate_doc_uses_generation_prompt(
 
 
 def test_generate_doc_returns_component_documentation(
-    mocker, mock_llm_client, sample_component_documentation
-):
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
     """Test generate_doc returns ComponentDocumentation object."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -168,8 +183,12 @@ def test_generate_doc_returns_component_documentation(
     ],
 )
 def test_check_drift_handles_various_inputs(
-    mocker, mock_llm_client, sample_drift_check_no_drift, context, current_doc
-):
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+    context: str,
+    current_doc: str,
+) -> None:
     """Test check_drift handles various context and documentation inputs."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -192,8 +211,11 @@ def test_check_drift_handles_various_inputs(
     ],
 )
 def test_generate_doc_handles_various_contexts(
-    mocker, mock_llm_client, sample_component_documentation, context
-):
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_component_documentation: ComponentDocumentation,
+    context: str,
+) -> None:
     """Test generate_doc handles various code contexts."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()

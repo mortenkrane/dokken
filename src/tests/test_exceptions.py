@@ -5,7 +5,7 @@ import pytest
 from src.exceptions import DocumentationDriftError
 
 
-def test_documentation_drift_error_initialization():
+def test_documentation_drift_error_initialization() -> None:
     """Test DocumentationDriftError initialization with rationale and module_path."""
     rationale = "Documentation is outdated"
     module_path = "src/test_module"
@@ -16,7 +16,7 @@ def test_documentation_drift_error_initialization():
     assert error.module_path == module_path
 
 
-def test_documentation_drift_error_message():
+def test_documentation_drift_error_message() -> None:
     """Test DocumentationDriftError generates correct error message."""
     rationale = "New functions added without docs"
     module_path = "src/payment"
@@ -35,7 +35,9 @@ def test_documentation_drift_error_message():
         ("Missing dependencies", "src/module3"),
     ],
 )
-def test_documentation_drift_error_various_inputs(rationale, module_path):
+def test_documentation_drift_error_various_inputs(
+    rationale: str, module_path: str
+) -> None:
     """Test DocumentationDriftError with various rationale and module_path combinations."""
     error = DocumentationDriftError(rationale=rationale, module_path=module_path)
 
@@ -45,14 +47,14 @@ def test_documentation_drift_error_various_inputs(rationale, module_path):
     assert rationale in str(error)
 
 
-def test_documentation_drift_error_is_exception():
+def test_documentation_drift_error_is_exception() -> None:
     """Test that DocumentationDriftError is a proper Exception."""
     error = DocumentationDriftError(rationale="test", module_path="test/path")
 
     assert isinstance(error, Exception)
 
 
-def test_documentation_drift_error_can_be_raised():
+def test_documentation_drift_error_can_be_raised() -> None:
     """Test that DocumentationDriftError can be raised and caught."""
     rationale = "Test error"
     module_path = "test/module"
