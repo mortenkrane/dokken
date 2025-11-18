@@ -21,3 +21,4 @@ ENV/
 # Environment variables
 .env
 .env.local
+.coverage
