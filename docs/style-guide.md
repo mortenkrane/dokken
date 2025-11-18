@@ -156,4 +156,274 @@ main.py (CLI)
 
 ## Testing
 
+Dokken uses pytest with comprehensive unit tests, aiming for close to 100% coverage.
+
+### Testing Framework
+
+- **pytest** - Primary testing framework
+- **pytest-cov** - Coverage reporting
+- **pytest-mock** - Mocking and patching
+- **Click's CliRunner** - CLI testing
+
+### Test Structure
+
+Tests mirror the source structure in `src/tests/`:
+
+```
+src/tests/
+├── conftest.py              # Shared fixtures
+├── test_exceptions.py       # Tests for src/exceptions.py
+├── test_prompts.py         # Tests for src/prompts.py
+├── test_git.py             # Tests for src/git.py
+├── test_code_analyzer.py   # Tests for src/code_analyzer.py
+├── test_llm.py             # Tests for src/llm.py
+├── test_formatters.py      # Tests for src/formatters.py
+├── test_workflows.py       # Tests for src/workflows.py
+└── test_main.py            # Tests for src/main.py (CLI)
+```
+
+### Core Testing Principles
+
+#### 1. Function-Based Tests
+
+**Always use function-based tests, never class-based tests.**
+
+```python
+# ✅ Good - function-based
+def test_generate_markdown_includes_title(sample_doc):
+    markdown = generate_markdown(doc_data=sample_doc)
+    assert "# Component Overview" in markdown
+
+# ❌ Bad - class-based
+class TestGenerateMarkdown:
+    def test_includes_title(self):
+        ...
+```
+
+#### 2. Use Parametrization to Avoid Duplication
+
+Parametrize tests to test multiple scenarios without code duplication:
+
+```python
+@pytest.mark.parametrize(
+    "input_value,expected",
+    [
+        ("value1", "result1"),
+        ("value2", "result2"),
+        ("value3", "result3"),
+    ],
+)
+def test_function_with_various_inputs(input_value, expected):
+    result = function_under_test(input_value)
+    assert result == expected
+```
+
+#### 3. Comprehensive Mocking
+
+**Mock all external dependencies** to keep tests fast and isolated:
+
+- Mock subprocess calls (git commands)
+- Mock LLM API calls
+- Mock file I/O operations
+- Mock console output
+
+```python
+def test_setup_git(mocker):
+    # Mock subprocess to avoid actual git commands
+    mock_subprocess = mocker.patch("src.git.subprocess.run")
+    # Mock console to suppress output
+    mocker.patch("src.git.console")
+
+    setup_git()
+
+    # Verify the right calls were made
+    assert mock_subprocess.call_count == 3
+```
+
+#### 4. Use Shared Fixtures
+
+Define reusable test data in `conftest.py`:
+
+```python
+# In conftest.py
+@pytest.fixture
+def sample_component_documentation():
+    return ComponentDocumentation(
+        component_name="Sample",
+        purpose_and_scope="Test purpose",
+        design_decisions={"KEY": "Value"},
+    )
+
+# In test files
+def test_something(sample_component_documentation):
+    # Use the fixture
+    ...
+```
+
+#### 5. Test the Unit in Isolation
+
+Each test should focus on a single unit:
+
+```python
+# ✅ Good - tests only check_drift function
+def test_check_drift_returns_correct_object(mocker, mock_llm_client):
+    mock_program = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program.from_defaults.return_value.return_value = expected_result
+
+    result = check_drift(llm=mock_llm_client, context="...", current_doc="...")
+
+    assert result == expected_result
+
+# ❌ Bad - tests multiple units together
+def test_entire_workflow_end_to_end():
+    # This tests too much at once
+    ...
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest src/tests/
+
+# Run with verbose output
+pytest src/tests/ -v
+
+# Run specific test file
+pytest src/tests/test_git.py
+
+# Run specific test
+pytest src/tests/test_git.py::test_setup_git_checks_out_main
+
+# Run with coverage
+pytest src/tests/ --cov=src --cov-report=term-missing
+
+# Generate HTML coverage report
+pytest src/tests/ --cov=src --cov-report=html
+# Open htmlcov/index.html to view
+```
+
+### Coverage Expectations
+
+- **Target: Close to 100% coverage** for all source modules
+- Minimum acceptable: 95% coverage
+- Acceptable untested code:
+  - `if __name__ == "__main__"` blocks
+  - Abstract methods meant to be overridden
+  - Defensive code for truly unreachable edge cases
+
+### Testing Best Practices
+
+#### Test Names Should Be Descriptive
+
+```python
+# ✅ Good - clear what is being tested
+def test_generate_markdown_sorts_design_decisions_alphabetically():
+    ...
+
+# ❌ Bad - unclear what is being tested
+def test_markdown():
+    ...
+```
+
+#### One Assertion Per Concept
+
+Keep tests focused, but don't artificially limit assertions:
+
+```python
+# ✅ Good - multiple related assertions
+def test_generate_markdown_includes_all_sections(sample_doc):
+    markdown = generate_markdown(doc_data=sample_doc)
+    assert "## Purpose & Scope" in markdown
+    assert "## Key Design Decisions" in markdown
+    assert sample_doc.purpose_and_scope in markdown
+
+# ❌ Bad - testing unrelated things
+def test_everything(sample_doc):
+    assert generate_markdown(...)  # markdown generation
+    assert check_drift(...)         # drift checking (unrelated!)
+```
+
+#### Test Both Happy and Sad Paths
+
+```python
+def test_initialize_llm_success(mocker):
+    mocker.patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"})
+    llm = initialize_llm()
+    assert llm is not None
+
+def test_initialize_llm_missing_api_key(mocker):
+    mocker.patch.dict(os.environ, {}, clear=True)
+    with pytest.raises(ValueError, match="GOOGLE_API_KEY"):
+        initialize_llm()
+```
+
+#### Use Temporary Directories for File Operations
+
+```python
+def test_function_writes_file(tmp_path):
+    # tmp_path is a pytest fixture that creates a temp directory
+    output_file = tmp_path / "output.txt"
+
+    write_function(str(output_file))
+
+    assert output_file.exists()
+    assert output_file.read_text() == "expected content"
+```
+
+#### Mock at the Right Level
+
+Mock at the boundary of your module, not deep inside dependencies:
+
+```python
+# ✅ Good - mock the subprocess call in your module
+def test_setup_git(mocker):
+    mock_subprocess = mocker.patch("src.git.subprocess.run")
+    setup_git()
+    mock_subprocess.assert_called()
+
+# ❌ Bad - mocking too deep
+def test_setup_git(mocker):
+    mocker.patch("subprocess.Popen")  # Too low-level
+    ...
+```
+
+### CLI Testing
+
+Use Click's `CliRunner` for testing CLI commands:
+
+```python
+from click.testing import CliRunner
+
+def test_check_command_success(runner, mocker):
+    runner = CliRunner()
+    mocker.patch("src.main.check_documentation_drift")
+
+    result = runner.invoke(cli, ["check", "src/module"])
+
+    assert result.exit_code == 0
+    assert "up-to-date" in result.output
+```
+
+### When to Write Tests
+
+**Write tests for:**
+- All new functions and classes
+- Bug fixes (add a failing test first, then fix)
+- Edge cases and error handling
+- Integration points between modules
+
+**You may skip tests for:**
+- Temporary debugging code
+- Code that will be deleted soon
+- Generated code (like migrations)
+
+### Continuous Integration
+
+Tests should:
+- Run on every commit
+- Pass before merging to main
+- Complete in under 10 seconds for fast feedback
+- Not require external services (use mocks!)
+
 ## Documentation
