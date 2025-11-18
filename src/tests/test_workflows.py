@@ -1,5 +1,6 @@
 """Tests for src/workflows.py"""
 
+
 import pytest
 
 from src.exceptions import DocumentationDriftError
@@ -14,6 +15,7 @@ def test_check_documentation_drift_invalid_directory(mocker, tmp_path):
     with pytest.raises(SystemExit) as exc_info:
         check_documentation_drift(target_module_path=invalid_path)
 
+    assert isinstance(exc_info.value, SystemExit)
     assert exc_info.value.code == 1
     mock_console.print.assert_called_once()
 
@@ -96,6 +98,7 @@ def test_generate_documentation_invalid_directory(mocker, tmp_path):
     with pytest.raises(SystemExit) as exc_info:
         generate_documentation(target_module_path=invalid_path)
 
+    assert isinstance(exc_info.value, SystemExit)
     assert exc_info.value.code == 1
     mock_console.print.assert_called_once()
 

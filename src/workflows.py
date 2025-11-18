@@ -81,7 +81,7 @@ def check_documentation_drift(*, target_module_path: str) -> None:
         )
 
 
-def generate_documentation(*, target_module_path: str) -> None:
+def generate_documentation(*, target_module_path: str) -> str | None:
     """
     Generate mode: Creates or updates documentation by analyzing code with AI.
 
