@@ -1,1 +1,23 @@
+# IDE
 .idea
+.vscode
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv
+venv/
+ENV/
+
+# Environment variables
+.env
+.env.local
