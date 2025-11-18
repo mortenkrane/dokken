@@ -1,15 +1,24 @@
+import argparse
+import glob
 import os
 import subprocess
 import sys
-import glob
-from typing import List
 
-from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.core.program import LLMTextCompletionProgram
+from llama_index.llms.google_genai import GoogleGenAI
 
-from src.records import DocumentationDriftCheck, ComponentDocumentation
+from src.records import ComponentDocumentation, DocumentationDriftCheck
 
 GIT_BASE_BRANCH = "main"
+
+
+class DocumentationDriftError(Exception):
+    """Raised when documentation drift is detected in check mode."""
+
+    def __init__(self, rationale: str, module_path: str):
+        self.rationale = rationale
+        self.module_path = module_path
+        super().__init__(f"Documentation drift detected in {module_path}:\n{rationale}")
 
 
 def setup_git() -> None:
@@ -71,7 +80,7 @@ def get_module_context(*, module_path: str, base_branch: str = "main") -> str:
 
         for file_path in sorted(python_files):
             # 1. Get the current file content
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 code_content = f.read()
 
             # 2. Get the diff relative to the base branch
@@ -170,6 +179,59 @@ def generate_markdown(*, doc_data: ComponentDocumentation) -> str:
     return md
 
 
+def check_documentation_drift(*, target_module_path: str) -> None:
+    """
+    Check mode: Analyzes documentation drift without generating new documentation.
+    Raises DocumentationDriftError if drift is detected.
+    """
+    if not os.path.isdir(target_module_path):
+        print(f"Error: {target_module_path} is not a valid directory")
+        sys.exit(1)
+
+    readme_path = os.path.join(target_module_path, "README.md")
+
+    print(f"Target module: {target_module_path}")
+    print(f"Documentation path: {readme_path}")
+
+    # 1. Setup
+    llm_client = initialize_llm()
+    code_context = get_module_context(
+        module_path=target_module_path, base_branch=GIT_BASE_BRANCH
+    )
+
+    if not code_context:
+        print("No code context found. No drift check needed.")
+        return
+
+    # Check for existing README.md
+    if not os.path.exists(readme_path):
+        print(f"No existing README.md found at {readme_path}")
+        raise DocumentationDriftError(
+            rationale="No documentation exists for this module.",
+            module_path=target_module_path,
+        )
+
+    with open(readme_path) as f:
+        current_doc_content = f.read()
+    print(f"Found existing README.md at {readme_path}")
+
+    # 2. Check for Documentation Drift
+    print("--- Checking for documentation drift... ---")
+    drift_check = check_drift(
+        llm=llm_client, context=code_context, current_doc=current_doc_content
+    )
+
+    print(f"Drift Detected: {drift_check.drift_detected}")
+    print(f"Rationale: {drift_check.rationale}")
+
+    if drift_check.drift_detected:
+        raise DocumentationDriftError(
+            rationale=drift_check.rationale, module_path=target_module_path
+        )
+
+    print("✅ Documentation is up-to-date. No drift detected.")
+
+
 def generate_documentation(*, target_module_path: str) -> None:
     if not os.path.isdir(target_module_path):
         print(f"Error: {target_module_path} is not a valid directory")
@@ -196,7 +258,7 @@ def generate_documentation(*, target_module_path: str) -> None:
 
     # Check for existing README.md
     if os.path.exists(readme_path):
-        with open(readme_path, "r") as f:
+        with open(readme_path) as f:
             current_doc_content = f.read()
         print(f"Found existing README.md at {readme_path}")
     else:
@@ -238,15 +300,27 @@ def generate_documentation(*, target_module_path: str) -> None:
 # --- Manual Execution ---
 
 if __name__ == "__main__":
-    # Get target module path from command line arguments
-    if len(sys.argv) < 2:
-        print("Usage: python main.py <module_path>")
-        print("Example: python main.py src/payment_service")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Documentation generation and drift checking tool"
+    )
+    parser.add_argument("module_path", help="Path to the module directory to process")
+    parser.add_argument(
+        "--mode",
+        choices=["check", "generate"],
+        default="generate",
+        help="Mode: 'check' to detect drift and raise error, 'generate' to create documentation (default: generate)",
+    )
 
-    target_module_path = sys.argv[1]
+    args = parser.parse_args()
 
     try:
-        generate_documentation(target_module_path=target_module_path)
-    except ValueError as e:
-        print(f"Configuration Error: {e}")
+        if args.mode == "check":
+            check_documentation_drift(target_module_path=args.module_path)
+        else:
+            generate_documentation(target_module_path=args.module_path)
+    except DocumentationDriftError as drift_error:
+        print(f"\n❌ {drift_error}")
+        sys.exit(1)
+    except ValueError as config_error:
+        print(f"Configuration Error: {config_error}")
+        sys.exit(1)
