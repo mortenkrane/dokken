@@ -38,7 +38,6 @@ def check(module_path: str):
 
 #### `exceptions.py` - Custom Exceptions
 - All custom exception classes
-- Currently contains `DocumentationDriftError`
 - Add new exceptions here as needed
 
 #### `prompts.py` - LLM Prompt Templates
@@ -64,17 +63,11 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 - No LLM or file I/O mixing
 - Single responsibility: git workflow automation
 
-**Contains:**
-- `setup_git()` - Checks out main, pulls, creates branch
-
 #### `code_analyzer.py` - Code Context Extraction
 - Analyzes code to create context for LLM
 - Reads Python files and git diffs
 - Pure extraction logic, no LLM calls
 - Could be extended to support other languages
-
-**Contains:**
-- `get_module_context()` - Extracts code + diffs from a module
 
 #### `llm.py` - LLM Client and Operations
 - LLM initialization and configuration
@@ -82,29 +75,17 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 - Uses prompts from `prompts.py`
 - Returns structured Pydantic objects
 
-**Contains:**
-- `initialize_llm()` - Sets up Google GenAI client
-- `check_drift()` - Checks documentation drift via LLM
-- `generate_doc()` - Generates structured documentation via LLM
-
 #### `formatters.py` - Output Formatting
 - Pure data transformation, no I/O
 - Converts structured data to various formats
 - Currently: Markdown formatting
 - Future: Could add HTML, PDF, etc.
 
-**Contains:**
-- `generate_markdown()` - Converts `ComponentDocumentation` to Markdown
-
 #### `workflows.py` - Orchestration Logic
 - **High-level business logic**
 - Coordinates git → analyzer → LLM → formatter
 - Contains the full flow of operations
 - Can be imported and used without CLI
-
-**Contains:**
-- `check_documentation_drift()` - Full drift check workflow
-- `generate_documentation()` - Full doc generation workflow
 
 **Why separate workflows?**
 - Reusable - can be imported by other scripts
@@ -117,9 +98,6 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 - Used by LLM for structured output
 - Type-safe data validation
 
-**Contains:**
-- `DocumentationDriftCheck` - Drift detection results
-- `ComponentDocumentation` - Generated documentation structure
 
 ### Dependency Flow
 
@@ -164,14 +142,15 @@ main.py (CLI)
     - Run `ruff format` to format code
     - Run `ruff check` to check for linting issues
     - Run `ruff check --fix` to automatically fix linting issues
-- Use type hints consistently throughout the codebase, use MyPy for type checking
+- Use type hints consistently throughout the codebase
+    - Run `uvx ty check` for type checking
 - Use absolute imports
 - Keep imports at the top of the file, unless we need to break circular imports
 - Use double quotes for strings
 - Keep functions simple and bite-sized
     - If Ruff says your function is "too complex", it probably is, and should be refactored
 - Keep files from growing indefinitely
-    - We define no max limit, but it's recommended to start looking for potential dividers when files reach 800-1000 lines
+    - We define no max limit, but it's recommended to start looking for potential dividers when files reach 300-500 lines
     - Typically, the solution will be to convert a big file into a directory with subfiles
 
 
