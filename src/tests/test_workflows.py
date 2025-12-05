@@ -120,26 +120,11 @@ def test_generate_documentation_invalid_directory(
     assert exc_info.value.code == 1
 
 
-def test_generate_documentation_calls_setup_git(
-    mocker: MockerFixture, temp_module_dir: Path
-) -> None:
-    """Test generate_documentation calls git setup."""
-    mocker.patch("src.workflows.console")
-    mock_setup_git = mocker.patch("src.workflows.setup_git")
-    mocker.patch("src.workflows.initialize_llm")
-    mocker.patch("src.workflows.get_module_context", return_value="")
-
-    generate_documentation(target_module_path=str(temp_module_dir))
-
-    mock_setup_git.assert_called_once()
-
-
 def test_generate_documentation_no_code_context(
     mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test generate_documentation returns early when no code context."""
     mocker.patch("src.workflows.console")
-    mocker.patch("src.workflows.setup_git")
     mocker.patch("src.workflows.initialize_llm")
     mock_get_context = mocker.patch("src.workflows.get_module_context", return_value="")
 
@@ -162,7 +147,6 @@ def test_generate_documentation_no_drift_skips_generation(
     readme.write_text("# Test\n\nDocumentation")
 
     mocker.patch("src.workflows.console")
-    mocker.patch("src.workflows.setup_git")
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
     mocker.patch("src.workflows.check_drift", return_value=sample_drift_check_no_drift)
@@ -189,7 +173,7 @@ def test_generate_documentation_generates_when_drift(
     readme.write_text("# Test\n\nDocumentation")
 
     mocker.patch("src.workflows.console")
-    mocker.patch("src.workflows.setup_git")
+
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
     mocker.patch(
@@ -220,7 +204,7 @@ def test_generate_documentation_writes_readme(
     readme.write_text("# Old Docs")
 
     mocker.patch("src.workflows.console")
-    mocker.patch("src.workflows.setup_git")
+
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
     mocker.patch(
@@ -247,7 +231,6 @@ def test_generate_documentation_creates_readme_if_missing(
 ) -> None:
     """Test generate_documentation creates README.md if it doesn't exist."""
     mocker.patch("src.workflows.console")
-    mocker.patch("src.workflows.setup_git")
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
     # When no README exists, drift check will say drift detected
@@ -292,7 +275,6 @@ def test_generate_documentation_initializes_llm(
 ) -> None:
     """Test generate_documentation initializes LLM."""
     mocker.patch("src.workflows.console")
-    mocker.patch("src.workflows.setup_git")
     mock_init_llm = mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="")
 

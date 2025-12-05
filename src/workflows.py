@@ -9,7 +9,6 @@ from rich.console import Console
 from src.code_analyzer import get_module_context
 from src.exceptions import DocumentationDriftError
 from src.formatters import generate_markdown
-from src.git import setup_git
 from src.llm import check_drift, generate_doc, initialize_llm
 
 console = Console()
@@ -137,9 +136,6 @@ def generate_documentation(*, target_module_path: str) -> str | None:
 
     console.print(f"\n[dim]Target module:[/dim] {target_module_path}")
     console.print(f"[dim]Documentation output:[/dim] {readme_path}\n")
-
-    # 0. Git setup
-    setup_git()
 
     # 1. Setup
     with console.status("[cyan]Initializing LLM..."):
