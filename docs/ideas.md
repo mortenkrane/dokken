@@ -18,3 +18,6 @@ In order to capture _intent_ in the documentation, we need to involve a human. A
 
 Current only Google Gemini.
 
+## Some way to exclude/deny changes permanently
+
+Sometimes, you don't want the things dokken suggests.
