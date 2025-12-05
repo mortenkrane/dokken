@@ -11,7 +11,8 @@ console = Console()
 
 def get_module_context(*, module_path: str, base_branch: str = "main") -> str:
     """
-    Fetches the full code content and the diff for all Python files in a module directory.
+    Fetches the full code content and the diff for all Python files in a module
+    directory.
 
     Args:
         module_path: The path to the module directory to analyze.
@@ -52,6 +53,6 @@ def get_module_context(*, module_path: str, base_branch: str = "main") -> str:
             )
 
         return context
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         console.print(f"[red]Error getting module context for {module_path}:[/red] {e}")
         return ""

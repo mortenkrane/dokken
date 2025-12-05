@@ -3,6 +3,7 @@
 import os
 import sys
 
+from llama_index.llms.google_genai import GoogleGenAI
 from rich.console import Console
 
 from src.code_analyzer import get_module_context
@@ -10,7 +11,6 @@ from src.exceptions import DocumentationDriftError
 from src.formatters import generate_markdown
 from src.git import GIT_BASE_BRANCH, setup_git
 from src.llm import check_drift, generate_doc, initialize_llm
-from llama_index.llms.google_genai import GoogleGenAI
 
 console = Console()
 
@@ -113,7 +113,8 @@ def fix_documentation_drift(
         f.write(final_markdown)
 
     console.print(
-        f"[green]✓[/green] Documentation updated and saved to: [bold]{readme_path}[/bold]\n"
+        f"[green]✓[/green] Documentation updated and saved to: "
+        f"[bold]{readme_path}[/bold]\n"
     )
 
 
@@ -181,7 +182,8 @@ def generate_documentation(*, target_module_path: str) -> str | None:
         and "No existing documentation provided." not in current_doc_content
     ):
         console.print(
-            "[green]✓[/green] Documentation is considered up-to-date. No new file generated."
+            "[green]✓[/green] Documentation is considered up-to-date. No new file "
+            "generated."
         )
         return None
 
@@ -200,7 +202,8 @@ def generate_documentation(*, target_module_path: str) -> str | None:
         f.write(final_markdown)
 
     console.print(
-        f"\n[green]✓[/green] New documentation generated and saved to: [bold]{readme_path}[/bold]"
+        f"\n[green]✓[/green] New documentation generated and saved to: "
+        f"[bold]{readme_path}[/bold]"
     )
 
     return final_markdown

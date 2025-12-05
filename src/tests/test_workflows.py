@@ -337,7 +337,9 @@ def test_generate_documentation_initializes_llm(
 def test_check_documentation_drift_fix_no_readme_still_raises(
     mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
-    """Test check_documentation_drift with fix=True still raises error when no README."""
+    """
+    Test check_documentation_drift with fix=True still raises error when no README.
+    """
     mocker.patch("src.workflows.console")
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
@@ -382,7 +384,9 @@ def test_check_documentation_drift_fix_with_drift(
     tmp_path: Path,
     sample_drift_check_with_drift: DocumentationDriftCheck,
 ) -> None:
-    """Test check_documentation_drift with fix=True calls fix function when drift detected."""
+    """
+    Test check_documentation_drift with fix=True calls fix function when drift detected.
+    """
     # Create module dir with README
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()

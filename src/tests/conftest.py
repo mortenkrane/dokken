@@ -52,7 +52,7 @@ def add(a: int, b: int) -> int:
 @pytest.fixture
 def sample_git_diff() -> str:
     """Sample git diff output."""
-    diff_text = (
+    return (
         "diff --git a/src/sample.py b/src/sample.py\n"
         "index 123abc..456def 100644\n"
         "--- a/src/sample.py\n"
@@ -67,7 +67,6 @@ def sample_git_diff() -> str:
         '+    """Add two numbers."""\n'
         "+    return a + b\n"
     )
-    return diff_text
 
 
 @pytest.fixture

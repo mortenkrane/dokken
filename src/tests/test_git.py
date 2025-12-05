@@ -91,7 +91,9 @@ def test_setup_git_operations_order(mocker: MockerFixture) -> None:
 def test_setup_git_branch_name_format(
     mocker: MockerFixture, date: datetime, expected_branch: str
 ) -> None:
-    """Test that setup_git creates correctly formatted branch names for various dates."""
+    """
+    Test that setup_git creates correctly formatted branch names for various dates.
+    """
     mock_subprocess = mocker.patch("src.git.subprocess.run")
     mocker.patch("src.git.console")
     mock_datetime = mocker.patch("src.git.datetime")

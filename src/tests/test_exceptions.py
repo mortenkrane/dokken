@@ -38,7 +38,9 @@ def test_documentation_drift_error_message() -> None:
 def test_documentation_drift_error_various_inputs(
     rationale: str, module_path: str
 ) -> None:
-    """Test DocumentationDriftError with various rationale and module_path combinations."""
+    """
+    Test DocumentationDriftError with various rationale and module_path combinations.
+    """
     error = DocumentationDriftError(rationale=rationale, module_path=module_path)
 
     assert error.rationale == rationale

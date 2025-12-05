@@ -41,8 +41,7 @@ def check_drift(
     )
 
     # Run the check
-    check_result = check_program(context=context, current_doc=current_doc)
-    return check_result
+    return check_program(context=context, current_doc=current_doc)
 
 
 def generate_doc(*, llm: GoogleGenAI, context: str) -> ComponentDocumentation:
@@ -64,5 +63,4 @@ def generate_doc(*, llm: GoogleGenAI, context: str) -> ComponentDocumentation:
     )
 
     # Run the generation
-    doc_result = generate_program(context=context)
-    return doc_result
+    return generate_program(context=context)

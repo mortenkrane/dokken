@@ -1,4 +1,3 @@
-from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -43,7 +42,7 @@ class ComponentDocumentation(BaseModel):
             "boundaries (the 'what')."
         ),
     )
-    design_decisions: Dict[str, str] = Field(
+    design_decisions: dict[str, str] = Field(
         ...,
         description=(
             "Key architectural decisions and the 'why' behind them, mapped to a short "
@@ -51,7 +50,7 @@ class ComponentDocumentation(BaseModel):
             "schema management in the early phase.')."
         ),
     )
-    external_dependencies: Optional[str] = Field(
+    external_dependencies: str | None = Field(
         None,
         description=(
             "A list or summary of external systems/APIs this component interacts with."
