@@ -266,39 +266,6 @@ def test_generate_documentation_creates_readme_if_missing(
     assert readme_path.read_text() == "# New Docs"
 
 
-@pytest.mark.parametrize(
-    "base_branch",
-    ["main", "develop", "master"],
-)
-def test_check_documentation_drift_uses_base_branch(
-    mocker: MockerFixture,
-    tmp_path: Path,
-    sample_drift_check_no_drift: DocumentationDriftCheck,
-    base_branch: str,
-) -> None:
-    """Test check_documentation_drift uses correct base branch."""
-    module_dir = tmp_path / "test_module"
-    module_dir.mkdir()
-    readme = module_dir / "README.md"
-    readme.write_text("# Test")
-
-    mocker.patch("src.workflows.console")
-    mocker.patch("src.workflows.initialize_llm")
-    mock_get_context = mocker.patch(
-        "src.workflows.get_module_context", return_value="code context"
-    )
-    mocker.patch("src.workflows.check_drift", return_value=sample_drift_check_no_drift)
-
-    # Temporarily change GIT_BASE_BRANCH
-    mocker.patch("src.workflows.GIT_BASE_BRANCH", base_branch)
-    check_documentation_drift(target_module_path=str(module_dir))
-
-    # Verify get_module_context was called with correct base_branch
-    mock_get_context.assert_called_once()
-    call_kwargs = mock_get_context.call_args[1]
-    assert call_kwargs["base_branch"] == base_branch
-
-
 def test_check_documentation_drift_initializes_llm(
     mocker: MockerFixture,
     tmp_path: Path,

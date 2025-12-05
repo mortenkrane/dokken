@@ -1,10 +1,7 @@
 """Tests for src/code_analyzer.py"""
 
-import subprocess
 from pathlib import Path
-from unittest.mock import MagicMock
 
-import pytest
 from pytest_mock import MockerFixture
 
 from src.code_analyzer import get_module_context
@@ -19,12 +16,6 @@ def test_get_module_context_with_python_files(
     module_dir.mkdir()
     (module_dir / "file1.py").write_text("print('hello')")
     (module_dir / "file2.py").write_text("print('world')")
-
-    # Mock subprocess for git diff
-    mock_subprocess = mocker.patch("src.code_analyzer.subprocess.run")
-    mock_result = MagicMock()
-    mock_result.stdout = "diff --git a/file1.py b/file1.py\n+print('hello')"
-    mock_subprocess.return_value = mock_result
 
     mocker.patch("src.code_analyzer.console")
 
@@ -55,59 +46,6 @@ def test_get_module_context_no_python_files(
     assert "No Python files found" in str(mock_console.print.call_args)
 
 
-def test_get_module_context_calls_git_diff(
-    tmp_path: Path, mocker: MockerFixture
-) -> None:
-    """Test that get_module_context calls git diff for each Python file."""
-    module_dir = tmp_path / "test_module"
-    module_dir.mkdir()
-    file_path = module_dir / "test.py"
-    file_path.write_text("def test(): pass")
-
-    mock_subprocess = mocker.patch("src.code_analyzer.subprocess.run")
-    mock_result = MagicMock()
-    mock_result.stdout = "sample diff"
-    mock_subprocess.return_value = mock_result
-
-    mocker.patch("src.code_analyzer.console")
-
-    get_module_context(module_path=str(module_dir))
-
-    # Verify git diff was called with correct arguments
-    mock_subprocess.assert_called_once()
-    call_args = mock_subprocess.call_args[0][0]
-    assert call_args[0] == "git"
-    assert call_args[1] == "diff"
-    assert call_args[2] == "main"
-    assert str(file_path) in call_args
-
-
-@pytest.mark.parametrize(
-    "base_branch",
-    ["main", "develop", "master"],
-)
-def test_get_module_context_with_different_base_branches(
-    tmp_path: Path, mocker: MockerFixture, base_branch: str
-) -> None:
-    """Test get_module_context uses the specified base branch."""
-    module_dir = tmp_path / "test_module"
-    module_dir.mkdir()
-    (module_dir / "test.py").write_text("code")
-
-    mock_subprocess = mocker.patch("src.code_analyzer.subprocess.run")
-    mock_result = MagicMock()
-    mock_result.stdout = "diff"
-    mock_subprocess.return_value = mock_result
-
-    mocker.patch("src.code_analyzer.console")
-
-    get_module_context(module_path=str(module_dir), base_branch=base_branch)
-
-    # Verify the base branch was used in git diff
-    call_args = mock_subprocess.call_args[0][0]
-    assert base_branch in call_args
-
-
 def test_get_module_context_includes_file_content(
     tmp_path: Path, mocker: MockerFixture
 ) -> None:
@@ -117,39 +55,12 @@ def test_get_module_context_includes_file_content(
     file_content = "def hello():\n    return 'world'"
     (module_dir / "test.py").write_text(file_content)
 
-    mock_subprocess = mocker.patch("src.code_analyzer.subprocess.run")
-    mock_result = MagicMock()
-    mock_result.stdout = "diff output"
-    mock_subprocess.return_value = mock_result
-
     mocker.patch("src.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
     assert file_content in context
-    assert "--- CURRENT CODE CONTENT ---" in context
-
-
-def test_get_module_context_includes_git_diff(
-    tmp_path: Path, mocker: MockerFixture
-) -> None:
-    """Test that get_module_context includes git diff output."""
-    module_dir = tmp_path / "test_module"
-    module_dir.mkdir()
-    (module_dir / "test.py").write_text("code")
-
-    diff_output = "diff --git a/test.py b/test.py\n+new line"
-    mock_subprocess = mocker.patch("src.code_analyzer.subprocess.run")
-    mock_result = MagicMock()
-    mock_result.stdout = diff_output
-    mock_subprocess.return_value = mock_result
-
-    mocker.patch("src.code_analyzer.console")
-
-    context = get_module_context(module_path=str(module_dir))
-
-    assert diff_output in context
-    assert "--- CODE CHANGES (GIT DIFF vs. main) ---" in context
+    assert "--- FILE:" in context
 
 
 def test_get_module_context_sorts_files(tmp_path: Path, mocker: MockerFixture) -> None:
@@ -159,11 +70,6 @@ def test_get_module_context_sorts_files(tmp_path: Path, mocker: MockerFixture) -
     (module_dir / "c_file.py").write_text("c")
     (module_dir / "a_file.py").write_text("a")
     (module_dir / "b_file.py").write_text("b")
-
-    mock_subprocess = mocker.patch("src.code_analyzer.subprocess.run")
-    mock_result = MagicMock()
-    mock_result.stdout = "diff"
-    mock_subprocess.return_value = mock_result
 
     mocker.patch("src.code_analyzer.console")
 
@@ -185,11 +91,9 @@ def test_get_module_context_handles_exception(
     module_dir.mkdir()
     (module_dir / "test.py").write_text("code")
 
-    # Make subprocess raise an exception
-    mock_subprocess = mocker.patch("src.code_analyzer.subprocess.run")
-    mock_subprocess.side_effect = subprocess.CalledProcessError(1, "git diff")
-
+    # Make file reading raise an exception
     mock_console = mocker.patch("src.code_analyzer.console")
+    mocker.patch("builtins.open", side_effect=OSError("File read error"))
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -210,11 +114,6 @@ def test_get_module_context_multiple_files(
     for filename in files:
         (module_dir / filename).write_text(f"# {filename}")
 
-    mock_subprocess = mocker.patch("src.code_analyzer.subprocess.run")
-    mock_result = MagicMock()
-    mock_result.stdout = "diff"
-    mock_subprocess.return_value = mock_result
-
     mocker.patch("src.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
@@ -223,6 +122,3 @@ def test_get_module_context_multiple_files(
     for filename in files:
         assert filename in context
         assert f"# {filename}" in context
-
-    # Should have made git diff call for each file
-    assert mock_subprocess.call_count == len(files)

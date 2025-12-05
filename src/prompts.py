@@ -5,10 +5,9 @@ These prompts can be easily modified and A/B tested without changing the core lo
 
 DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector. Your task is to
 analyze the provided code context and the current documentation to determine if the
-documentation is now obsolete, inaccurate, or missing crucial information
-due to the code changes. Focus specifically on high-level structure,
-purpose, and design decisions.
---- CODE CONTEXT & DIFF ---
+documentation is obsolete, inaccurate, or missing crucial information.
+Focus specifically on high-level structure, purpose, and design decisions.
+--- CODE CONTEXT ---
 {context}
 --- CURRENT DOCUMENTATION ---
 {current_doc}

@@ -9,7 +9,7 @@ from rich.console import Console
 from src.code_analyzer import get_module_context
 from src.exceptions import DocumentationDriftError
 from src.formatters import generate_markdown
-from src.git import GIT_BASE_BRANCH, setup_git
+from src.git import setup_git
 from src.llm import check_drift, generate_doc, initialize_llm
 
 console = Console()
@@ -44,9 +44,7 @@ def check_documentation_drift(*, target_module_path: str, fix: bool = False) -> 
         llm_client = initialize_llm()
 
     with console.status("[cyan]Analyzing code context..."):
-        code_context = get_module_context(
-            module_path=target_module_path, base_branch=GIT_BASE_BRANCH
-        )
+        code_context = get_module_context(module_path=target_module_path)
 
     if not code_context:
         console.print(
@@ -148,9 +146,7 @@ def generate_documentation(*, target_module_path: str) -> str | None:
         llm_client = initialize_llm()
 
     with console.status("[cyan]Analyzing code context..."):
-        code_context = get_module_context(
-            module_path=target_module_path, base_branch=GIT_BASE_BRANCH
-        )
+        code_context = get_module_context(module_path=target_module_path)
 
     if not code_context:
         console.print("[yellow]⚠[/yellow] No code context found. Exiting.")
