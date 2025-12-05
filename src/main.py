@@ -29,14 +29,22 @@ def cli():
 @click.argument(
     "module_path", type=click.Path(exists=True, file_okay=False, dir_okay=True)
 )
-def check(module_path: str):
+@click.option(
+    "--fix",
+    is_flag=True,
+    help="Automatically fix detected drift by updating the README.md",
+)
+def check(module_path: str, fix: bool):
     """Check for documentation drift without generating new docs.
 
     This command analyzes your code and documentation to detect if they're out of sync.
     If drift is detected, it exits with code 1, making it perfect for CI/CD pipelines.
 
+    Use --fix to automatically update the README.md when drift is detected.
+
     Example:
         dokken check src/payment_service
+        dokken check src/payment_service --fix
     """
     try:
         console.print(
@@ -45,7 +53,7 @@ def check(module_path: str):
                 subtitle=f"Module: {module_path}",
             )
         )
-        check_documentation_drift(target_module_path=module_path)
+        check_documentation_drift(target_module_path=module_path, fix=fix)
         console.print("\n[bold green]✓ Documentation is up-to-date![/bold green]")
     except DocumentationDriftError as drift_error:
         console.print(f"\n[bold red]✗ {drift_error}[/bold red]")

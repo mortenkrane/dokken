@@ -10,20 +10,22 @@ from src.exceptions import DocumentationDriftError
 from src.formatters import generate_markdown
 from src.git import GIT_BASE_BRANCH, setup_git
 from src.llm import check_drift, generate_doc, initialize_llm
+from llama_index.llms.google_genai import GoogleGenAI
 
 console = Console()
 
 
-def check_documentation_drift(*, target_module_path: str) -> None:
+def check_documentation_drift(*, target_module_path: str, fix: bool = False) -> None:
     """
     Check mode: Analyzes documentation drift without generating new documentation.
     Raises DocumentationDriftError if drift is detected.
 
     Args:
         target_module_path: Path to the module directory to check.
+        fix: If True, automatically fixes detected drift by updating README.md.
 
     Raises:
-        DocumentationDriftError: If documentation drift is detected.
+        DocumentationDriftError: If documentation drift is detected and fix=False.
         SystemExit: If the target path is invalid.
     """
     if not os.path.isdir(target_module_path):
@@ -55,7 +57,8 @@ def check_documentation_drift(*, target_module_path: str) -> None:
     # Check for existing README.md
     if not os.path.exists(readme_path):
         console.print(
-            f"[yellow]⚠[/yellow] No existing README.md found at {readme_path}"
+            f"[yellow]⚠[/yellow] No existing README.md found at {readme_path}."
+            "Try running `dokken generate` to generate a README.md file."
         )
         raise DocumentationDriftError(
             rationale="No documentation exists for this module.",
@@ -76,9 +79,42 @@ def check_documentation_drift(*, target_module_path: str) -> None:
     console.print(f"[bold]Rationale:[/bold] {drift_check.rationale}\n")
 
     if drift_check.drift_detected:
+        if fix:
+            fix_documentation_drift(
+                llm_client=llm_client,
+                code_context=code_context,
+                readme_path=readme_path,
+            )
+            return
+
         raise DocumentationDriftError(
             rationale=drift_check.rationale, module_path=target_module_path
         )
+
+
+def fix_documentation_drift(
+    *, llm_client: GoogleGenAI, code_context: str, readme_path: str
+) -> None:
+    """
+    Fix documentation drift by generating and writing updated documentation.
+
+    Args:
+        llm_client: The LLM client to use for generation.
+        code_context: The code context to analyze.
+        readme_path: Path to the README.md file to update.
+    """
+    console.print("[cyan]Fixing drift by generating updated documentation...\n")
+    with console.status("[cyan]Generating documentation..."):
+        new_doc_data = generate_doc(llm=llm_client, context=code_context)
+
+    final_markdown = generate_markdown(doc_data=new_doc_data)
+
+    with open(readme_path, "w") as f:
+        f.write(final_markdown)
+
+    console.print(
+        f"[green]✓[/green] Documentation updated and saved to: [bold]{readme_path}[/bold]\n"
+    )
 
 
 def generate_documentation(*, target_module_path: str) -> str | None:

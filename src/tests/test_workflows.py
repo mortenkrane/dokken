@@ -7,7 +7,11 @@ from pytest_mock import MockerFixture
 
 from src.exceptions import DocumentationDriftError
 from src.records import ComponentDocumentation, DocumentationDriftCheck
-from src.workflows import check_documentation_drift, generate_documentation
+from src.workflows import (
+    check_documentation_drift,
+    fix_documentation_drift,
+    generate_documentation,
+)
 
 
 def test_check_documentation_drift_invalid_directory(
@@ -328,3 +332,73 @@ def test_generate_documentation_initializes_llm(
     generate_documentation(target_module_path=str(temp_module_dir))
 
     mock_init_llm.assert_called_once()
+
+
+def test_check_documentation_drift_fix_no_readme_still_raises(
+    mocker: MockerFixture, temp_module_dir: Path
+) -> None:
+    """Test check_documentation_drift with fix=True still raises error when no README."""
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.initialize_llm")
+    mocker.patch("src.workflows.get_module_context", return_value="code context")
+
+    # Should raise error even with fix=True when no README exists
+    with pytest.raises(DocumentationDriftError) as exc_info:
+        check_documentation_drift(target_module_path=str(temp_module_dir), fix=True)
+
+    assert "No documentation exists" in str(exc_info.value)
+
+
+def test_fix_documentation_drift_generates_and_writes(
+    mocker: MockerFixture,
+    tmp_path: Path,
+    mock_llm_client,
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
+    """Test fix_documentation_drift generates and writes updated documentation."""
+    readme_path = tmp_path / "README.md"
+    readme_path.write_text("# Old Documentation")
+
+    mocker.patch("src.workflows.console")
+    mock_generate_doc = mocker.patch(
+        "src.workflows.generate_doc", return_value=sample_component_documentation
+    )
+    mocker.patch("src.workflows.generate_markdown", return_value="# Updated Docs")
+
+    fix_documentation_drift(
+        llm_client=mock_llm_client,
+        code_context="code context",
+        readme_path=str(readme_path),
+    )
+
+    # Should generate documentation
+    mock_generate_doc.assert_called_once()
+    # Verify README was updated
+    assert readme_path.read_text() == "# Updated Docs"
+
+
+def test_check_documentation_drift_fix_with_drift(
+    mocker: MockerFixture,
+    tmp_path: Path,
+    sample_drift_check_with_drift: DocumentationDriftCheck,
+) -> None:
+    """Test check_documentation_drift with fix=True calls fix function when drift detected."""
+    # Create module dir with README
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    readme = module_dir / "README.md"
+    readme.write_text("# Old Documentation")
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.initialize_llm")
+    mocker.patch("src.workflows.get_module_context", return_value="code context")
+    mocker.patch(
+        "src.workflows.check_drift", return_value=sample_drift_check_with_drift
+    )
+    mock_fix = mocker.patch("src.workflows.fix_documentation_drift")
+
+    # Should not raise error when fix=True
+    check_documentation_drift(target_module_path=str(module_dir), fix=True)
+
+    # Should call fix function
+    mock_fix.assert_called_once()

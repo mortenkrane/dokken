@@ -61,7 +61,9 @@ def test_check_command_with_valid_path(
     result = runner.invoke(cli, ["check", str(temp_module_dir)])
 
     assert result.exit_code == 0
-    mock_check.assert_called_once_with(target_module_path=str(temp_module_dir))
+    mock_check.assert_called_once_with(
+        target_module_path=str(temp_module_dir), fix=False
+    )
 
 
 def test_check_command_with_invalid_path(runner: CliRunner) -> None:
@@ -272,3 +274,27 @@ def test_generate_command_path_validation(runner: CliRunner, tmp_path: Path) -> 
     result = runner.invoke(cli, ["generate", str(file_path)])
 
     assert result.exit_code != 0
+
+
+def test_check_command_with_fix_flag(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
+    """Test check command with --fix flag."""
+    mock_check = mocker.patch("src.main.check_documentation_drift")
+    mocker.patch("src.main.console")
+
+    result = runner.invoke(cli, ["check", str(temp_module_dir), "--fix"])
+
+    assert result.exit_code == 0
+    mock_check.assert_called_once_with(
+        target_module_path=str(temp_module_dir), fix=True
+    )
+
+
+def test_check_command_fix_flag_in_help(runner: CliRunner) -> None:
+    """Test that --fix flag appears in check command help."""
+    result = runner.invoke(cli, ["check", "--help"])
+
+    assert result.exit_code == 0
+    assert "--fix" in result.output
+    assert "README.md" in result.output
