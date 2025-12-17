@@ -121,3 +121,11 @@ uvx ty check
 - **Git Base Branch**: Configurable via `GIT_BASE_BRANCH = "main"` in `git.py`
 - **Alphabetically Sorted Decisions**: Formatters sort design decisions alphabetically to prevent diff noise
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists (saves LLM calls)
+- **Stabilized Drift Detection**: Uses criteria-based checklist in prompts to improve consistency. Drift is only detected when code shows:
+  - Structural changes (new modules, removed components)
+  - Purpose mismatch with documentation
+  - Missing key features in docs
+  - Outdated design decisions
+  - Incorrect dependency information
+
+  Minor changes (refactoring, formatting, comments) are explicitly excluded from triggering drift.
