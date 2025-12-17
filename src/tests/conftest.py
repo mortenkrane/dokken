@@ -10,80 +10,6 @@ from src.records import ComponentDocumentation, DocumentationDriftCheck
 
 
 @pytest.fixture
-def sample_readme_content() -> str:
-    """Sample README content for testing."""
-    return """# Sample Component Overview
-
-## Purpose & Scope
-
-This is a sample component for testing purposes.
-
-## External Dependencies
-
-- dependency1
-- dependency2
-
-## Key Design Decisions (The 'Why')
-
-### Decision: DB_CHOICE
-
-We chose MongoDB for flexibility.
-
-### Decision: CACHE_STRATEGY
-
-We use Redis for caching.
-"""
-
-
-@pytest.fixture
-def sample_code_content() -> str:
-    """Sample Python code for testing."""
-    return '''def hello_world():
-    """Print hello world."""
-    print("Hello, World!")
-
-
-def add(a: int, b: int) -> int:
-    """Add two numbers."""
-    return a + b
-'''
-
-
-@pytest.fixture
-def sample_git_diff() -> str:
-    """Sample git diff output."""
-    return (
-        "diff --git a/src/sample.py b/src/sample.py\n"
-        "index 123abc..456def 100644\n"
-        "--- a/src/sample.py\n"
-        "+++ b/src/sample.py\n"
-        "@@ -1,3 +1,7 @@\n"
-        " def hello_world():\n"
-        '-    print("Hello, World!")\n'
-        '+    """Print hello world."""\n'
-        '+    print("Hello, World!")\n'
-        "+\n"
-        "+def add(a: int, b: int) -> int:\n"
-        '+    """Add two numbers."""\n'
-        "+    return a + b\n"
-    )
-
-
-@pytest.fixture
-def sample_module_context(sample_code_content: str, sample_git_diff: str) -> str:
-    """Sample module context for LLM."""
-    return f"""--- MODULE PATH: src/sample ---
-
---- FILE: src/sample.py ---
---- CURRENT CODE CONTENT ---
-{sample_code_content}
---- CODE CHANGES (GIT DIFF vs. main) ---
-{sample_git_diff}
-
-"""
-
-
-@pytest.fixture
 def sample_drift_check_no_drift() -> DocumentationDriftCheck:
     """Sample DocumentationDriftCheck with no drift."""
     return DocumentationDriftCheck(
@@ -129,19 +55,6 @@ def temp_module_dir(tmp_path: Path) -> Path:
 ''')
 
     return module_dir
-
-
-@pytest.fixture
-def temp_readme(tmp_path: Path) -> Path:
-    """Create a temporary README.md file."""
-    readme_path = tmp_path / "README.md"
-    readme_path.write_text("""# Test Component
-
-## Purpose & Scope
-
-Test documentation.
-""")
-    return readme_path
 
 
 @pytest.fixture
