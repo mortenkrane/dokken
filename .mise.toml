@@ -2,7 +2,7 @@
 # See https://mise.jdx.dev for documentation
 
 [tools]
-python = "3.14.2"
+python = "3.13.7"
 uv = "0.9.18"
 
 [env]

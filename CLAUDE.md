@@ -104,7 +104,7 @@ uvx ty check
 ## Environment Setup
 
 **Required:**
-- Python 3.14.2+ (managed via mise - see `.mise.toml`)
+- Python 3.13.7+ (managed via mise - see `.mise.toml`)
 - uv 0.9.18+ (managed via mise)
 - `GOOGLE_API_KEY` environment variable (for Gemini API)
 
