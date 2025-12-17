@@ -71,7 +71,6 @@ def generate(module_path: str):
     """Generate fresh documentation for a module.
 
     This command creates or updates documentation by analyzing your code with AI.
-    It performs git setup, creates a new branch, and generates a README.md file.
 
     Example:
         dokken generate src/payment_service

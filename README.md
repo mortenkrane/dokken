@@ -6,7 +6,6 @@ AI-powered documentation generation and drift detection tool that keeps your cod
 
 - **Drift Detection**: Automatically detect when documentation is out of sync with code
 - **Smart Generation**: Generate comprehensive documentation using Google's Gemini LLM
-- **Git Integration**: Automatic branch creation and management for documentation updates
 - **CI/CD Ready**: Exit codes designed for pipeline integration
 
 ## Installation
@@ -90,7 +89,6 @@ dokken generate src/module_name
 ```
 
 This will:
-- Create a new branch `dokken/docs-YYYY-MM-DD`
 - Analyze your code and detect drift
 - Generate updated documentation
 - Write to `README.md` in the module directory
