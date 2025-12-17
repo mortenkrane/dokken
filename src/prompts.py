@@ -20,4 +20,5 @@ Focus on the component's main purpose, scope, and the 'why' behind its design.
 Do not include simple function signature details (assume those are in docstrings).
 --- CODE CONTEXT ---
 {context}
+{human_intent_section}
 Respond ONLY with the JSON object schema provided."""
