@@ -2,26 +2,58 @@
 
 import os
 
+from llama_index.core.llms import LLM
 from llama_index.core.program import LLMTextCompletionProgram
+from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.google_genai import GoogleGenAI
+from llama_index.llms.openai import OpenAI
 
 from src.prompts import DOCUMENTATION_GENERATION_PROMPT, DRIFT_CHECK_PROMPT
 from src.records import ComponentDocumentation, DocumentationDriftCheck
 
 
-def initialize_llm() -> GoogleGenAI:
-    """Initializes the GoogleGenAI LLM client."""
-    if not os.getenv("GOOGLE_API_KEY"):
-        raise ValueError("GOOGLE_API_KEY environment variable not set.")
+def initialize_llm() -> LLM:
+    """
+    Initializes the LLM client based on available API keys.
 
-    # Using Gemini-2.5-Flash as it has a good balance of speed, cost, and context window
-    # Low temp for stability
-    return GoogleGenAI(model="gemini-2.5-flash", temperature=0.0)
+    Checks for API keys in the following priority order:
+    1. ANTHROPIC_API_KEY -> Claude (claude-3-5-sonnet-20241022)
+    2. OPENAI_API_KEY -> OpenAI (gpt-4o-mini)
+    3. GOOGLE_API_KEY -> Google Gemini (gemini-2.5-flash)
+
+    Returns:
+        LLM: The initialized LLM client.
+
+    Raises:
+        ValueError: If no API key is found.
+    """
+    # Check for Anthropic/Claude API key
+    if os.getenv("ANTHROPIC_API_KEY"):
+        # Using Claude 3.5 Sonnet for high-quality structured output
+        # Temperature 0.0 for deterministic, reproducible output
+        return Anthropic(model="claude-3-5-sonnet-20241022", temperature=0.0)
+
+    # Check for OpenAI API key
+    if os.getenv("OPENAI_API_KEY"):
+        # Using GPT-4o-mini for good balance of speed, cost, and quality
+        # Temperature 0.0 for deterministic, reproducible output
+        return OpenAI(model="gpt-4o-mini", temperature=0.0)
+
+    # Check for Google API key
+    if os.getenv("GOOGLE_API_KEY"):
+        # Using Gemini-2.5-Flash for speed, cost, and context balance
+        # Temperature 0.0 for deterministic, reproducible output
+        return GoogleGenAI(model="gemini-2.5-flash", temperature=0.0)
+
+    raise ValueError(
+        "No API key found. Please set one of the following environment variables:\n"
+        "  - ANTHROPIC_API_KEY (for Claude)\n"
+        "  - OPENAI_API_KEY (for OpenAI)\n"
+        "  - GOOGLE_API_KEY (for Google Gemini)"
+    )
 
 
-def check_drift(
-    *, llm: GoogleGenAI, context: str, current_doc: str
-) -> DocumentationDriftCheck:
+def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDriftCheck:
     """
     Analyzes the current documentation against the code changes to detect drift.
 
@@ -44,7 +76,7 @@ def check_drift(
     return check_program(context=context, current_doc=current_doc)
 
 
-def generate_doc(*, llm: GoogleGenAI, context: str) -> ComponentDocumentation:
+def generate_doc(*, llm: LLM, context: str) -> ComponentDocumentation:
     """
     Generates structured documentation for a component based on code context.
 

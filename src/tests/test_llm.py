@@ -9,10 +9,36 @@ from pytest_mock import MockerFixture
 from src.llm import check_drift, generate_doc, initialize_llm
 from src.records import ComponentDocumentation, DocumentationDriftCheck
 
+# --- Tests for initialize_llm() ---
 
-def test_initialize_llm_success(mocker: MockerFixture) -> None:
-    """Test initialize_llm creates GoogleGenAI client with correct parameters."""
-    mocker.patch.dict(os.environ, {"GOOGLE_API_KEY": "test_api_key"})
+
+def test_initialize_llm_with_anthropic_key(mocker: MockerFixture) -> None:
+    """Test initialize_llm creates Anthropic client when ANTHROPIC_API_KEY is set."""
+    mocker.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test_api_key"}, clear=True)
+    mock_anthropic = mocker.patch("src.llm.Anthropic")
+
+    llm = initialize_llm()
+
+    mock_anthropic.assert_called_once_with(
+        model="claude-3-5-sonnet-20241022", temperature=0.0
+    )
+    assert llm == mock_anthropic.return_value
+
+
+def test_initialize_llm_with_openai_key(mocker: MockerFixture) -> None:
+    """Test initialize_llm creates OpenAI client when OPENAI_API_KEY is set."""
+    mocker.patch.dict(os.environ, {"OPENAI_API_KEY": "test_api_key"}, clear=True)
+    mock_openai = mocker.patch("src.llm.OpenAI")
+
+    llm = initialize_llm()
+
+    mock_openai.assert_called_once_with(model="gpt-4o-mini", temperature=0.0)
+    assert llm == mock_openai.return_value
+
+
+def test_initialize_llm_with_google_key(mocker: MockerFixture) -> None:
+    """Test initialize_llm creates GoogleGenAI client when GOOGLE_API_KEY is set."""
+    mocker.patch.dict(os.environ, {"GOOGLE_API_KEY": "test_api_key"}, clear=True)
     mock_genai = mocker.patch("src.llm.GoogleGenAI")
 
     llm = initialize_llm()
@@ -21,26 +47,86 @@ def test_initialize_llm_success(mocker: MockerFixture) -> None:
     assert llm == mock_genai.return_value
 
 
-def test_initialize_llm_missing_api_key(mocker: MockerFixture) -> None:
-    """Test initialize_llm raises ValueError when GOOGLE_API_KEY is missing."""
+def test_initialize_llm_priority_order(mocker: MockerFixture) -> None:
+    """Test initialize_llm prioritizes Anthropic > OpenAI > Google."""
+    # Set all three API keys
+    mocker.patch.dict(
+        os.environ,
+        {
+            "ANTHROPIC_API_KEY": "anthropic_key",
+            "OPENAI_API_KEY": "openai_key",
+            "GOOGLE_API_KEY": "google_key",
+        },
+        clear=True,
+    )
+    mock_anthropic = mocker.patch("src.llm.Anthropic")
+    mock_openai = mocker.patch("src.llm.OpenAI")
+    mock_genai = mocker.patch("src.llm.GoogleGenAI")
+
+    llm = initialize_llm()
+
+    # Should use Anthropic (highest priority)
+    mock_anthropic.assert_called_once()
+    mock_openai.assert_not_called()
+    mock_genai.assert_not_called()
+    assert llm == mock_anthropic.return_value
+
+
+def test_initialize_llm_openai_priority_over_google(mocker: MockerFixture) -> None:
+    """Test initialize_llm prioritizes OpenAI over Google when both keys are set."""
+    mocker.patch.dict(
+        os.environ,
+        {"OPENAI_API_KEY": "openai_key", "GOOGLE_API_KEY": "google_key"},
+        clear=True,
+    )
+    mock_openai = mocker.patch("src.llm.OpenAI")
+    mock_genai = mocker.patch("src.llm.GoogleGenAI")
+
+    llm = initialize_llm()
+
+    # Should use OpenAI (higher priority than Google)
+    mock_openai.assert_called_once()
+    mock_genai.assert_not_called()
+    assert llm == mock_openai.return_value
+
+
+def test_initialize_llm_missing_all_api_keys(mocker: MockerFixture) -> None:
+    """Test initialize_llm raises ValueError when no API keys are set."""
     mocker.patch.dict(os.environ, {}, clear=True)
 
-    with pytest.raises(ValueError, match="GOOGLE_API_KEY environment variable not set"):
+    with pytest.raises(
+        ValueError,
+        match=r"No API key found\.",
+    ):
         initialize_llm()
 
 
 @pytest.mark.parametrize(
-    "api_key",
-    ["key123", "test_key_xyz", "AIzaSyABC123"],
+    "env_var,api_key",
+    [
+        ("ANTHROPIC_API_KEY", "sk-ant-api03-test"),
+        ("OPENAI_API_KEY", "sk-test123"),
+        ("GOOGLE_API_KEY", "AIzaSyABC123"),
+    ],
 )
-def test_initialize_llm_with_various_keys(mocker: MockerFixture, api_key: str) -> None:
+def test_initialize_llm_with_various_key_formats(
+    mocker: MockerFixture, env_var: str, api_key: str
+) -> None:
     """Test initialize_llm works with various API key formats."""
-    mocker.patch.dict(os.environ, {"GOOGLE_API_KEY": api_key})
-    mock_genai = mocker.patch("src.llm.GoogleGenAI")
+    mocker.patch.dict(os.environ, {env_var: api_key}, clear=True)
 
-    initialize_llm()
+    if env_var == "ANTHROPIC_API_KEY":
+        mocker.patch("src.llm.Anthropic")
+    elif env_var == "OPENAI_API_KEY":
+        mocker.patch("src.llm.OpenAI")
+    else:
+        mocker.patch("src.llm.GoogleGenAI")
 
-    mock_genai.assert_called_once()
+    llm = initialize_llm()
+    assert llm is not None
+
+
+# --- Tests for check_drift() ---
 
 
 def test_check_drift_creates_program(
