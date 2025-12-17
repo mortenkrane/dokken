@@ -133,6 +133,40 @@ This will:
 - Generate updated documentation
 - Write to `README.md` in the module directory
 
+### Excluding Files and Symbols from Documentation
+
+You can configure Dokken to permanently exclude certain files or code symbols from documentation using `.dokken.toml` configuration files.
+
+**Create a `.dokken.toml` file in:**
+- Repository root (for global exclusions)
+- Module directory (for module-specific exclusions)
+
+**Example configuration:**
+
+```toml
+[exclusions]
+# Exclude entire files (supports glob patterns)
+files = [
+    "__init__.py",
+    "*_test.py",
+    "conftest.py"
+]
+
+# Exclude specific symbols (functions/classes)
+# Supports wildcards
+symbols = [
+    "_private_*",       # All private functions
+    "setup_*",          # All setup functions
+    "Temporary*"        # All temporary classes
+]
+```
+
+**Common use cases:**
+- Hide test utilities and fixtures from module documentation
+- Exclude internal implementation details (e.g., `_private_*` functions)
+- Skip boilerplate files like `__init__.py`
+- Filter out experimental or temporary code
+
 ## Development
 
 ### Running Tests

@@ -122,6 +122,51 @@ uvx ty check
 - Priority: Claude > OpenAI > Google Gemini (if multiple API keys are set)
 - Default models selected for balance of speed, cost, and quality
 
+## Exclusion Configuration
+
+Dokken supports excluding specific files and symbols from documentation using `.dokken.toml` configuration files.
+
+### Configuration File Location
+
+Config files can be placed in two locations (module-level overrides repo-level):
+1. **Repository root**: `.dokken.toml` - Global exclusions for all modules
+2. **Module directory**: `<module>/.dokken.toml` - Module-specific exclusions
+
+### Configuration Format
+
+```toml
+[exclusions]
+# Exclude entire files (supports glob patterns)
+files = [
+    "__init__.py",      # Exact filename
+    "*_test.py",        # All test files
+    "conftest.py"
+]
+
+# Exclude specific symbols (functions/classes) by name
+# Supports wildcards
+symbols = [
+    "_private_*",       # All symbols starting with _private_
+    "setup_fixtures",   # Specific function name
+    "Temporary*"        # All classes starting with Temporary
+]
+```
+
+### Use Cases
+
+- **Exclude test utilities**: Keep test helpers out of module documentation
+- **Hide private functions**: Exclude internal implementation details (e.g., `_private_*`)
+- **Filter boilerplate**: Skip `__init__.py` or other boilerplate files
+- **Temporary code**: Exclude experimental or temporary code from docs
+
+### How It Works
+
+1. `code_analyzer.py` loads config from both repo root and module directory
+2. Module-level config extends (not replaces) repo-level config
+3. Files are filtered using glob pattern matching (via `fnmatch`)
+4. Symbols are filtered using AST parsing - only top-level functions/classes are excluded
+5. Nested functions and class methods are preserved even if they match exclusion patterns
+
 ## Important Implementation Details
 
 - **Shallow Code Analysis**: `code_analyzer.py` only scans top-level Python files (non-recursive by design)
@@ -129,3 +174,4 @@ uvx ty check
 - **Alphabetically Sorted Decisions**: Formatters sort design decisions alphabetically to prevent diff noise
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists (saves LLM calls)
 - **Stabilized Drift Detection**: Uses criteria-based checklist (see `DRIFT_CHECK_PROMPT` in `src/prompts.py`) to improve consistency. The prompt explicitly defines what constitutes drift vs. minor changes that shouldn't trigger updates, making detection more deterministic across runs.
+- **Exclusion Rules**: Respects `.dokken.toml` config for filtering files and symbols from documentation

@@ -12,6 +12,7 @@ src/
 ├── main.py              # CLI entry points (Click commands)
 ├── exceptions.py        # Custom exceptions
 ├── prompts.py          # LLM prompt templates as constants
+├── config.py           # Configuration loading (.dokken.toml)
 ├── git.py              # Git operations
 ├── code_analyzer.py    # Code context extraction
 ├── llm.py              # LLM client initialization and operations
@@ -57,6 +58,12 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 - Changes are visible in git diffs
 - Can add prompt variants easily
 
+#### `config.py` - Configuration Loading
+- Loads exclusion rules from `.dokken.toml` files
+- Supports both repo-level and module-level configs
+- Uses Pydantic for config validation
+- Handles config merging (module overrides repo)
+
 #### `git.py` - Git Operations
 - Pure git functionality
 - Uses `subprocess` to interact with git
@@ -66,6 +73,7 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 #### `code_analyzer.py` - Code Context Extraction
 - Analyzes code to create context for LLM
 - Reads Python files and git diffs
+- Respects exclusion rules from `.dokken.toml`
 - Pure extraction logic, no LLM calls
 - Could be extended to support other languages
 
@@ -106,6 +114,7 @@ main.py (CLI)
     └── workflows.py (Orchestration)
             ├── git.py
             ├── code_analyzer.py
+            │   └── config.py
             ├── llm.py
             │   ├── prompts.py
             │   └── records.py
