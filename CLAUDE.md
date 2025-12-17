@@ -107,7 +107,7 @@ uvx ty check
 - Python 3.13.7+ (managed via mise - see `.mise.toml`)
 - uv 0.9.18+ (managed via mise)
 - One of the following API keys (checked in priority order):
-  - `ANTHROPIC_API_KEY` - For Claude (claude-3-5-sonnet-20241022)
+  - `ANTHROPIC_API_KEY` - For Claude (claude-3-5-haiku-20241022)
   - `OPENAI_API_KEY` - For OpenAI (gpt-4o-mini)
   - `GOOGLE_API_KEY` - For Google Gemini (gemini-2.5-flash)
 
