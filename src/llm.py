@@ -9,7 +9,7 @@ from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 
 from src.prompts import DOCUMENTATION_GENERATION_PROMPT, DRIFT_CHECK_PROMPT
-from src.records import ComponentDocumentation, DocumentationDriftCheck
+from src.records import ComponentDocumentation, DocumentationDriftCheck, HumanIntent
 
 # Temperature setting for deterministic, reproducible documentation output
 TEMPERATURE = 0.0
@@ -76,17 +76,50 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     return check_program(context=context, current_doc=current_doc)
 
 
-def generate_doc(*, llm: LLM, context: str) -> ComponentDocumentation:
+def generate_doc(
+    *, llm: LLM, context: str, human_intent: HumanIntent | None = None
+) -> ComponentDocumentation:
     """
     Generates structured documentation for a component based on code context.
 
     Args:
         llm: The LLM client instance.
         context: The code context to generate documentation from.
+        human_intent: Optional human-provided intent and context for the module.
 
     Returns:
         A ComponentDocumentation object with structured documentation data.
     """
+    # Build human intent section if provided
+    human_intent_section = ""
+    if human_intent:
+        intent_lines = []
+        if human_intent.problems_solved:
+            intent_lines.append(f"Problems Solved: {human_intent.problems_solved}")
+        if human_intent.core_responsibilities:
+            intent_lines.append(
+                f"Core Responsibilities: {human_intent.core_responsibilities}"
+            )
+        if human_intent.non_responsibilities:
+            intent_lines.append(
+                f"Non-Responsibilities: {human_intent.non_responsibilities}"
+            )
+        if human_intent.system_context:
+            intent_lines.append(f"System Context: {human_intent.system_context}")
+        if human_intent.entry_points:
+            intent_lines.append(f"Entry Points: {human_intent.entry_points}")
+        if human_intent.invariants:
+            intent_lines.append(f"Invariants: {human_intent.invariants}")
+        if human_intent.limitations:
+            intent_lines.append(f"Limitations: {human_intent.limitations}")
+        if human_intent.common_pitfalls:
+            intent_lines.append(f"Common Pitfalls: {human_intent.common_pitfalls}")
+
+        if intent_lines:
+            human_intent_section = (
+                "\n--- HUMAN-PROVIDED CONTEXT ---\n" + "\n".join(intent_lines) + "\n"
+            )
+
     # Use LLMTextCompletionProgram for structured Pydantic output
     generate_program = LLMTextCompletionProgram.from_defaults(
         output_cls=ComponentDocumentation,
@@ -95,4 +128,4 @@ def generate_doc(*, llm: LLM, context: str) -> ComponentDocumentation:
     )
 
     # Run the generation
-    return generate_program(context=context)
+    return generate_program(context=context, human_intent_section=human_intent_section)

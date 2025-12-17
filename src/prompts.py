@@ -78,5 +78,5 @@ Do NOT include:
 
 --- CODE CONTEXT ---
 {context}
-
+{human_intent_section}
 Respond ONLY with the JSON object schema provided."""

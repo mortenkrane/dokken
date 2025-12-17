@@ -1,0 +1,113 @@
+"""Interactive questionnaire for capturing human intent in documentation."""
+
+import questionary
+from questionary import ValidationError, Validator
+from rich.console import Console
+
+from src.records import HumanIntent
+
+console = Console()
+
+
+class NonEmptyValidator(Validator):
+    """Validator to ensure non-empty input."""
+
+    def validate(self, document):
+        """Validate that the document text is not empty."""
+        if not document.text.strip():
+            raise ValidationError(
+                message="This field cannot be empty. Press Esc to skip.",
+                cursor_position=len(document.text),
+            )
+
+
+def ask_human_intent() -> HumanIntent | None:
+    """
+    Run an interactive questionnaire to capture human intent for documentation.
+
+    Users can skip any question by pressing ESC, or skip the entire questionnaire
+    by pressing ESC on the first question.
+
+    Returns:
+        HumanIntent object with user responses, or None if user skipped the questionnaire.
+    """
+    console.print(
+        "\n[bold cyan]Human Intent Capture[/bold cyan]\n"
+        "[dim]Help us understand the intent behind your module.[/dim]\n"
+        "[dim]Press ESC to skip any question or to skip the entire questionnaire.[/dim]\n"
+    )
+
+    questions = [
+        {
+            "field": "problems_solved",
+            "prompt": "What problems does this module solve?",
+        },
+        {
+            "field": "core_responsibilities",
+            "prompt": "What are the module's core responsibilities?",
+        },
+        {
+            "field": "non_responsibilities",
+            "prompt": "What is NOT this module's responsibility?",
+        },
+        {
+            "field": "system_context",
+            "prompt": "How does the module fit into the larger system?",
+        },
+        {
+            "field": "entry_points",
+            "prompt": "What are the main entry points in the module?",
+        },
+        {
+            "field": "invariants",
+            "prompt": "What are the important invariants, assumptions, or contracts?",
+        },
+        {
+            "field": "limitations",
+            "prompt": "What are the module's known limitations?",
+        },
+        {
+            "field": "common_pitfalls",
+            "prompt": "What are common pitfalls for contributors?",
+        },
+    ]
+
+    responses = {}
+    for i, question in enumerate(questions):
+        try:
+            answer = questionary.text(
+                f"[{i + 1}/{len(questions)}] {question['prompt']}",
+                multiline=True,
+                instruction="(Press ESC to skip, Enter twice to submit)",
+            ).ask()
+
+            # If user pressed ESC on first question, skip entire questionnaire
+            if answer is None and i == 0:
+                console.print(
+                    "\n[yellow]Questionnaire skipped. Continuing without human intent.[/yellow]\n"
+                )
+                return None
+
+            # If user pressed ESC on any other question, just skip that question
+            if answer is None:
+                responses[question["field"]] = None
+                continue
+
+            # Store non-empty answers, or None for empty answers
+            responses[question["field"]] = answer.strip() if answer.strip() else None
+
+        except KeyboardInterrupt:
+            console.print(
+                "\n[yellow]Questionnaire interrupted. Continuing without human intent.[/yellow]\n"
+            )
+            return None
+
+    # Check if user provided any responses
+    if not any(responses.values()):
+        console.print(
+            "\n[yellow]No responses provided. Continuing without human intent.[/yellow]\n"
+        )
+        return None
+
+    console.print("\n[green]✓[/green] Human intent captured successfully!\n")
+    return HumanIntent(**responses)
