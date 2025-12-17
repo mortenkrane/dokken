@@ -51,7 +51,7 @@ AI-powered documentation generation and drift detection tool that keeps your cod
    ```
 
    mise will automatically:
-   - Install Python 3.14.2 and uv 0.9.18
+   - Install Python 3.13.7 and uv 0.9.18
    - Create and activate the `.venv` virtual environment
 
 5. **Install dependencies**
@@ -103,9 +103,14 @@ This will:
 # Run all tests
 pytest src/tests/
 
-# Run with coverage
+# Run with coverage (99% minimum required)
 pytest src/tests/ --cov=src --cov-report=term-missing
 ```
+
+**Coverage Requirements:**
+- Minimum test coverage: **99%** (enforced in CI)
+- Tests will fail if coverage drops below this threshold
+- Current coverage target aligns with production quality standards
 
 ### Code Quality
 
@@ -116,9 +121,21 @@ ruff format
 # Lint
 ruff check --fix
 
-# Type checking
+# Type checking (using ty)
 uvx ty check
 ```
+
+### Continuous Integration
+
+The project uses GitHub Actions for automated quality checks on all pull requests and pushes to main:
+
+**Automated Checks:**
+- **Tests**: Full test suite with 99% coverage requirement
+- **Formatting**: Ruff format validation
+- **Linting**: Ruff linting rules (see `pyproject.toml`)
+- **Type Checking**: Static type analysis using `ty`
+
+All checks run in parallel for fast feedback. CI must pass before merging.
 
 ## Documentation
 
@@ -131,7 +148,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contributing
 
 Contributions are welcome! Please ensure:
-- All tests pass
+- All tests pass with **99% minimum coverage**
 - Code follows the style guide in `docs/style-guide.md`
 - Function-based tests with proper mocking
-- Close to 100% test coverage
+- All CI checks pass (formatting, linting, type checking)
