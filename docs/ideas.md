@@ -13,10 +13,6 @@ add a short questionaire, with questions like:
 - What are the module's known limitations?
 - What are common pitfalls for contributors?
 
-## Support multiple LLMs
-
-Current only Google Gemini.
-
 ## Some way to exclude/deny changes permanently
 
 Sometimes, you don't want the things dokken suggests.
