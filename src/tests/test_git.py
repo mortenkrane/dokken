@@ -1,6 +1,5 @@
 """Tests for src/git.py"""
 
-
 from pytest_mock import MockerFixture
 
 from src.git import setup_git
