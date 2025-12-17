@@ -9,8 +9,7 @@ class DocumentationDriftCheck(BaseModel):
     drift_detected: bool = Field(
         ...,
         description=(
-            "True if ANY checklist item applies: structural changes, purpose mismatch, "
-            "missing key features, outdated design decisions, or incorrect dependencies. "
+            "True if ANY criteria-based checklist item applies (see DRIFT_CHECK_PROMPT). "
             "False if the documentation still accurately reflects the code."
         ),
     )
