@@ -179,6 +179,7 @@ def test_generate_documentation_generates_when_drift(
     mocker.patch(
         "src.workflows.check_drift", return_value=sample_drift_check_with_drift
     )
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
     mock_generate_doc = mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
@@ -210,6 +211,7 @@ def test_generate_documentation_writes_readme(
     mocker.patch(
         "src.workflows.check_drift", return_value=sample_drift_check_with_drift
     )
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
     mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
@@ -237,6 +239,7 @@ def test_generate_documentation_creates_readme_if_missing(
     mocker.patch(
         "src.workflows.check_drift", return_value=sample_drift_check_with_drift
     )
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
     mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
@@ -311,6 +314,7 @@ def test_fix_documentation_drift_generates_and_writes(
     readme_path.write_text("# Old Documentation")
 
     mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
     mock_generate_doc = mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )

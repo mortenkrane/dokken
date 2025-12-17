@@ -9,6 +9,7 @@ from rich.console import Console
 from src.code_analyzer import get_module_context
 from src.exceptions import DocumentationDriftError
 from src.formatters import generate_markdown
+from src.human_in_the_loop import ask_human_intent
 from src.llm import check_drift, generate_doc, initialize_llm
 
 console = Console()
@@ -104,8 +105,14 @@ def fix_documentation_drift(
         readme_path: Path to the README.md file to update.
     """
     console.print("[cyan]Fixing drift by generating updated documentation...\n")
+
+    # Capture human intent
+    human_intent = ask_human_intent()
+
     with console.status("[cyan]Generating documentation..."):
-        new_doc_data = generate_doc(llm=llm_client, context=code_context)
+        new_doc_data = generate_doc(
+            llm=llm_client, context=code_context, human_intent=human_intent
+        )
 
     final_markdown = generate_markdown(doc_data=new_doc_data)
 
@@ -183,17 +190,25 @@ def generate_documentation(*, target_module_path: str, depth: int = 0) -> str | 
         )
         return None
 
-    # 3. Step 2: Generate New Structured Documentation
+    # 3. Step 2: Capture Human Intent
     console.print(
-        "[bold cyan]Step 2:[/bold cyan] Generating new structured documentation..."
+        "[bold cyan]Step 2:[/bold cyan] Capturing human intent for documentation..."
+    )
+    human_intent = ask_human_intent()
+
+    # 4. Step 3: Generate New Structured Documentation
+    console.print(
+        "[bold cyan]Step 3:[/bold cyan] Generating new structured documentation..."
     )
     with console.status("[cyan]Generating documentation..."):
-        new_doc_data = generate_doc(llm=llm_client, context=code_context)
+        new_doc_data = generate_doc(
+            llm=llm_client, context=code_context, human_intent=human_intent
+        )
 
-    # 4. Generate Final Markdown (Stabilization)
+    # 5. Generate Final Markdown (Stabilization)
     final_markdown = generate_markdown(doc_data=new_doc_data)
 
-    # 5. Overwrite README.md with the new documentation
+    # 6. Overwrite README.md with the new documentation
     with open(readme_path, "w") as f:
         f.write(final_markdown)
 
