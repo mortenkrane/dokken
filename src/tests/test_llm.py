@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from pytest_mock import MockerFixture
 
-from src.llm import check_drift, generate_doc, initialize_llm
+from src.llm import TEMPERATURE, check_drift, generate_doc, initialize_llm
 from src.records import ComponentDocumentation, DocumentationDriftCheck
 
 # --- Tests for initialize_llm() ---
@@ -20,7 +20,7 @@ def test_initialize_llm_with_anthropic_key(mocker: MockerFixture) -> None:
     llm = initialize_llm()
 
     mock_anthropic.assert_called_once_with(
-        model="claude-3-5-haiku-20241022", temperature=0.0
+        model="claude-3-5-haiku-20241022", temperature=TEMPERATURE
     )
     assert llm == mock_anthropic.return_value
 
@@ -32,7 +32,7 @@ def test_initialize_llm_with_openai_key(mocker: MockerFixture) -> None:
 
     llm = initialize_llm()
 
-    mock_openai.assert_called_once_with(model="gpt-4o-mini", temperature=0.0)
+    mock_openai.assert_called_once_with(model="gpt-4o-mini", temperature=TEMPERATURE)
     assert llm == mock_openai.return_value
 
 
@@ -43,7 +43,9 @@ def test_initialize_llm_with_google_key(mocker: MockerFixture) -> None:
 
     llm = initialize_llm()
 
-    mock_genai.assert_called_once_with(model="gemini-2.5-flash", temperature=0.0)
+    mock_genai.assert_called_once_with(
+        model="gemini-2.5-flash", temperature=TEMPERATURE
+    )
     assert llm == mock_genai.return_value
 
 

@@ -11,6 +11,9 @@ from llama_index.llms.openai import OpenAI
 from src.prompts import DOCUMENTATION_GENERATION_PROMPT, DRIFT_CHECK_PROMPT
 from src.records import ComponentDocumentation, DocumentationDriftCheck
 
+# Temperature setting for deterministic, reproducible documentation output
+TEMPERATURE = 0.0
+
 
 def initialize_llm() -> LLM:
     """
@@ -30,20 +33,17 @@ def initialize_llm() -> LLM:
     # Check for Anthropic/Claude API key
     if os.getenv("ANTHROPIC_API_KEY"):
         # Using Claude 3.5 Haiku for fast, cost-effective structured output
-        # Temperature 0.0 for deterministic, reproducible output
-        return Anthropic(model="claude-3-5-haiku-20241022", temperature=0.0)
+        return Anthropic(model="claude-3-5-haiku-20241022", temperature=TEMPERATURE)
 
     # Check for OpenAI API key
     if os.getenv("OPENAI_API_KEY"):
         # Using GPT-4o-mini for good balance of speed, cost, and quality
-        # Temperature 0.0 for deterministic, reproducible output
-        return OpenAI(model="gpt-4o-mini", temperature=0.0)
+        return OpenAI(model="gpt-4o-mini", temperature=TEMPERATURE)
 
     # Check for Google API key
     if os.getenv("GOOGLE_API_KEY"):
         # Using Gemini-2.5-Flash for speed, cost, and context balance
-        # Temperature 0.0 for deterministic, reproducible output
-        return GoogleGenAI(model="gemini-2.5-flash", temperature=0.0)
+        return GoogleGenAI(model="gemini-2.5-flash", temperature=TEMPERATURE)
 
     raise ValueError(
         "No API key found. Please set one of the following environment variables:\n"
