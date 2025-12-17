@@ -16,7 +16,7 @@ class NonEmptyValidator(Validator):
         """Validate that the document text is not empty."""
         if not document.text.strip():
             raise ValidationError(
-                message="This field cannot be empty. Press Esc to skip.",
+                message="This field cannot be empty. Press Ctrl+C to skip.",
                 cursor_position=len(document.text),
             )
 
@@ -25,8 +25,8 @@ def ask_human_intent() -> HumanIntent | None:
     """
     Run an interactive questionnaire to capture human intent for documentation.
 
-    Users can skip any question by pressing ESC, or skip the entire questionnaire
-    by pressing ESC on the first question.
+    Users can skip any question by pressing Ctrl+C, or skip the entire questionnaire
+    by pressing Ctrl+C on the first question.
 
     Returns:
         HumanIntent object with user responses, or None if user skipped the questionnaire.
@@ -34,7 +34,7 @@ def ask_human_intent() -> HumanIntent | None:
     console.print(
         "\n[bold cyan]Human Intent Capture[/bold cyan]\n"
         "[dim]Help us understand the intent behind your module.[/dim]\n"
-        "[dim]Press ESC to skip any question or to skip the entire questionnaire.[/dim]\n"
+        "[dim]Press Ctrl+C to skip questions, Meta+Enter or Esc+Enter to submit.[/dim]\n"
     )
 
     questions = [
@@ -78,17 +78,17 @@ def ask_human_intent() -> HumanIntent | None:
             answer = questionary.text(
                 f"[{i + 1}/{len(questions)}] {question['prompt']}",
                 multiline=True,
-                instruction="(Press ESC to skip, Enter twice to submit)",
+                instruction="(Ctrl+C to skip, Meta+Enter or Esc+Enter to submit)",
             ).ask()
 
-            # If user pressed ESC on first question, skip entire questionnaire
+            # If user pressed Ctrl+C on first question, skip entire questionnaire
             if answer is None and i == 0:
                 console.print(
                     "\n[yellow]Questionnaire skipped. Continuing without human intent.[/yellow]\n"
                 )
                 return None
 
-            # If user pressed ESC on any other question, just skip that question
+            # If user pressed Ctrl+C on any other question, just skip that question
             if answer is None:
                 responses[question["field"]] = None
                 continue
