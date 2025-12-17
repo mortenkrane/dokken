@@ -13,7 +13,6 @@ dependencies = [
     "llama-index>=0.14.4",
     "llama-index-llms-google-genai>=0.6.2",
     "mccabe >= 0.7.0, <1",
-    "mypy>=1.18.2",
     "pydantic>=2.12.0",
     "pytest>=8.0.0",
     "pytest-cov>=6.0.0",
