@@ -7,7 +7,7 @@ name = "dokken"
 version = "0.1.0"
 description = "AI-powered documentation generation and drift detection tool"
 readme = "README.md"
-requires-python = ">=3.13.7"
+requires-python = ">=3.14.2"
 dependencies = [
     "click>=8.1.0",
     "llama-index>=0.14.4",
@@ -33,7 +33,7 @@ include = ["src*"]
 [tool.ruff]
 exclude = [".venv"]
 line-length = 88
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 # See https://beta.ruff.rs/docs/rules/ for more info on the rules

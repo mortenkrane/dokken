@@ -14,9 +14,21 @@ Dokken is an AI-powered documentation generation and drift detection tool. It us
 
 ## Development Commands
 
+### Environment Setup with mise
+```bash
+# Install mise if not already installed: https://mise.jdx.dev/getting-started.html
+
+# Install Python and uv versions (defined in .mise.toml)
+mise install
+
+# The .venv will be automatically created and activated when you cd into the directory
+# mise will use uv to create the venv automatically
+```
+
 ### Running the CLI
 ```bash
 # Install dependencies (uses uv)
+# Note: mise will auto-activate .venv when you're in the project directory
 uv sync
 
 # Run dokken CLI
@@ -92,10 +104,12 @@ uvx ty check
 ## Environment Setup
 
 **Required:**
-- Python 3.13.7+
+- Python 3.14.2+ (managed via mise - see `.mise.toml`)
+- uv 0.9.18+ (managed via mise)
 - `GOOGLE_API_KEY` environment variable (for Gemini API)
 
 **Package Manager:** uv with lock file
+**Version Manager:** mise with automatic venv activation
 
 **LLM Configuration:**
 - Model: `gemini-2.5-flash` (balance of speed/cost/quality)
