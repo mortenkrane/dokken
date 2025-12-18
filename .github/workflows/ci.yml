@@ -48,6 +48,8 @@ jobs:
             run: uv run ruff check
           - name: Type
             run: uvx ty check
+          - name: Markdown Format
+            run: uvx mdformat --check *.md docs/ src/
 
     steps:
       - uses: actions/checkout@v4

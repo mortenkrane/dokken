@@ -24,12 +24,14 @@ src/
 ### Module Responsibilities
 
 #### `main.py` - CLI Entry Points
+
 - Contains **only** the Click-based CLI interface
 - Delegates all business logic to `workflows.py`
 - Handles user-facing output with Rich console
 - Should remain thin - just UI concerns
 
 **Example:**
+
 ```python
 @cli.command()
 def check(module_path: str):
@@ -38,39 +40,46 @@ def check(module_path: str):
 ```
 
 #### `exceptions.py` - Custom Exceptions
+
 - All custom exception classes
 - Add new exceptions here as needed
 
 #### `prompts.py` - LLM Prompt Templates
+
 - **All LLM prompts as module-level constants**
 - Easy to iterate on prompts without touching logic
 - Version control tracks prompt changes clearly
 - Makes A/B testing prompts straightforward
 
 **Example:**
+
 ```python
 DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 ```
 
 **Why separate prompts?**
+
 - Prompts are the most frequently tweaked part of LLM applications
 - Keeping them as constants makes experimentation faster
 - Changes are visible in git diffs
 - Can add prompt variants easily
 
 #### `config.py` - Configuration Loading
+
 - Loads exclusion rules from `.dokken.toml` files
 - Supports both repo-level and module-level configs
 - Uses Pydantic for config validation
 - Handles config merging (module overrides repo)
 
 #### `git.py` - Git Operations
+
 - Pure git functionality
 - Uses `subprocess` to interact with git
 - No LLM or file I/O mixing
 - Single responsibility: git workflow automation
 
 #### `code_analyzer.py` - Code Context Extraction
+
 - Analyzes code to create context for LLM
 - Reads Python files and git diffs
 - Respects exclusion rules from `.dokken.toml`
@@ -78,34 +87,38 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 - Could be extended to support other languages
 
 #### `llm.py` - LLM Client and Operations
+
 - LLM initialization and configuration
 - Direct LLM interaction functions
 - Uses prompts from `prompts.py`
 - Returns structured Pydantic objects
 
 #### `formatters.py` - Output Formatting
+
 - Pure data transformation, no I/O
 - Converts structured data to various formats
 - Currently: Markdown formatting
 - Future: Could add HTML, PDF, etc.
 
 #### `workflows.py` - Orchestration Logic
+
 - **High-level business logic**
 - Coordinates git → analyzer → LLM → formatter
 - Contains the full flow of operations
 - Can be imported and used without CLI
 
 **Why separate workflows?**
+
 - Reusable - can be imported by other scripts
 - Testable - can be tested without CLI
 - Clear business logic separated from UI
 
 #### `records.py` - Data Models
+
 - Pydantic models for structured data
 - Defines the "shape" of our data
 - Used by LLM for structured output
 - Type-safe data validation
-
 
 ### Dependency Flow
 
@@ -126,21 +139,25 @@ main.py (CLI)
 ### Adding New Features
 
 **Adding a new prompt:**
+
 1. Add constant to `prompts.py`
-2. Use it in `llm.py`
+1. Use it in `llm.py`
 
 **Adding a new LLM operation:**
+
 1. Add prompt to `prompts.py`
-2. Add function to `llm.py`
-3. Use it in `workflows.py`
+1. Add function to `llm.py`
+1. Use it in `workflows.py`
 
 **Adding a new output format:**
+
 1. Add formatter function to `formatters.py`
-2. Call it from `workflows.py`
+1. Call it from `workflows.py`
 
 **Adding a new CLI command:**
+
 1. Add `@cli.command()` to `main.py`
-2. Optionally add new workflow to `workflows.py`
+1. Optionally add new workflow to `workflows.py`
 
 ## Code Style
 
@@ -148,20 +165,19 @@ main.py (CLI)
 
 - Follow PEP 8 guidelines
 - Use Ruff for code formatting and linting
-    - Run `ruff format` to format code
-    - Run `ruff check` to check for linting issues
-    - Run `ruff check --fix` to automatically fix linting issues
+  - Run `ruff format` to format code
+  - Run `ruff check` to check for linting issues
+  - Run `ruff check --fix` to automatically fix linting issues
 - Use type hints consistently throughout the codebase
-    - Run `uvx ty check` for type checking
+  - Run `uvx ty check` for type checking
 - Use absolute imports
 - Keep imports at the top of the file, unless we need to break circular imports
 - Use double quotes for strings
 - Keep functions simple and bite-sized
-    - If Ruff says your function is "too complex", it probably is, and should be refactored
+  - If Ruff says your function is "too complex", it probably is, and should be refactored
 - Keep files from growing indefinitely
-    - We define no max limit, but it's recommended to start looking for potential dividers when files reach 300-500 lines
-    - Typically, the solution will be to convert a big file into a directory with subfiles
-
+  - We define no max limit, but it's recommended to start looking for potential dividers when files reach 300-500 lines
+  - Typically, the solution will be to convert a big file into a directory with subfiles
 
 ## Testing
 
@@ -413,12 +429,14 @@ def test_check_command_success(runner, mocker):
 ### When to Write Tests
 
 **Write tests for:**
+
 - All new functions and classes
 - Bug fixes (add a failing test first, then fix)
 - Edge cases and error handling
 - Integration points between modules
 
 **You may skip tests for:**
+
 - Temporary debugging code
 - Code that will be deleted soon
 - Generated code (like migrations)
@@ -426,6 +444,7 @@ def test_check_command_success(runner, mocker):
 ### Continuous Integration
 
 Tests should:
+
 - Run on every commit
 - Pass before merging to main
 - Complete in under 10 seconds for fast feedback

@@ -9,12 +9,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Dokken is an AI-powered documentation generation and drift detection tool. It supports multiple LLM providers (Claude, OpenAI, and Google Gemini) to automatically keep codebase documentation synchronized with source code changes by detecting drift and generating updated documentation.
 
 **Key Capabilities:**
+
 - `dokken check <module>` - Detects documentation drift (for CI/CD pipelines)
 - `dokken generate <module>` - Generates/updates documentation with automatic git branching
 
 ## Development Commands
 
 ### Environment Setup with mise
+
 ```bash
 # Install mise if not already installed: https://mise.jdx.dev/getting-started.html
 
@@ -26,6 +28,7 @@ mise install
 ```
 
 ### Running the CLI
+
 ```bash
 # Install dependencies (uses uv)
 # Note: mise will auto-activate .venv when you're in the project directory
@@ -38,6 +41,7 @@ dokken generate src/module_name
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 pytest src/tests/
@@ -53,6 +57,7 @@ pytest src/tests/test_git.py::test_setup_git_checks_out_main
 ```
 
 **Testing Requirements:**
+
 - Always use function-based tests (never class-based)
 - Mock all external dependencies (subprocess, LLM calls, file I/O, console output)
 - Use shared fixtures from `conftest.py`
@@ -74,39 +79,48 @@ ruff check --fix
 
 # Type checking
 uvx ty check
+
+# Format markdown
+uvx mdformat *.md docs/ src/
+
+# Check markdown formatting
+uvx mdformat --check *.md docs/ src/
 ```
 
 ## Key Design Patterns
 
 1. **Structured Output**: All LLM operations return validated Pydantic models
-2. **Prompt-as-Constants**: Prompts stored in `prompts.py` for easy experimentation
-3. **Dependency Injection**: Functions receive dependencies as parameters (e.g., `llm` client)
-4. **Pure Functions**: Most business logic is in pure, testable functions
-5. **Deterministic LLM**: Temperature=0.0 for reproducible documentation
+1. **Prompt-as-Constants**: Prompts stored in `prompts.py` for easy experimentation
+1. **Dependency Injection**: Functions receive dependencies as parameters (e.g., `llm` client)
+1. **Pure Functions**: Most business logic is in pure, testable functions
+1. **Deterministic LLM**: Temperature=0.0 for reproducible documentation
 
 ### Workflow Flow
 
 **Check Command:**
+
 1. Validate module path exists
-2. Initialize LLM (requires one of: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GOOGLE_API_KEY`)
-3. Extract code context (Python files + git diff vs main)
-4. Read existing README.md
-5. Call LLM to detect drift
-6. Raise `DocumentationDriftError` if drift detected (exit code 1)
+1. Initialize LLM (requires one of: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GOOGLE_API_KEY`)
+1. Extract code context (Python files + git diff vs main)
+1. Read existing README.md
+1. Call LLM to detect drift
+1. Raise `DocumentationDriftError` if drift detected (exit code 1)
 
 **Generate Command:**
+
 1. Git setup: checkout main, pull, create branch `dokken/docs-YYYY-MM-DD`
-2. Initialize LLM
-3. Extract code context
-4. Check for drift
-5. If no drift + doc exists: return early (optimization)
-6. If drift detected: generate structured docs via LLM
-7. Format to Markdown
-8. Write/overwrite README.md
+1. Initialize LLM
+1. Extract code context
+1. Check for drift
+1. If no drift + doc exists: return early (optimization)
+1. If drift detected: generate structured docs via LLM
+1. Format to Markdown
+1. Write/overwrite README.md
 
 ## Environment Setup
 
 **Required:**
+
 - Python 3.13.7+ (managed via mise - see `.mise.toml`)
 - uv 0.9.18+ (managed via mise)
 - One of the following API keys (checked in priority order):
@@ -118,6 +132,7 @@ uvx ty check
 **Version Manager:** mise with automatic venv activation
 
 **LLM Configuration:**
+
 - All providers use Temperature: 0.0 (deterministic, reproducible output)
 - Priority: Claude > OpenAI > Google Gemini (if multiple API keys are set)
 - Default models selected for balance of speed, cost, and quality
@@ -129,8 +144,9 @@ Dokken supports excluding specific files and symbols from documentation using `.
 ### Configuration File Location
 
 Config files can be placed in two locations (module-level overrides repo-level):
+
 1. **Repository root**: `.dokken.toml` - Global exclusions for all modules
-2. **Module directory**: `<module>/.dokken.toml` - Module-specific exclusions
+1. **Module directory**: `<module>/.dokken.toml` - Module-specific exclusions
 
 ### Configuration Format
 
@@ -162,10 +178,10 @@ symbols = [
 ### How It Works
 
 1. `code_analyzer.py` loads config from both repo root and module directory
-2. Module-level config extends (not replaces) repo-level config
-3. Files are filtered using glob pattern matching (via `fnmatch`)
-4. Symbols are filtered using AST parsing - only top-level functions/classes are excluded
-5. Nested functions and class methods are preserved even if they match exclusion patterns
+1. Module-level config extends (not replaces) repo-level config
+1. Files are filtered using glob pattern matching (via `fnmatch`)
+1. Symbols are filtered using AST parsing - only top-level functions/classes are excluded
+1. Nested functions and class methods are preserved even if they match exclusion patterns
 
 ## Important Implementation Details
 
