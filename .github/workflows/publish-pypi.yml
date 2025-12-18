@@ -1,0 +1,42 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read versions from .mise.toml
+        id: versions
+        run: |
+          PYTHON_VERSION=$(grep 'python = ' .mise.toml | cut -d'"' -f2)
+          UV_VERSION=$(grep 'uv = ' .mise.toml | cut -d'"' -f2)
+          echo "python=$PYTHON_VERSION" >> $GITHUB_OUTPUT
+          echo "uv=$UV_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.versions.outputs.python }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ steps.versions.outputs.uv }}
+
+      - name: Build package
+        run: uv build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
