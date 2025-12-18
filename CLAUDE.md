@@ -59,6 +59,9 @@ pytest src/tests/test_git.py::test_setup_git_checks_out_main
 - Target close to 100% test coverage
 
 ### Code Quality
+
+ALWAYS run these commands and make sure they pass, after making changes.
+
 ```bash
 # Format code
 ruff format
@@ -125,3 +128,4 @@ uvx ty check
 - **Git Base Branch**: Configurable via `GIT_BASE_BRANCH = "main"` in `git.py`
 - **Alphabetically Sorted Decisions**: Formatters sort design decisions alphabetically to prevent diff noise
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists (saves LLM calls)
+- **Stabilized Drift Detection**: Uses criteria-based checklist (see `DRIFT_CHECK_PROMPT` in `src/prompts.py`) to improve consistency. The prompt explicitly defines what constitutes drift vs. minor changes that shouldn't trigger updates, making detection more deterministic across runs.
