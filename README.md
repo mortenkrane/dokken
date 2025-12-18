@@ -5,7 +5,8 @@ AI-powered documentation generation and drift detection tool that keeps your cod
 ## Features
 
 - **Drift Detection**: Automatically detect when documentation is out of sync with code
-- **Smart Generation**: Generate comprehensive documentation using Google's Gemini LLM
+- **Multi-Provider LLM Support**: Use Claude, OpenAI, or Google Gemini for documentation generation
+- **Cost-Optimized**: Uses fast, budget-friendly models (Haiku, GPT-4o-mini, Gemini Flash)
 - **CI/CD Ready**: Exit codes designed for pipeline integration
 
 ## Installation
@@ -13,7 +14,10 @@ AI-powered documentation generation and drift detection tool that keeps your cod
 ### Prerequisites
 
 - [mise](https://mise.jdx.dev/getting-started.html) - Version manager
-- Google API key for Gemini access
+- API key for one of the supported LLM providers:
+  - **Claude** (Anthropic) - Recommended for best quality
+  - **OpenAI** (GPT models)
+  - **Google Gemini**
 
 ### Setup
 
@@ -58,15 +62,51 @@ AI-powered documentation generation and drift detection tool that keeps your cod
    uv sync
    ```
 
-6. **Set up your Google API key**
+6. **Set up your API key**
+
+   Choose one of the following providers (checked in priority order):
+
+   **Option 1: Claude (Anthropic)** - Fastest and most cost-effective
    ```bash
-   export GOOGLE_API_KEY="your-api-key-here"
+   export ANTHROPIC_API_KEY="sk-ant-api03-..."
+   ```
+
+   **Option 2: OpenAI**
+   ```bash
+   export OPENAI_API_KEY="sk-..."
+   ```
+
+   **Option 3: Google Gemini**
+   ```bash
+   export GOOGLE_API_KEY="AIza..."
    ```
 
    Or add to `.env` file:
    ```bash
-   echo "GOOGLE_API_KEY=your-api-key-here" > .env
+   echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
    ```
+
+   **Note**: If multiple API keys are set, the system uses Claude > OpenAI > Google Gemini in that order.
+
+## LLM Providers
+
+Dokken supports three LLM providers, automatically selecting the first available API key:
+
+| Provider | Model | Priority | Best For |
+|----------|-------|----------|----------|
+| **Claude (Anthropic)** | claude-3-5-haiku-20241022 | 1st | Fast, cost-effective, excellent structured output |
+| **OpenAI** | gpt-4o-mini | 2nd | Good balance of speed and quality |
+| **Google Gemini** | gemini-2.5-flash | 3rd | Large context window, fast |
+
+**All models use temperature=0.0 for deterministic, reproducible documentation.**
+
+### Why These Models?
+
+These budget-friendly models are specifically chosen for:
+- **Speed**: Fast response times for frequent CI/CD runs
+- **Cost**: Significantly cheaper than flagship models
+- **Quality**: More than capable for structured documentation tasks
+- **Consistency**: Reliable with Pydantic-validated outputs
 
 ## Usage
 

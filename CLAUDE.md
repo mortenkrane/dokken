@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Dokken is an AI-powered documentation generation and drift detection tool. It uses Google's Gemini LLM (gemini-2.5-flash) to automatically keep codebase documentation synchronized with source code changes by detecting drift and generating updated documentation.
+Dokken is an AI-powered documentation generation and drift detection tool. It supports multiple LLM providers (Claude, OpenAI, and Google Gemini) to automatically keep codebase documentation synchronized with source code changes by detecting drift and generating updated documentation.
 
 **Key Capabilities:**
 - `dokken check <module>` - Detects documentation drift (for CI/CD pipelines)
@@ -85,7 +85,7 @@ uvx ty check
 
 **Check Command:**
 1. Validate module path exists
-2. Initialize LLM (requires `GOOGLE_API_KEY` env var)
+2. Initialize LLM (requires one of: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GOOGLE_API_KEY`)
 3. Extract code context (Python files + git diff vs main)
 4. Read existing README.md
 5. Call LLM to detect drift
@@ -106,14 +106,18 @@ uvx ty check
 **Required:**
 - Python 3.13.7+ (managed via mise - see `.mise.toml`)
 - uv 0.9.18+ (managed via mise)
-- `GOOGLE_API_KEY` environment variable (for Gemini API)
+- One of the following API keys (checked in priority order):
+  - `ANTHROPIC_API_KEY` - For Claude (claude-3-5-haiku-20241022)
+  - `OPENAI_API_KEY` - For OpenAI (gpt-4o-mini)
+  - `GOOGLE_API_KEY` - For Google Gemini (gemini-2.5-flash)
 
 **Package Manager:** uv with lock file
 **Version Manager:** mise with automatic venv activation
 
 **LLM Configuration:**
-- Model: `gemini-2.5-flash` (balance of speed/cost/quality)
-- Temperature: 0.0 (deterministic, reproducible output)
+- All providers use Temperature: 0.0 (deterministic, reproducible output)
+- Priority: Claude > OpenAI > Google Gemini (if multiple API keys are set)
+- Default models selected for balance of speed, cost, and quality
 
 ## Important Implementation Details
 

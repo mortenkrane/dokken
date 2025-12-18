@@ -3,7 +3,7 @@
 import os
 import sys
 
-from llama_index.llms.google_genai import GoogleGenAI
+from llama_index.core.llms import LLM
 from rich.console import Console
 
 from src.code_analyzer import get_module_context
@@ -90,7 +90,7 @@ def check_documentation_drift(*, target_module_path: str, fix: bool = False) -> 
 
 
 def fix_documentation_drift(
-    *, llm_client: GoogleGenAI, code_context: str, readme_path: str
+    *, llm_client: LLM, code_context: str, readme_path: str
 ) -> None:
     """
     Fix documentation drift by generating and writing updated documentation.
