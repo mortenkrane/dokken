@@ -41,25 +41,29 @@ def load_config(*, module_path: str) -> DokkenConfig:
     """
     config_data = {"exclusions": {"files": [], "symbols": []}}
 
-    # Try to find repository root by looking for .git directory
-    repo_root = _find_repo_root(module_path)
-
     # Load global config from repo root if it exists
+    repo_root = _find_repo_root(module_path)
     if repo_root:
-        global_config_path = Path(repo_root) / ".dokken.toml"
-        if global_config_path.exists():
-            with open(global_config_path, "rb") as f:
-                global_data = tomllib.load(f)
-                _merge_config(config_data, global_data)
+        _load_and_merge_config(Path(repo_root) / ".dokken.toml", config_data)
 
-    # Load module-specific config if it exists (overrides global)
-    module_config_path = Path(module_path) / ".dokken.toml"
-    if module_config_path.exists():
-        with open(module_config_path, "rb") as f:
-            module_data = tomllib.load(f)
-            _merge_config(config_data, module_data)
+    # Load module-specific config if it exists (extends global)
+    _load_and_merge_config(Path(module_path) / ".dokken.toml", config_data)
 
     return DokkenConfig(**config_data)
+
+
+def _load_and_merge_config(config_path: Path, base_config: dict) -> None:
+    """
+    Load a TOML config file and merge it into the base config.
+
+    Args:
+        config_path: Path to the .dokken.toml file to load.
+        base_config: Base configuration dictionary (modified in-place).
+    """
+    if config_path.exists():
+        with open(config_path, "rb") as f:
+            config_data = tomllib.load(f)
+            _merge_config(base_config, config_data)
 
 
 def _find_repo_root(start_path: str) -> str | None:
