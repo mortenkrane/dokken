@@ -62,7 +62,7 @@ def test_check_command_with_valid_path(
 
     assert result.exit_code == 0
     mock_check.assert_called_once_with(
-        target_module_path=str(temp_module_dir), fix=False
+        target_module_path=str(temp_module_dir), fix=False, depth=0
     )
 
 
@@ -131,7 +131,9 @@ def test_generate_command_with_valid_path(
     result = runner.invoke(cli, ["generate", str(temp_module_dir)])
 
     assert result.exit_code == 0
-    mock_generate.assert_called_once_with(target_module_path=str(temp_module_dir))
+    mock_generate.assert_called_once_with(
+        target_module_path=str(temp_module_dir), depth=0
+    )
 
 
 def test_generate_command_with_invalid_path(runner: CliRunner) -> None:
@@ -287,7 +289,7 @@ def test_check_command_with_fix_flag(
 
     assert result.exit_code == 0
     mock_check.assert_called_once_with(
-        target_module_path=str(temp_module_dir), fix=True
+        target_module_path=str(temp_module_dir), fix=True, depth=0
     )
 
 
@@ -298,3 +300,51 @@ def test_check_command_fix_flag_in_help(runner: CliRunner) -> None:
     assert result.exit_code == 0
     assert "--fix" in result.output
     assert "README.md" in result.output
+
+
+def test_check_command_with_depth_flag(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
+    """Test check command with --depth flag."""
+    mock_check = mocker.patch("src.main.check_documentation_drift")
+    mocker.patch("src.main.console")
+
+    result = runner.invoke(cli, ["check", str(temp_module_dir), "--depth", "2"])
+
+    assert result.exit_code == 0
+    mock_check.assert_called_once_with(
+        target_module_path=str(temp_module_dir), fix=False, depth=2
+    )
+
+
+def test_generate_command_with_depth_flag(
+    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+) -> None:
+    """Test generate command with --depth flag."""
+    mock_generate = mocker.patch("src.main.generate_documentation", return_value=None)
+    mocker.patch("src.main.console")
+
+    result = runner.invoke(cli, ["generate", str(temp_module_dir), "--depth", "-1"])
+
+    assert result.exit_code == 0
+    mock_generate.assert_called_once_with(
+        target_module_path=str(temp_module_dir), depth=-1
+    )
+
+
+def test_check_command_depth_flag_in_help(runner: CliRunner) -> None:
+    """Test that --depth flag appears in check command help."""
+    result = runner.invoke(cli, ["check", "--help"])
+
+    assert result.exit_code == 0
+    assert "--depth" in result.output
+    assert "Directory depth" in result.output
+
+
+def test_generate_command_depth_flag_in_help(runner: CliRunner) -> None:
+    """Test that --depth flag appears in generate command help."""
+    result = runner.invoke(cli, ["generate", "--help"])
+
+    assert result.exit_code == 0
+    assert "--depth" in result.output
+    assert "Directory depth" in result.output

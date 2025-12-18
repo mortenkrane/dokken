@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 from src.code_analyzer import (
     _filter_excluded_files,
     _filter_excluded_symbols,
+    _find_python_files,
     get_module_context,
 )
 
@@ -397,3 +398,94 @@ files = ["test_*.py"]
         "All Python files" in str(call) and "are excluded" in str(call)
         for call in mock_console.print.call_args_list
     )
+
+
+# Tests for depth functionality
+
+
+def test_find_python_files_depth_zero(tmp_path: Path) -> None:
+    """Test _find_python_files with depth=0 finds only root level files."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "root.py").write_text("root")
+
+    # Create nested directory
+    subdir = module_dir / "subdir"
+    subdir.mkdir()
+    (subdir / "nested.py").write_text("nested")
+
+    files = _find_python_files(module_path=str(module_dir), depth=0)
+
+    assert len(files) == 1
+    assert any("root.py" in f for f in files)
+    assert not any("nested.py" in f for f in files)
+
+
+def test_find_python_files_depth_one(tmp_path: Path) -> None:
+    """Test _find_python_files with depth=1 finds root and one level deep."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "root.py").write_text("root")
+
+    # Create nested directory (level 1)
+    subdir = module_dir / "subdir"
+    subdir.mkdir()
+    (subdir / "level1.py").write_text("level1")
+
+    # Create deeper nested directory (level 2)
+    subsubdir = subdir / "subsubdir"
+    subsubdir.mkdir()
+    (subsubdir / "level2.py").write_text("level2")
+
+    files = _find_python_files(module_path=str(module_dir), depth=1)
+
+    assert len(files) == 2
+    assert any("root.py" in f for f in files)
+    assert any("level1.py" in f for f in files)
+    assert not any("level2.py" in f for f in files)
+
+
+def test_find_python_files_depth_infinite(tmp_path: Path) -> None:
+    """Test _find_python_files with depth=-1 finds all files recursively."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "root.py").write_text("root")
+
+    # Create nested directories
+    subdir = module_dir / "subdir"
+    subdir.mkdir()
+    (subdir / "level1.py").write_text("level1")
+
+    subsubdir = subdir / "subsubdir"
+    subsubdir.mkdir()
+    (subsubdir / "level2.py").write_text("level2")
+
+    files = _find_python_files(module_path=str(module_dir), depth=-1)
+
+    assert len(files) == 3
+    assert any("root.py" in f for f in files)
+    assert any("level1.py" in f for f in files)
+    assert any("level2.py" in f for f in files)
+
+
+def test_get_module_context_with_depth(tmp_path: Path, mocker: MockerFixture) -> None:
+    """Test get_module_context respects depth parameter."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "root.py").write_text("root content")
+
+    subdir = module_dir / "subdir"
+    subdir.mkdir()
+    (subdir / "nested.py").write_text("nested content")
+
+    mocker.patch("src.code_analyzer.console")
+
+    # depth=0 should only find root
+    context = get_module_context(module_path=str(module_dir), depth=0)
+    assert "root content" in context
+    assert "nested content" not in context
+
+    # depth=-1 should find all
+    context = get_module_context(module_path=str(module_dir), depth=-1)
+    assert "root content" in context
+    assert "nested content" in context
