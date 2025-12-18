@@ -81,10 +81,10 @@ ruff check --fix
 uvx ty check
 
 # Format markdown
-uvx mdformat .
+uvx mdformat *.md docs/
 
 # Check markdown formatting
-uvx mdformat --check .
+uvx mdformat --check *.md docs/
 ```
 
 ## Key Design Patterns

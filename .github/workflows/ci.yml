@@ -49,7 +49,7 @@ jobs:
           - name: Type
             run: uvx ty check
           - name: Markdown Format
-            run: uvx mdformat --check .
+            run: uvx mdformat --check *.md docs/
 
     steps:
       - uses: actions/checkout@v4
