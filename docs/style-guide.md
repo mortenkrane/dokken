@@ -179,6 +179,113 @@ main.py (CLI)
   - We define no max limit, but it's recommended to start looking for potential dividers when files reach 300-500 lines
   - Typically, the solution will be to convert a big file into a directory with subfiles
 
+## Git Workflow
+
+### Conventional Commits
+
+**All commits to the `main` branch MUST follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.**
+
+Dokken uses [release-please](https://github.com/googleapis/release-please) for automated versioning, changelog generation, and PyPI publishing. This automation is driven entirely by commit messages.
+
+#### Commit Format
+
+```
+<type>: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+#### Required Commit Types
+
+| Type | Description | Version Bump | In Changelog |
+|------|-------------|--------------|--------------|
+| `feat:` | New feature | Minor (0.1.0 → 0.2.0) | ✅ Yes |
+| `fix:` | Bug fix | Patch (0.1.0 → 0.1.1) | ✅ Yes |
+| `docs:` | Documentation changes | None | ✅ Yes |
+| `refactor:` | Code refactoring | None | ✅ Yes |
+| `perf:` | Performance improvements | None | ✅ Yes |
+| `test:` | Test changes | None | ❌ No |
+| `chore:` | Maintenance tasks | None | ❌ No |
+| `ci:` | CI/CD changes | None | ❌ No |
+| `build:` | Build system changes | None | ❌ No |
+| `style:` | Code style changes (formatting) | None | ❌ No |
+
+#### Breaking Changes
+
+To trigger a major version bump (0.1.0 → 1.0.0), use one of:
+
+1. Add `!` after the type: `feat!: remove deprecated API`
+1. Add `BREAKING CHANGE:` in the footer:
+   ```
+   feat: change response format
+
+   BREAKING CHANGE: API now returns JSON instead of XML
+   ```
+
+#### Examples
+
+**Feature addition:**
+
+```bash
+git commit -m "feat: add support for markdown export"
+```
+
+**Bug fix:**
+
+```bash
+git commit -m "fix: correct drift detection logic for nested functions"
+```
+
+**Documentation:**
+
+```bash
+git commit -m "docs: update API documentation with examples"
+```
+
+**Refactoring:**
+
+```bash
+git commit -m "refactor: simplify code analyzer extraction logic"
+```
+
+**Breaking change:**
+
+```bash
+git commit -m "feat!: change CLI argument names
+
+BREAKING CHANGE: Renamed --module to --path for consistency"
+```
+
+**Multiple changes:**
+
+```bash
+# Make separate commits for each type
+git commit -m "feat: add PDF export"
+git commit -m "fix: handle edge case in git detection"
+git commit -m "docs: add PDF export guide"
+```
+
+#### Why This Matters
+
+- **Automated releases**: Commits trigger version bumps automatically
+- **Clean changelogs**: Users see clear, categorized changes
+- **No manual version management**: release-please handles everything
+- **PyPI publishing**: Releases are automatically published when PRs merge
+
+#### Pre-Commit Checklist
+
+Before committing to `main`, ensure:
+
+1. ✅ Commit message follows conventional format
+1. ✅ Tests pass (`pytest src/tests/ --cov=src`)
+1. ✅ Code is formatted (`ruff format`)
+1. ✅ Linting passes (`ruff check`)
+1. ✅ Type checking passes (`uvx ty check`)
+
+**See [docs/releasing-to-pypi.md](releasing-to-pypi.md) for detailed release workflow documentation.**
+
 ## Testing
 
 Dokken uses pytest with comprehensive unit tests, aiming for close to 100% coverage.
