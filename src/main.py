@@ -11,6 +11,9 @@ from src.workflows import check_documentation_drift, generate_documentation
 
 console = Console()
 
+# Constants for CLI options
+DEPTH_HELP = "Directory depth to traverse (0=root only, 1=root+1 level, -1=infinite)"
+
 
 # --- CLI Interface ---
 
@@ -34,7 +37,13 @@ def cli():
     is_flag=True,
     help="Automatically fix detected drift by updating the README.md",
 )
-def check(module_path: str, fix: bool):
+@click.option(
+    "--depth",
+    type=click.IntRange(min=-1),
+    default=0,
+    help=DEPTH_HELP,
+)
+def check(module_path: str, fix: bool, depth: int):
     """Check for documentation drift without generating new docs.
 
     This command analyzes your code and documentation to detect if they're out of sync.
@@ -45,6 +54,7 @@ def check(module_path: str, fix: bool):
     Example:
         dokken check src/payment_service
         dokken check src/payment_service --fix
+        dokken check src/payment_service --depth 2
     """
     try:
         console.print(
@@ -53,7 +63,7 @@ def check(module_path: str, fix: bool):
                 subtitle=f"Module: {module_path}",
             )
         )
-        check_documentation_drift(target_module_path=module_path, fix=fix)
+        check_documentation_drift(target_module_path=module_path, fix=fix, depth=depth)
         console.print("\n[bold green]✓ Documentation is up-to-date![/bold green]")
     except DocumentationDriftError as drift_error:
         console.print(f"\n[bold red]✗ {drift_error}[/bold red]")
@@ -67,13 +77,20 @@ def check(module_path: str, fix: bool):
 @click.argument(
     "module_path", type=click.Path(exists=True, file_okay=False, dir_okay=True)
 )
-def generate(module_path: str):
+@click.option(
+    "--depth",
+    type=click.IntRange(min=-1),
+    default=0,
+    help=DEPTH_HELP,
+)
+def generate(module_path: str, depth: int):
     """Generate fresh documentation for a module.
 
     This command creates or updates documentation by analyzing your code with AI.
 
     Example:
         dokken generate src/payment_service
+        dokken generate src/payment_service --depth -1
     """
     try:
         console.print(
@@ -82,7 +99,9 @@ def generate(module_path: str):
                 subtitle=f"Module: {module_path}",
             )
         )
-        final_markdown = generate_documentation(target_module_path=module_path)
+        final_markdown = generate_documentation(
+            target_module_path=module_path, depth=depth
+        )
 
         if final_markdown:
             console.print(

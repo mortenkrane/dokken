@@ -14,7 +14,9 @@ from src.llm import check_drift, generate_doc, initialize_llm
 console = Console()
 
 
-def check_documentation_drift(*, target_module_path: str, fix: bool = False) -> None:
+def check_documentation_drift(
+    *, target_module_path: str, fix: bool = False, depth: int = 0
+) -> None:
     """
     Check mode: Analyzes documentation drift without generating new documentation.
     Raises DocumentationDriftError if drift is detected.
@@ -22,6 +24,7 @@ def check_documentation_drift(*, target_module_path: str, fix: bool = False) -> 
     Args:
         target_module_path: Path to the module directory to check.
         fix: If True, automatically fixes detected drift by updating README.md.
+        depth: Directory depth to traverse. 0=root only, 1=root+1 level, -1=infinite.
 
     Raises:
         DocumentationDriftError: If documentation drift is detected and fix=False.
@@ -43,7 +46,7 @@ def check_documentation_drift(*, target_module_path: str, fix: bool = False) -> 
         llm_client = initialize_llm()
 
     with console.status("[cyan]Analyzing code context..."):
-        code_context = get_module_context(module_path=target_module_path)
+        code_context = get_module_context(module_path=target_module_path, depth=depth)
 
     if not code_context:
         console.print(
@@ -115,12 +118,13 @@ def fix_documentation_drift(
     )
 
 
-def generate_documentation(*, target_module_path: str) -> str | None:
+def generate_documentation(*, target_module_path: str, depth: int = 0) -> str | None:
     """
     Generate mode: Creates or updates documentation by analyzing code with AI.
 
     Args:
         target_module_path: Path to the module directory to document.
+        depth: Directory depth to traverse. 0=root only, 1=root+1 level, -1=infinite.
 
     Raises:
         SystemExit: If the target path is invalid.
@@ -142,7 +146,7 @@ def generate_documentation(*, target_module_path: str) -> str | None:
         llm_client = initialize_llm()
 
     with console.status("[cyan]Analyzing code context..."):
-        code_context = get_module_context(module_path=target_module_path)
+        code_context = get_module_context(module_path=target_module_path, depth=depth)
 
     if not code_context:
         console.print("[yellow]⚠[/yellow] No code context found. Exiting.")

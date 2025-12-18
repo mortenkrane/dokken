@@ -2,8 +2,8 @@
 
 import ast
 import fnmatch
-import glob
 import os
+from pathlib import Path
 
 from rich.console import Console
 
@@ -12,7 +12,7 @@ from src.config import load_config
 console = Console()
 
 
-def get_module_context(*, module_path: str) -> str:
+def get_module_context(*, module_path: str, depth: int = 0) -> str:
     """
     Fetches the full code content for all Python files in a module directory.
 
@@ -20,6 +20,7 @@ def get_module_context(*, module_path: str) -> str:
 
     Args:
         module_path: The path to the module directory to analyze.
+        depth: Directory depth to traverse. 0=root only, 1=root+1 level, -1=infinite.
 
     Returns:
         A formatted string containing all Python files' content.
@@ -29,7 +30,7 @@ def get_module_context(*, module_path: str) -> str:
         config = load_config(module_path=module_path)
 
         # Find all Python files in the module directory
-        python_files = glob.glob(os.path.join(module_path, "*.py"))
+        python_files = _find_python_files(module_path=module_path, depth=depth)
 
         if not python_files:
             console.print(f"[yellow]⚠[/yellow] No Python files found in {module_path}")
@@ -65,6 +66,41 @@ def get_module_context(*, module_path: str) -> str:
     except Exception as e:  # noqa: BLE001
         console.print(f"[red]Error getting module context for {module_path}:[/red] {e}")
         return ""
+
+
+def _find_python_files(*, module_path: str, depth: int) -> list[str]:
+    """
+    Find Python files in a directory up to a specified depth.
+
+    Args:
+        module_path: The root directory to search.
+        depth: Directory depth to traverse. 0=root only, 1=root+1 level, -1=infinite.
+
+    Returns:
+        List of absolute paths to Python files.
+    """
+    root = Path(module_path)
+    python_files = []
+
+    if depth == -1:
+        # Infinite recursion using rglob (recursive glob)
+        python_files = [str(p) for p in root.rglob("*.py")]
+    elif depth == 0:
+        # Root level only - direct children with .py extension
+        python_files = [str(p) for p in root.glob("*.py")]
+    else:
+        # Limited depth recursion
+        # Start with root level files (*.py)
+        python_files = [str(p) for p in root.glob("*.py")]
+
+        # Add files from deeper levels
+        # depth=1 adds */*.py, depth=2 adds */*.py and */*/*.py, etc.
+        for current_depth in range(1, depth + 1):
+            # Build pattern: depth=1 → "*/*.py", depth=2 → "*/*/*.py"
+            pattern = "/".join(["*"] * current_depth) + "/*.py"
+            python_files.extend([str(p) for p in root.glob(pattern)])
+
+    return python_files
 
 
 def _filter_excluded_files(
