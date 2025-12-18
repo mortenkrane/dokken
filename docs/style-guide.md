@@ -174,12 +174,8 @@ src/tests/
 ├── conftest.py              # Shared fixtures
 ├── test_exceptions.py       # Tests for src/exceptions.py
 ├── test_prompts.py         # Tests for src/prompts.py
-├── test_git.py             # Tests for src/git.py
-├── test_code_analyzer.py   # Tests for src/code_analyzer.py
-├── test_llm.py             # Tests for src/llm.py
-├── test_formatters.py      # Tests for src/formatters.py
-├── test_workflows.py       # Tests for src/workflows.py
 └── test_main.py            # Tests for src/main.py (CLI)
+(etc)
 ```
 
 ### Core Testing Principles

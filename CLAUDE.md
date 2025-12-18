@@ -59,6 +59,9 @@ pytest src/tests/test_git.py::test_setup_git_checks_out_main
 - Target close to 100% test coverage
 
 ### Code Quality
+
+ALWAYS run these commands and make sure they pass, after making changes.
+
 ```bash
 # Format code
 ruff format
