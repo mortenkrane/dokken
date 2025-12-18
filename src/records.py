@@ -9,16 +9,17 @@ class DocumentationDriftCheck(BaseModel):
     drift_detected: bool = Field(
         ...,
         description=(
-            "True if ANY criteria-based checklist item applies (see DRIFT_CHECK_PROMPT). "
-            "False if the documentation still accurately reflects the code."
+            "True if ANY criteria-based checklist item applies (see "
+            "DRIFT_CHECK_PROMPT). False if the documentation still accurately reflects "
+            "the code."
         ),
     )
     rationale: str = Field(
         ...,
         description=(
-            "A concise explanation referencing which specific checklist items triggered "
-            "drift detection, or why the existing documentation remains adequate. "
-            "Be specific about what changed."
+            "A concise explanation referencing which specific checklist items "
+            "triggered drift detection, or why the existing documentation remains "
+            "adequate. Be specific about what changed."
         ),
     )
 
