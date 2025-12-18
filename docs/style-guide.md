@@ -557,4 +557,50 @@ Tests should:
 - Complete in under 10 seconds for fast feedback
 - Not require external services (use mocks!)
 
+## Exclusion Configuration
+
+Dokken supports excluding specific files and symbols from documentation using `.dokken.toml` configuration files.
+
+### Configuration File Location
+
+Config files can be placed in two locations (module-level extends repo-level):
+
+1. **Repository root**: `.dokken.toml` - Global exclusions for all modules
+1. **Module directory**: `<module>/.dokken.toml` - Module-specific exclusions
+
+### Configuration Format
+
+```toml
+[exclusions]
+# Exclude entire files (supports glob patterns)
+files = [
+    "__init__.py",      # Exact filename
+    "*_test.py",        # All test files
+    "conftest.py"
+]
+
+# Exclude specific symbols (functions/classes) by name
+# Supports wildcards
+symbols = [
+    "_private_*",       # All symbols starting with _private_
+    "setup_fixtures",   # Specific function name
+    "Temporary*"        # All classes starting with Temporary
+]
+```
+
+### Common Use Cases
+
+- **Exclude test utilities**: Keep test helpers out of module documentation
+- **Hide private functions**: Exclude internal implementation details (e.g., `_private_*`)
+- **Filter boilerplate**: Skip `__init__.py` or other boilerplate files
+- **Temporary code**: Exclude experimental or temporary code from docs
+
+### Implementation Details
+
+- Config is loaded by `code_analyzer.py` from both repo root and module directory
+- Module-level config extends (not replaces) repo-level config
+- Files are filtered using glob pattern matching (via `fnmatch`)
+- Symbols are filtered using AST parsing - only top-level functions/classes are excluded
+- Nested functions and class methods are preserved even if they match exclusion patterns
+
 ## Documentation
