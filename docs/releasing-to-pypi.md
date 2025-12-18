@@ -13,10 +13,12 @@ Dokken uses [release-please](https://github.com/googleapis/release-please) to au
 Before the first release, you must set up trusted publishing on PyPI:
 
 1. **Create the project on PyPI** (if not already done):
+
    - Go to https://pypi.org/
    - Create a new project named `dokken` (or claim it if you're the owner)
 
-2. **Set up Trusted Publishing**:
+1. **Set up Trusted Publishing**:
+
    - Go to https://pypi.org/manage/account/publishing/
    - Click "Add a new publisher"
    - Fill in the form:
@@ -27,7 +29,8 @@ Before the first release, you must set up trusted publishing on PyPI:
      - **Environment name**: (leave blank)
    - Click "Add"
 
-3. **Verify the configuration**:
+1. **Verify the configuration**:
+
    - The trusted publisher should appear in your list
    - No API tokens or secrets are needed - GitHub Actions will authenticate automatically
 
@@ -46,6 +49,7 @@ All commits to the `main` branch should follow the [Conventional Commits](https:
 - `ci:` - CI/CD changes (hidden from changelog, no version bump)
 
 **Examples:**
+
 ```bash
 git commit -m "feat: add support for markdown export"
 git commit -m "fix: correct drift detection logic"
@@ -58,20 +62,21 @@ git commit -m "feat!: remove deprecated --legacy flag"
 ### Step 1: Develop and Commit
 
 1. **Make your changes** on a feature branch
-2. **Merge to main** using conventional commit
+1. **Merge to main** using conventional commit
 
 ### Step 2: Release-Please Creates PR
 
 After pushing to `main`, the release-please GitHub Action will:
 
 1. **Analyze commits** since the last release
-2. **Calculate new version** based on commit types
-3. **Create or update a release PR** with:
+1. **Calculate new version** based on commit types
+1. **Create or update a release PR** with:
    - Updated version in `pyproject.toml`
    - Generated/updated `CHANGELOG.md`
    - A clear title like "chore(main): release 0.2.0"
 
 **What the release PR looks like:**
+
 - Title: `chore(main): release 0.2.0`
 - Description: Summary of changes organized by type
 - Files changed: `pyproject.toml`, `CHANGELOG.md`, `.release-please-manifest.json`
@@ -79,11 +84,13 @@ After pushing to `main`, the release-please GitHub Action will:
 ### Step 3: Review and Merge Release PR
 
 1. **Review the release PR**:
+
    - Check the version number is correct
    - Review the changelog entries
    - Verify all changes are included
 
-2. **Merge the release PR**:
+1. **Merge the release PR**:
+
    - Click "Merge pull request"
    - The release-please workflow will automatically:
      - Create a GitHub release tagged with the version (e.g., `v0.2.0`)
@@ -95,9 +102,9 @@ After pushing to `main`, the release-please GitHub Action will:
 When the GitHub release is created:
 
 1. **The publish-pypi workflow triggers automatically**
-2. **Package is built** using `uv build`
-3. **Package is published to PyPI** using trusted publishing
-4. **Verify the release** at https://pypi.org/project/dokken/
+1. **Package is built** using `uv build`
+1. **Package is published to PyPI** using trusted publishing
+1. **Verify the release** at https://pypi.org/project/dokken/
 
 ## Version Bumping Rules
 
@@ -112,6 +119,7 @@ Release-please follows semantic versioning:
 | `test:`, `chore:`, `ci:` | No bump (hidden from changelog) | Internal changes |
 
 **Special cases:**
+
 - Multiple commit types: Uses the highest precedence (breaking > feat > fix)
 - No releasable commits: No release PR is created
 - Pre-1.0.0 versions: `feat:` bumps minor, `fix:` bumps patch (configured in `release-please-config.json`)
@@ -121,33 +129,39 @@ Release-please follows semantic versioning:
 ### Release PR Not Created
 
 **Possible causes:**
+
 - No conventional commits since last release
 - Only `chore:`, `test:`, or `ci:` commits (these don't trigger releases)
 - Commits don't follow conventional commit format
 
 **Solution:**
+
 - Check your commit messages in the GitHub UI
 - Ensure at least one commit is `feat:`, `fix:`, `docs:`, `refactor:`, or `perf:`
 
 ### PyPI Publishing Failed
 
 **Possible causes:**
+
 - Trusted publishing not configured correctly
 - Package name already exists and you're not the owner
 - Version already published to PyPI
 
 **Solution:**
+
 1. Check the GitHub Actions logs in the "Actions" tab
-2. Verify trusted publishing settings on PyPI
-3. If version exists, merge more commits and create a new release
+1. Verify trusted publishing settings on PyPI
+1. If version exists, merge more commits and create a new release
 
 ### Version Not Updated Correctly
 
 **Possible causes:**
+
 - Conventional commit format not followed
 - Wrong commit type used (e.g., `chore:` instead of `feat:`)
 
 **Solution:**
+
 - Review the release-please PR to see what it detected
 - If incorrect, close the PR, fix commits on main, and push again
 - Release-please will update the PR automatically
@@ -157,13 +171,13 @@ Release-please follows semantic versioning:
 If you need to manually release (not recommended):
 
 1. **Update version** in `pyproject.toml` and `.release-please-manifest.json`
-2. **Build package**:
+1. **Build package**:
    ```bash
    uv build
    ```
-3. **Create GitHub release** manually with the tag `v{version}`
-4. **Upload artifacts** to the release
-5. **PyPI publishing** will trigger automatically from the release event
+1. **Create GitHub release** manually with the tag `v{version}`
+1. **Upload artifacts** to the release
+1. **PyPI publishing** will trigger automatically from the release event
 
 ## Files and Configuration
 
@@ -177,6 +191,7 @@ If you need to manually release (not recommended):
 ### Key Settings
 
 From `release-please-config.json`:
+
 - **release-type**: `python` (updates `pyproject.toml`)
 - **package-name**: `dokken`
 - **bump-minor-pre-major**: `true` (pre-1.0 versions bump minor for features)
@@ -185,10 +200,10 @@ From `release-please-config.json`:
 ## Best Practices
 
 1. **Always use conventional commits** on main branch
-2. **Batch related changes** into a single commit when possible
-3. **Test before merging** to main (CI should pass)
-4. **Review release PRs** carefully before merging
-5. **Document breaking changes** in commit messages:
+1. **Batch related changes** into a single commit when possible
+1. **Test before merging** to main (CI should pass)
+1. **Review release PRs** carefully before merging
+1. **Document breaking changes** in commit messages:
    ```bash
    git commit -m "feat!: change API response format
 

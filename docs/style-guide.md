@@ -217,7 +217,7 @@ Dokken uses [release-please](https://github.com/googleapis/release-please) for a
 To trigger a major version bump (0.1.0 → 1.0.0), use one of:
 
 1. Add `!` after the type: `feat!: remove deprecated API`
-2. Add `BREAKING CHANGE:` in the footer:
+1. Add `BREAKING CHANGE:` in the footer:
    ```
    feat: change response format
 
@@ -227,26 +227,31 @@ To trigger a major version bump (0.1.0 → 1.0.0), use one of:
 #### Examples
 
 **Feature addition:**
+
 ```bash
 git commit -m "feat: add support for markdown export"
 ```
 
 **Bug fix:**
+
 ```bash
 git commit -m "fix: correct drift detection logic for nested functions"
 ```
 
 **Documentation:**
+
 ```bash
 git commit -m "docs: update API documentation with examples"
 ```
 
 **Refactoring:**
+
 ```bash
 git commit -m "refactor: simplify code analyzer extraction logic"
 ```
 
 **Breaking change:**
+
 ```bash
 git commit -m "feat!: change CLI argument names
 
@@ -254,6 +259,7 @@ BREAKING CHANGE: Renamed --module to --path for consistency"
 ```
 
 **Multiple changes:**
+
 ```bash
 # Make separate commits for each type
 git commit -m "feat: add PDF export"
@@ -273,10 +279,10 @@ git commit -m "docs: add PDF export guide"
 Before committing to `main`, ensure:
 
 1. ✅ Commit message follows conventional format
-2. ✅ Tests pass (`pytest src/tests/ --cov=src`)
-3. ✅ Code is formatted (`ruff format`)
-4. ✅ Linting passes (`ruff check`)
-5. ✅ Type checking passes (`uvx ty check`)
+1. ✅ Tests pass (`pytest src/tests/ --cov=src`)
+1. ✅ Code is formatted (`ruff format`)
+1. ✅ Linting passes (`ruff check`)
+1. ✅ Type checking passes (`uvx ty check`)
 
 **See [docs/releasing-to-pypi.md](releasing-to-pypi.md) for detailed release workflow documentation.**
 

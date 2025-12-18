@@ -94,6 +94,7 @@ uvx mdformat --check *.md docs/ src/
 Dokken uses release-please for automated releases and PyPI publishing. Commit messages drive version bumping and changelog generation.
 
 **Common commit types:**
+
 - `feat:` - New features (bumps minor version)
 - `fix:` - Bug fixes (bumps patch version)
 - `docs:` - Documentation changes
@@ -102,6 +103,7 @@ Dokken uses release-please for automated releases and PyPI publishing. Commit me
 - `chore:` - Maintenance tasks
 
 **Examples:**
+
 ```bash
 git commit -m "feat: add PDF export support"
 git commit -m "fix: correct drift detection edge case"
@@ -109,6 +111,7 @@ git commit -m "docs: update API examples"
 ```
 
 **Breaking changes** (bumps major version):
+
 ```bash
 git commit -m "feat!: remove deprecated CLI flags"
 # or
