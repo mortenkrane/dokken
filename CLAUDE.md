@@ -87,6 +87,38 @@ uvx mdformat *.md docs/ src/
 uvx mdformat --check *.md docs/ src/
 ```
 
+### Git Workflow and Conventional Commits
+
+**IMPORTANT: All commits to `main` MUST use [Conventional Commits](https://www.conventionalcommits.org/) format.**
+
+Dokken uses release-please for automated releases and PyPI publishing. Commit messages drive version bumping and changelog generation.
+
+**Common commit types:**
+- `feat:` - New features (bumps minor version)
+- `fix:` - Bug fixes (bumps patch version)
+- `docs:` - Documentation changes
+- `refactor:` - Code refactoring
+- `test:` - Test changes
+- `chore:` - Maintenance tasks
+
+**Examples:**
+```bash
+git commit -m "feat: add PDF export support"
+git commit -m "fix: correct drift detection edge case"
+git commit -m "docs: update API examples"
+```
+
+**Breaking changes** (bumps major version):
+```bash
+git commit -m "feat!: remove deprecated CLI flags"
+# or
+git commit -m "feat: change API format
+
+BREAKING CHANGE: Response now returns JSON instead of XML"
+```
+
+**See [docs/style-guide.md](docs/style-guide.md#git-workflow) and [docs/releasing-to-pypi.md](docs/releasing-to-pypi.md) for complete details.**
+
 ## Key Design Patterns
 
 1. **Structured Output**: All LLM operations return validated Pydantic models
