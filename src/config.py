@@ -49,7 +49,9 @@ def load_config(*, module_path: str) -> DokkenConfig:
     # Load module-specific config if it exists (extends global)
     _load_and_merge_config(Path(module_path) / ".dokken.toml", config_data)
 
-    return DokkenConfig(**config_data)
+    # Construct ExclusionConfig from the merged dictionary
+    exclusion_config = ExclusionConfig(**config_data["exclusions"])
+    return DokkenConfig(exclusions=exclusion_config)
 
 
 def _load_and_merge_config(config_path: Path, base_config: dict) -> None:
