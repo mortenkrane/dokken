@@ -22,12 +22,14 @@ AI-powered documentation generation and drift detection tool that keeps your cod
 ### Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/your-username/dokken.git
    cd dokken
    ```
 
-2. **Install mise** (if not already installed)
+1. **Install mise** (if not already installed)
+
    ```bash
    # macOS
    brew install mise
@@ -36,52 +38,61 @@ AI-powered documentation generation and drift detection tool that keeps your cod
    curl https://mise.run | sh
    ```
 
-3. **Activate mise in your shell**
+1. **Activate mise in your shell**
 
    Add to your `~/.zshrc` or `~/.bashrc`:
+
    ```bash
    eval "$(mise activate zsh)"  # or bash/fish
    ```
 
    Then reload your shell:
+
    ```bash
    source ~/.zshrc  # or ~/.bashrc
    ```
 
-4. **Install Python and uv**
+1. **Install Python and uv**
+
    ```bash
    mise install
    ```
 
    mise will automatically:
+
    - Install Python 3.13.7 and uv 0.9.18
    - Create and activate the `.venv` virtual environment
 
-5. **Install dependencies**
+1. **Install dependencies**
+
    ```bash
    uv sync
    ```
 
-6. **Set up your API key**
+1. **Set up your API key**
 
    Choose one of the following providers (checked in priority order):
 
    **Option 1: Claude (Anthropic)** - Fastest and most cost-effective
+
    ```bash
    export ANTHROPIC_API_KEY="sk-ant-api03-..."
    ```
 
    **Option 2: OpenAI**
+
    ```bash
    export OPENAI_API_KEY="sk-..."
    ```
 
    **Option 3: Google Gemini**
+
    ```bash
    export GOOGLE_API_KEY="AIza..."
    ```
 
    Or add to `.env` file:
+
    ```bash
    echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
    ```
@@ -103,6 +114,7 @@ Dokken supports three LLM providers, automatically selecting the first available
 ### Why These Models?
 
 These budget-friendly models are specifically chosen for:
+
 - **Speed**: Fast response times for frequent CI/CD runs
 - **Cost**: Significantly cheaper than flagship models
 - **Quality**: More than capable for structured documentation tasks
@@ -129,6 +141,7 @@ dokken generate src/module_name
 ```
 
 This will:
+
 - Analyze your code and detect drift
 - Generate updated documentation
 - Write to `README.md` in the module directory
@@ -138,6 +151,7 @@ This will:
 You can configure Dokken to permanently exclude certain files or code symbols from documentation using `.dokken.toml` configuration files.
 
 **Create a `.dokken.toml` file in:**
+
 - Repository root (for global exclusions)
 - Module directory (for module-specific exclusions)
 
@@ -162,6 +176,7 @@ symbols = [
 ```
 
 **Common use cases:**
+
 - Hide test utilities and fixtures from module documentation
 - Exclude internal implementation details (e.g., `_private_*` functions)
 - Skip boilerplate files like `__init__.py`
@@ -180,6 +195,7 @@ pytest src/tests/ --cov=src --cov-report=term-missing
 ```
 
 **Coverage Requirements:**
+
 - Minimum test coverage: **99%** (enforced in CI)
 - Tests will fail if coverage drops below this threshold
 - Current coverage target aligns with production quality standards
@@ -202,6 +218,7 @@ uvx ty check
 The project uses GitHub Actions for automated quality checks on all pull requests and pushes to main:
 
 **Automated Checks:**
+
 - **Tests**: Full test suite with 99% coverage requirement
 - **Formatting**: Ruff format validation
 - **Linting**: Ruff linting rules (see `pyproject.toml`)
@@ -220,6 +237,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contributing
 
 Contributions are welcome! Please ensure:
+
 - All tests pass with **99% minimum coverage**
 - Code follows the style guide in `docs/style-guide.md`
 - Function-based tests with proper mocking
