@@ -58,20 +58,7 @@ git commit -m "feat!: remove deprecated --legacy flag"
 ### Step 1: Develop and Commit
 
 1. **Make your changes** on a feature branch
-2. **Test thoroughly**:
-   ```bash
-   pytest src/tests/ --cov=src --cov-report=term-missing
-   ruff format
-   ruff check
-   uvx ty check
-   ```
-3. **Merge to main** using conventional commits:
-   ```bash
-   git checkout main
-   git pull origin main
-   git merge feature-branch
-   git push origin main
-   ```
+2. **Merge to main** using conventional commit
 
 ### Step 2: Release-Please Creates PR
 
