@@ -13,11 +13,11 @@ src/
 ├── exceptions.py        # Custom exceptions
 ├── prompts.py          # LLM prompt templates as constants
 ├── config.py           # Configuration loading (.dokken.toml)
-├── git.py              # Git operations
 ├── code_analyzer.py    # Code context extraction
 ├── llm.py              # LLM client initialization and operations
 ├── formatters.py       # Documentation formatting (Markdown, etc.)
 ├── workflows.py        # High-level orchestration logic
+├── human_in_the_loop.py # Interactive user questionnaires
 └── records.py          # Pydantic models for structured data
 ```
 
@@ -71,18 +71,12 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 - Uses Pydantic for config validation
 - Handles config merging (module overrides repo)
 
-#### `git.py` - Git Operations
-
-- Pure git functionality
-- Uses `subprocess` to interact with git
-- No LLM or file I/O mixing
-- Single responsibility: git workflow automation
-
 #### `code_analyzer.py` - Code Context Extraction
 
 - Analyzes code to create context for LLM
-- Reads Python files and git diffs
+- Reads Python files from module directories
 - Respects exclusion rules from `.dokken.toml`
+- Supports configurable directory depth traversal (`depth` parameter)
 - Pure extraction logic, no LLM calls
 - Could be extended to support other languages
 
@@ -103,7 +97,7 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 #### `workflows.py` - Orchestration Logic
 
 - **High-level business logic**
-- Coordinates git → analyzer → LLM → formatter
+- Coordinates analyzer → LLM → formatter → human-in-the-loop
 - Contains the full flow of operations
 - Can be imported and used without CLI
 
@@ -112,6 +106,14 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 - Reusable - can be imported by other scripts
 - Testable - can be tested without CLI
 - Clear business logic separated from UI
+
+#### `human_in_the_loop.py` - Interactive Questionnaires
+
+- Interactive questionnaire system using `questionary`
+- Captures human intent that AI cannot infer from code
+- Asks about problems solved, responsibilities, system context
+- Returns structured `HumanIntent` Pydantic model
+- Graceful skip handling (Ctrl+C on first question skips all)
 
 #### `records.py` - Data Models
 
@@ -125,13 +127,14 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector..."""
 ```
 main.py (CLI)
     └── workflows.py (Orchestration)
-            ├── git.py
             ├── code_analyzer.py
             │   └── config.py
             ├── llm.py
             │   ├── prompts.py
             │   └── records.py
             ├── formatters.py
+            │   └── records.py
+            ├── human_in_the_loop.py
             │   └── records.py
             └── exceptions.py
 ```
@@ -356,16 +359,16 @@ def test_function_with_various_inputs(input_value, expected):
 - Mock console output
 
 ```python
-def test_setup_git(mocker):
-    # Mock subprocess to avoid actual git commands
-    mock_subprocess = mocker.patch("src.git.subprocess.run")
-    # Mock console to suppress output
-    mocker.patch("src.git.console")
+def test_check_drift(mocker, mock_llm_client):
+    # Mock the LLM program to avoid actual API calls
+    mock_program = mocker.patch("src.llm.LLMTextCompletionProgram")
+    expected_result = DocumentationDriftCheck(drift_detected=False, rationale="Up to date")
+    mock_program.from_defaults.return_value.return_value = expected_result
 
-    setup_git()
+    result = check_drift(llm=mock_llm_client, context="...", current_doc="...")
 
-    # Verify the right calls were made
-    assert mock_subprocess.call_count == 3
+    # Verify the result
+    assert result == expected_result
 ```
 
 #### 4. Use Shared Fixtures
@@ -433,8 +436,8 @@ pytest src/tests/ --cov=src --cov-report=html
 
 ### Coverage Expectations
 
-- **Target: Close to 100% coverage** for all source modules
-- Minimum acceptable: 95% coverage
+- **Target: 99% coverage minimum** (enforced in `pyproject.toml`)
+- Tests will fail if coverage drops below 99%
 - Acceptable untested code:
   - `if __name__ == "__main__"` blocks
   - Abstract methods meant to be overridden
@@ -504,15 +507,15 @@ def test_function_writes_file(tmp_path):
 Mock at the boundary of your module, not deep inside dependencies:
 
 ```python
-# ✅ Good - mock the subprocess call in your module
-def test_setup_git(mocker):
-    mock_subprocess = mocker.patch("src.git.subprocess.run")
-    setup_git()
-    mock_subprocess.assert_called()
+# ✅ Good - mock at the module boundary
+def test_check_drift(mocker, mock_llm_client):
+    mock_program = mocker.patch("src.llm.LLMTextCompletionProgram")
+    check_drift(llm=mock_llm_client, context="...", current_doc="...")
+    mock_program.from_defaults.assert_called()
 
-# ❌ Bad - mocking too deep
-def test_setup_git(mocker):
-    mocker.patch("subprocess.Popen")  # Too low-level
+# ❌ Bad - mocking too deep in dependencies
+def test_check_drift(mocker, mock_llm_client):
+    mocker.patch("llama_index.core.program.base.BaseLLMProgram")  # Too low-level
     ...
 ```
 
@@ -572,9 +575,10 @@ The exclusion system (`.dokken.toml` config) is implemented in `code_analyzer.py
 
 ### Key Design Decisions
 
-- **Shallow Code Analysis**: `code_analyzer.py` only scans top-level Python files (non-recursive by design)
+- **Configurable Depth Analysis**: `code_analyzer.py` supports configurable directory traversal depth (0=root only, 1=root+1 level, -1=infinite recursion)
 - **Alphabetically Sorted Decisions**: Formatters sort design decisions alphabetically to prevent diff noise
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists (saves LLM calls)
 - **Stabilized Drift Detection**: Uses criteria-based checklist in `DRIFT_CHECK_PROMPT` - explicitly defines what constitutes drift vs. minor changes
+- **Human-in-the-Loop**: Interactive questionnaire captures developer intent that AI cannot infer from code alone
 
 ## Documentation
