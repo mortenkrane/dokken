@@ -8,13 +8,16 @@ from rich.console import Console
 
 from src.code_analyzer import get_module_context
 from src.config import _find_repo_root
-from src.doc_configs import DOC_CONFIGS
+from src.doc_configs import DOC_CONFIGS, DocConfig
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.human_in_the_loop import ask_human_intent
 from src.llm import check_drift, generate_doc, initialize_llm
 
 console = Console()
+
+# Constants
+NO_DOC_MARKER = "No existing documentation provided."
 
 
 def resolve_output_path(*, doc_type: DocType, module_path: str) -> str:
@@ -165,7 +168,7 @@ def check_documentation_drift(  # noqa: C901
 
 
 def fix_documentation_drift(
-    *, llm_client: LLM, code_context: str, output_path: str, doc_config
+    *, llm_client: LLM, code_context: str, output_path: str, doc_config: DocConfig
 ) -> None:
     """
     Fix documentation drift by generating and writing updated documentation.
@@ -277,7 +280,7 @@ def generate_documentation(
             current_doc_content = f.read()
         console.print("[green]✓[/green] Found existing documentation")
     else:
-        current_doc_content = "No existing documentation provided."
+        current_doc_content = NO_DOC_MARKER
         console.print("[yellow]⚠[/yellow] No existing documentation found")
 
     # 2. Step 1: Check for Documentation Drift
@@ -292,10 +295,7 @@ def generate_documentation(
     console.print(f"[bold]Drift Detected:[/bold] {drift_check.drift_detected}")
     console.print(f"[bold]Rationale:[/bold] {drift_check.rationale}\n")
 
-    if (
-        not drift_check.drift_detected
-        and "No existing documentation provided." not in current_doc_content
-    ):
+    if not drift_check.drift_detected and NO_DOC_MARKER not in current_doc_content:
         console.print(
             "[green]✓[/green] Documentation is considered up-to-date. No new file "
             "generated."

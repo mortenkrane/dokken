@@ -1,6 +1,5 @@
 """Interactive questionnaire for capturing human intent in documentation."""
 
-
 import questionary
 from pydantic import BaseModel
 from rich.console import Console
