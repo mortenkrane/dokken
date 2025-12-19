@@ -1,28 +1,6 @@
 # Ideas for future development
 
-## Human-in-the-loop
-
-In order to capture _intent_ in the documentation, we need to involve a human. AI can never infer that alone. We should
-add a short questionaire, with questions like:
-
-- What problems does this module solve?
-- What are the module's core responsibilities?
-- What is not this module's responsibility?
-- How does the module fit into the larger system?
-
-## Make drift detection more stable
-
-Seems to still be slightly random, sometimes detecting drift, sometimes not
-
 ## Don't check drift if no existing readme found
-
-## Support multiple LLMs
-
-Current only Google Gemini.
-
-## Some way to exclude/deny changes permanently
-
-Sometimes, you don't want the things dokken suggests.
 
 ## Enable automatic git branches
 
