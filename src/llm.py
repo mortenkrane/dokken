@@ -7,9 +7,10 @@ from llama_index.core.program import LLMTextCompletionProgram
 from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
+from pydantic import BaseModel
 
 from src.prompts import DOCUMENTATION_GENERATION_PROMPT, DRIFT_CHECK_PROMPT
-from src.records import ComponentDocumentation, DocumentationDriftCheck, HumanIntent
+from src.records import ComponentDocumentation, DocumentationDriftCheck
 
 # Temperature setting for deterministic, reproducible documentation output
 TEMPERATURE = 0.0
@@ -76,26 +77,26 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     return check_program(context=context, current_doc=current_doc)
 
 
-def _build_human_intent_section(human_intent: HumanIntent) -> str:
+def _build_human_intent_section(human_intent: BaseModel) -> str:
     """
-    Builds a formatted string from human intent data.
+    Builds a formatted string from human intent data (any BaseModel).
 
     Args:
-        human_intent: The HumanIntent object containing user responses.
+        human_intent: The intent model containing user responses.
 
     Returns:
         Formatted string with human-provided context, or empty string if no data.
     """
-    intent_fields = [
-        ("Problems Solved", human_intent.problems_solved),
-        ("Core Responsibilities", human_intent.core_responsibilities),
-        ("Non-Responsibilities", human_intent.non_responsibilities),
-        ("System Context", human_intent.system_context),
-    ]
+    # Get all fields from the intent model
+    intent_dict = human_intent.model_dump()
 
-    intent_lines = [
-        f"{label}: {value}" for label, value in intent_fields if value is not None
-    ]
+    # Build formatted lines for non-null values
+    intent_lines = []
+    for key, value in intent_dict.items():
+        if value is not None:
+            # Convert snake_case to Title Case
+            label = key.replace("_", " ").title()
+            intent_lines.append(f"{label}: {value}")
 
     if not intent_lines:
         return ""
@@ -104,18 +105,25 @@ def _build_human_intent_section(human_intent: HumanIntent) -> str:
 
 
 def generate_doc(
-    *, llm: LLM, context: str, human_intent: HumanIntent | None = None
-) -> ComponentDocumentation:
+    *,
+    llm: LLM,
+    context: str,
+    human_intent: BaseModel | None = None,
+    output_model: type[BaseModel] = ComponentDocumentation,
+    prompt_template: str = DOCUMENTATION_GENERATION_PROMPT,
+) -> BaseModel:
     """
-    Generates structured documentation for a component based on code context.
+    Generates structured documentation based on code context.
 
     Args:
         llm: The LLM client instance.
         context: The code context to generate documentation from.
-        human_intent: Optional human-provided intent and context for the module.
+        human_intent: Optional human-provided intent and context.
+        output_model: Pydantic model class for structured output.
+        prompt_template: Prompt template string to use.
 
     Returns:
-        A ComponentDocumentation object with structured documentation data.
+        An instance of output_model with structured documentation data.
     """
     # Build human intent section if provided
     human_intent_section = (
@@ -124,9 +132,9 @@ def generate_doc(
 
     # Use LLMTextCompletionProgram for structured Pydantic output
     generate_program = LLMTextCompletionProgram.from_defaults(
-        output_cls=ComponentDocumentation,
+        output_cls=output_model,
         llm=llm,
-        prompt_template_str=DOCUMENTATION_GENERATION_PROMPT,
+        prompt_template_str=prompt_template,
     )
 
     # Run the generation

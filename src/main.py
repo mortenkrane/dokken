@@ -6,6 +6,7 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 
+from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.workflows import check_documentation_drift, generate_documentation
 
@@ -13,6 +14,12 @@ console = Console()
 
 # Constants for CLI options
 DEPTH_HELP = "Directory depth to traverse (0=root only, 1=root+1 level, -1=infinite)"
+DOC_TYPE_HELP = (
+    "Type of documentation to generate: "
+    "module-readme (module architectural docs), "
+    "project-readme (top-level project README), "
+    "style-guide (code conventions guide)"
+)
 
 
 # --- CLI Interface ---
@@ -35,35 +42,49 @@ def cli():
 @click.option(
     "--fix",
     is_flag=True,
-    help="Automatically fix detected drift by updating the README.md",
+    help="Automatically fix detected drift by updating the documentation",
 )
 @click.option(
     "--depth",
     type=click.IntRange(min=-1),
-    default=0,
-    help=DEPTH_HELP,
+    default=None,
+    help=DEPTH_HELP + " (defaults to doc type's default)",
 )
-def check(module_path: str, fix: bool, depth: int):
+@click.option(
+    "--doc-type",
+    type=click.Choice(
+        ["module-readme", "project-readme", "style-guide"], case_sensitive=False
+    ),
+    default="module-readme",
+    help=DOC_TYPE_HELP,
+)
+def check(module_path: str, fix: bool, depth: int | None, doc_type: str):
     """Check for documentation drift without generating new docs.
 
     This command analyzes your code and documentation to detect if they're out of sync.
     If drift is detected, it exits with code 1, making it perfect for CI/CD pipelines.
 
-    Use --fix to automatically update the README.md when drift is detected.
+    Use --fix to automatically update the documentation when drift is detected.
 
     Example:
         dokken check src/payment_service
         dokken check src/payment_service --fix
+        dokken check src/payment_service --doc-type project-readme
         dokken check src/payment_service --depth 2
     """
     try:
+        # Convert string to DocType enum
+        doc_type_enum = DocType(doc_type)
+
         console.print(
             Panel.fit(
                 "[bold blue]Documentation Drift Check[/bold blue]",
-                subtitle=f"Module: {module_path}",
+                subtitle=f"Module: {module_path} | Type: {doc_type}",
             )
         )
-        check_documentation_drift(target_module_path=module_path, fix=fix, depth=depth)
+        check_documentation_drift(
+            target_module_path=module_path, fix=fix, depth=depth, doc_type=doc_type_enum
+        )
         console.print("\n[bold green]✓ Documentation is up-to-date![/bold green]")
     except DocumentationDriftError as drift_error:
         console.print(f"\n[bold red]✗ {drift_error}[/bold red]")
@@ -80,27 +101,40 @@ def check(module_path: str, fix: bool, depth: int):
 @click.option(
     "--depth",
     type=click.IntRange(min=-1),
-    default=0,
-    help=DEPTH_HELP,
+    default=None,
+    help=DEPTH_HELP + " (defaults to doc type's default)",
 )
-def generate(module_path: str, depth: int):
-    """Generate fresh documentation for a module.
+@click.option(
+    "--doc-type",
+    type=click.Choice(
+        ["module-readme", "project-readme", "style-guide"], case_sensitive=False
+    ),
+    default="module-readme",
+    help=DOC_TYPE_HELP,
+)
+def generate(module_path: str, depth: int | None, doc_type: str):
+    """Generate fresh documentation for a module or project.
 
     This command creates or updates documentation by analyzing your code with AI.
 
     Example:
         dokken generate src/payment_service
+        dokken generate . --doc-type project-readme
+        dokken generate . --doc-type style-guide
         dokken generate src/payment_service --depth -1
     """
     try:
+        # Convert string to DocType enum
+        doc_type_enum = DocType(doc_type)
+
         console.print(
             Panel.fit(
                 "[bold blue]Documentation Generation[/bold blue]",
-                subtitle=f"Module: {module_path}",
+                subtitle=f"Module: {module_path} | Type: {doc_type}",
             )
         )
         final_markdown = generate_documentation(
-            target_module_path=module_path, depth=depth
+            target_module_path=module_path, depth=depth, doc_type=doc_type_enum
         )
 
         if final_markdown:

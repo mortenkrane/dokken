@@ -24,9 +24,9 @@ class DocumentationDriftCheck(BaseModel):
     )
 
 
-class ComponentDocumentation(BaseModel):
+class ModuleDocumentation(BaseModel):
     """
-    Structured documentation for a single code component.
+    Structured documentation for a module (architectural design).
     """
 
     component_name: str = Field(
@@ -86,7 +86,128 @@ class ComponentDocumentation(BaseModel):
     )
 
 
-class HumanIntent(BaseModel):
+class ProjectDocumentation(BaseModel):
+    """
+    Structured documentation for a top-level project README.
+    """
+
+    project_name: str = Field(
+        ...,
+        description="The name of the project.",
+    )
+    project_purpose: str = Field(
+        ...,
+        description=(
+            "What problem does this project solve? Why does it exist? "
+            "2-3 paragraphs introducing the project to new users."
+        ),
+    )
+    key_features: str = Field(
+        ...,
+        description=(
+            "Main capabilities of the project. Bulleted list of 3-7 features "
+            "that users should know about."
+        ),
+    )
+    installation: str = Field(
+        ...,
+        description=(
+            "How users install and set up the project for usage. Include "
+            "prerequisites, installation steps, and basic configuration."
+        ),
+    )
+    development_setup: str = Field(
+        ...,
+        description=(
+            "How contributors set up the project for development. Include "
+            "installing dependencies, running tests, and any dev tools."
+        ),
+    )
+    usage_examples: str = Field(
+        ...,
+        description=(
+            "Basic usage patterns and commands. Show the most common use "
+            "cases with concrete examples."
+        ),
+    )
+    project_structure: str = Field(
+        ...,
+        description=(
+            "High-level overview of directory organization. Help users "
+            "understand where to find different components."
+        ),
+    )
+    contributing: str | None = Field(
+        None,
+        description=(
+            "How to contribute to the project (optional). Include PR process, "
+            "coding standards, or link to CONTRIBUTING.md if applicable."
+        ),
+    )
+
+
+class StyleGuideDocumentation(BaseModel):
+    """
+    Structured documentation for code style and conventions.
+    """
+
+    project_name: str = Field(
+        ...,
+        description="The name of the project.",
+    )
+    languages: list[str] = Field(
+        ...,
+        description="Programming languages used in this project.",
+    )
+    code_style_patterns: str = Field(
+        ...,
+        description=(
+            "Formatting, naming conventions, and code structure patterns "
+            "consistently used across the codebase. Include specific examples."
+        ),
+    )
+    architectural_patterns: str = Field(
+        ...,
+        description=(
+            "Design patterns, abstractions, and architectural approaches "
+            "used in the codebase. Explain dependency injection, data flow, "
+            "separation of concerns, etc."
+        ),
+    )
+    testing_conventions: str = Field(
+        ...,
+        description=(
+            "Test structure, mocking patterns, fixtures, and testing practices. "
+            "Explain how tests are organized and what patterns to follow."
+        ),
+    )
+    git_workflow: str = Field(
+        ...,
+        description=(
+            "Branching strategy, commit message format, PR process, and "
+            "version control practices. Include any commit conventions."
+        ),
+    )
+    module_organization: str = Field(
+        ...,
+        description=(
+            "How code is organized into modules, packages, and files. "
+            "Explain the directory structure and module responsibilities."
+        ),
+    )
+    dependencies_management: str = Field(
+        ...,
+        description=(
+            "How dependencies are declared, managed, and versioned. "
+            "Include package management tools and practices."
+        ),
+    )
+
+
+# Intent models for human-in-the-loop
+
+
+class ModuleIntent(BaseModel):
     """
     Human-provided intent and context for module documentation.
     Captures information that AI cannot infer from code alone.
@@ -108,3 +229,50 @@ class HumanIntent(BaseModel):
         None,
         description="How does the module fit into the larger system?",
     )
+
+
+class ProjectIntent(BaseModel):
+    """
+    Human-provided intent and context for project README documentation.
+    """
+
+    project_type: str | None = Field(
+        None,
+        description="Is this a library/tool/application/framework?",
+    )
+    target_audience: str | None = Field(
+        None,
+        description="Who is the primary audience?",
+    )
+    key_problem: str | None = Field(
+        None,
+        description="What problem does this project solve?",
+    )
+    setup_notes: str | None = Field(
+        None,
+        description="Any special setup considerations?",
+    )
+
+
+class StyleGuideIntent(BaseModel):
+    """
+    Human-provided intent and context for style guide documentation.
+    """
+
+    unique_conventions: str | None = Field(
+        None,
+        description="Are there any unique conventions in this codebase?",
+    )
+    organization_notes: str | None = Field(
+        None,
+        description="What should new contributors know about code organization?",
+    )
+    patterns: str | None = Field(
+        None,
+        description="Are there specific patterns to follow or avoid?",
+    )
+
+
+# Backward compatibility aliases
+ComponentDocumentation = ModuleDocumentation  # Deprecated: use ModuleDocumentation
+HumanIntent = ModuleIntent  # Deprecated: use ModuleIntent
