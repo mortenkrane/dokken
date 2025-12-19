@@ -1,24 +1,11 @@
 """Interactive questionnaire for capturing human intent in documentation."""
 
 import questionary
-from questionary import ValidationError, Validator
 from rich.console import Console
 
 from src.records import HumanIntent
 
 console = Console()
-
-
-class NonEmptyValidator(Validator):
-    """Validator to ensure non-empty input."""
-
-    def validate(self, document):
-        """Validate that the document text is not empty."""
-        if not document.text.strip():
-            raise ValidationError(
-                message="This field cannot be empty. Press Ctrl+C to skip.",
-                cursor_position=len(document.text),
-            )
 
 
 def ask_human_intent() -> HumanIntent | None:

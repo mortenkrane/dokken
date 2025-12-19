@@ -100,30 +100,3 @@ def test_ask_human_intent_keyboard_interrupt():
         result = ask_human_intent()
 
         assert result is None
-
-
-def test_ask_human_intent_console_output(capsys):
-    """Test that appropriate console messages are printed."""
-    with patch("src.human_in_the_loop.questionary.text") as mock_text:
-        mock_text.return_value.ask.side_effect = [
-            "Value 1",
-            "Value 2",
-            "Value 3",
-            "Value 4",
-        ]
-
-        result = ask_human_intent()
-
-        # We can't easily capture rich console output, but we can verify
-        # the function completed successfully
-        assert result is not None
-
-
-def test_ask_human_intent_skip_console_output(capsys):
-    """Test console output when questionnaire is skipped."""
-    with patch("src.human_in_the_loop.questionary.text") as mock_text:
-        mock_text.return_value.ask.return_value = None
-
-        result = ask_human_intent()
-
-        assert result is None
