@@ -42,9 +42,9 @@ dokken generate src/module_name
 When you run `dokken generate`, it will:
 
 1. Analyze your code and detect drift
-2. **Prompt you with an interactive questionnaire** to capture human intent (see below)
-3. Generate updated documentation using both code analysis and human input
-4. Write to `README.md` in the module directory
+1. **Prompt you with an interactive questionnaire** to capture human intent (see below)
+1. Generate updated documentation using both code analysis and human input
+1. Write to `README.md` in the module directory
 
 #### Human Intent Capture
 
@@ -56,6 +56,7 @@ When generating documentation, Dokken will ask you questions to capture context 
 - **How does the module fit into the larger system?**
 
 **Tips:**
+
 - Press `ESC` on any question to skip it
 - Press `ESC` on the first question to skip the entire questionnaire
 - Press `Enter` twice to submit your answer (supports multiline input)

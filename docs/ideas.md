@@ -9,10 +9,6 @@ add a short questionaire, with questions like:
 - What are the module's core responsibilities?
 - What is not this module's responsibility?
 - How does the module fit into the larger system?
-- What are the main entry points in the module?
-- What are the important invariants, assumptions, or contracts?
-- What are the module's known limitations?
-- What are common pitfalls for contributors?
 
 ## Make drift detection more stable
 

@@ -29,12 +29,14 @@ def ask_human_intent() -> HumanIntent | None:
     by pressing Ctrl+C on the first question.
 
     Returns:
-        HumanIntent object with user responses, or None if user skipped the questionnaire.
+        HumanIntent object with user responses, or None if user skipped the
+        questionnaire.
     """
     console.print(
         "\n[bold cyan]Human Intent Capture[/bold cyan]\n"
         "[dim]Help us understand the intent behind your module.[/dim]\n"
-        "[dim]Press Ctrl+C to skip questions, Meta+Enter or Esc+Enter to submit.[/dim]\n"
+        "[dim]Press Ctrl+C to skip questions, Meta+Enter or Esc+Enter to "
+        "submit.[/dim]\n"
     )
 
     questions = [
@@ -54,22 +56,6 @@ def ask_human_intent() -> HumanIntent | None:
             "field": "system_context",
             "prompt": "How does the module fit into the larger system?",
         },
-        {
-            "field": "entry_points",
-            "prompt": "What are the main entry points in the module?",
-        },
-        {
-            "field": "invariants",
-            "prompt": "What are the important invariants, assumptions, or contracts?",
-        },
-        {
-            "field": "limitations",
-            "prompt": "What are the module's known limitations?",
-        },
-        {
-            "field": "common_pitfalls",
-            "prompt": "What are common pitfalls for contributors?",
-        },
     ]
 
     responses = {}
@@ -84,7 +70,8 @@ def ask_human_intent() -> HumanIntent | None:
             # If user pressed Ctrl+C on first question, skip entire questionnaire
             if answer is None and i == 0:
                 console.print(
-                    "\n[yellow]Questionnaire skipped. Continuing without human intent.[/yellow]\n"
+                    "\n[yellow]Questionnaire skipped. "
+                    "Continuing without human intent.[/yellow]\n"
                 )
                 return None
 
@@ -98,14 +85,16 @@ def ask_human_intent() -> HumanIntent | None:
 
         except KeyboardInterrupt:
             console.print(
-                "\n[yellow]Questionnaire interrupted. Continuing without human intent.[/yellow]\n"
+                "\n[yellow]Questionnaire interrupted. "
+                "Continuing without human intent.[/yellow]\n"
             )
             return None
 
     # Check if user provided any responses
     if not any(responses.values()):
         console.print(
-            "\n[yellow]No responses provided. Continuing without human intent.[/yellow]\n"
+            "\n[yellow]No responses provided. "
+            "Continuing without human intent.[/yellow]\n"
         )
         return None
 

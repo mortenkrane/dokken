@@ -76,6 +76,33 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     return check_program(context=context, current_doc=current_doc)
 
 
+def _build_human_intent_section(human_intent: HumanIntent) -> str:
+    """
+    Builds a formatted string from human intent data.
+
+    Args:
+        human_intent: The HumanIntent object containing user responses.
+
+    Returns:
+        Formatted string with human-provided context, or empty string if no data.
+    """
+    intent_fields = [
+        ("Problems Solved", human_intent.problems_solved),
+        ("Core Responsibilities", human_intent.core_responsibilities),
+        ("Non-Responsibilities", human_intent.non_responsibilities),
+        ("System Context", human_intent.system_context),
+    ]
+
+    intent_lines = [
+        f"{label}: {value}" for label, value in intent_fields if value is not None
+    ]
+
+    if not intent_lines:
+        return ""
+
+    return "\n--- HUMAN-PROVIDED CONTEXT ---\n" + "\n".join(intent_lines) + "\n"
+
+
 def generate_doc(
     *, llm: LLM, context: str, human_intent: HumanIntent | None = None
 ) -> ComponentDocumentation:
@@ -91,34 +118,9 @@ def generate_doc(
         A ComponentDocumentation object with structured documentation data.
     """
     # Build human intent section if provided
-    human_intent_section = ""
-    if human_intent:
-        intent_lines = []
-        if human_intent.problems_solved:
-            intent_lines.append(f"Problems Solved: {human_intent.problems_solved}")
-        if human_intent.core_responsibilities:
-            intent_lines.append(
-                f"Core Responsibilities: {human_intent.core_responsibilities}"
-            )
-        if human_intent.non_responsibilities:
-            intent_lines.append(
-                f"Non-Responsibilities: {human_intent.non_responsibilities}"
-            )
-        if human_intent.system_context:
-            intent_lines.append(f"System Context: {human_intent.system_context}")
-        if human_intent.entry_points:
-            intent_lines.append(f"Entry Points: {human_intent.entry_points}")
-        if human_intent.invariants:
-            intent_lines.append(f"Invariants: {human_intent.invariants}")
-        if human_intent.limitations:
-            intent_lines.append(f"Limitations: {human_intent.limitations}")
-        if human_intent.common_pitfalls:
-            intent_lines.append(f"Common Pitfalls: {human_intent.common_pitfalls}")
-
-        if intent_lines:
-            human_intent_section = (
-                "\n--- HUMAN-PROVIDED CONTEXT ---\n" + "\n".join(intent_lines) + "\n"
-            )
+    human_intent_section = (
+        _build_human_intent_section(human_intent) if human_intent else ""
+    )
 
     # Use LLMTextCompletionProgram for structured Pydantic output
     generate_program = LLMTextCompletionProgram.from_defaults(

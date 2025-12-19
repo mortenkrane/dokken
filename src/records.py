@@ -108,19 +108,3 @@ class HumanIntent(BaseModel):
         None,
         description="How does the module fit into the larger system?",
     )
-    entry_points: str | None = Field(
-        None,
-        description="What are the main entry points in the module?",
-    )
-    invariants: str | None = Field(
-        None,
-        description="What are the important invariants, assumptions, or contracts?",
-    )
-    limitations: str | None = Field(
-        None,
-        description="What are the module's known limitations?",
-    )
-    common_pitfalls: str | None = Field(
-        None,
-        description="What are common pitfalls for contributors?",
-    )

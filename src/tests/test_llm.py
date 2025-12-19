@@ -335,10 +335,6 @@ def test_generate_doc_with_human_intent(
         core_responsibilities="Login and registration",
         non_responsibilities="Payment processing",
         system_context="Part of auth system",
-        entry_points="login() function",
-        invariants="Passwords must be hashed",
-        limitations="No 2FA support",
-        common_pitfalls="Always validate tokens",
     )
 
     result = generate_doc(
@@ -358,10 +354,6 @@ def test_generate_doc_with_human_intent(
     assert "Login and registration" in intent_section
     assert "Payment processing" in intent_section
     assert "Part of auth system" in intent_section
-    assert "login() function" in intent_section
-    assert "Passwords must be hashed" in intent_section
-    assert "No 2FA support" in intent_section
-    assert "Always validate tokens" in intent_section
 
     assert result == sample_component_documentation
 
