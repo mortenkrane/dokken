@@ -52,5 +52,5 @@ When working with this codebase, be aware of these key design decisions:
 - **Alphabetically Sorted Decisions**: Formatters sort design decisions alphabetically to prevent diff noise
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists (saves LLM calls)
 - **Stabilized Drift Detection**: Uses criteria-based checklist (see `DRIFT_CHECK_PROMPT` in `src/prompts.py`) - the prompt explicitly defines what constitutes drift vs. minor changes
-- **Exclusion Rules**: Respects `.dokken.toml` config (see [docs/style-guide.md](docs/style-guide.md#exclusion-configuration))
+- **Exclusion Rules**: Respects `.dokken.toml` config (see README.md for user config details, [docs/style-guide.md](docs/style-guide.md#implementation-notes) for implementation)
 - **Testing**: Always use function-based tests (never class-based), mock all external dependencies, use fixtures from `conftest.py`

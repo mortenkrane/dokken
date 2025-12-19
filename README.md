@@ -36,7 +36,40 @@ dokken check src/module_name
 dokken generate src/module_name
 ```
 
-**Excluding files/symbols:** Create a `.dokken.toml` file to exclude files or symbols from documentation. See [docs/style-guide.md](docs/style-guide.md) for configuration details
+### Excluding Files and Symbols
+
+Create a `.dokken.toml` file to exclude files or symbols from documentation:
+
+**Configuration locations:**
+
+- Repository root: `.dokken.toml` - Global exclusions
+- Module directory: `<module>/.dokken.toml` - Module-specific exclusions
+
+**Example configuration:**
+
+```toml
+[exclusions]
+# Exclude entire files (supports glob patterns)
+files = [
+    "__init__.py",
+    "*_test.py",
+    "conftest.py"
+]
+
+# Exclude specific symbols (functions/classes)
+symbols = [
+    "_private_*",       # All private functions
+    "setup_*",          # All setup functions
+    "Temporary*"        # All temporary classes
+]
+```
+
+**Common use cases:**
+
+- Hide test utilities and fixtures
+- Exclude internal implementation details (`_private_*`)
+- Skip boilerplate files like `__init__.py`
+- Filter experimental or temporary code
 
 ## Development
 
