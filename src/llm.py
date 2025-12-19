@@ -9,7 +9,7 @@ from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 
 from src.prompts import DOCUMENTATION_GENERATION_PROMPT, DRIFT_CHECK_PROMPT
-from src.records import ComponentDocumentation, DocumentationDriftCheck
+from src.records import ComponentDocumentation, DocumentationDriftCheck, HumanIntent
 
 # Temperature setting for deterministic, reproducible documentation output
 TEMPERATURE = 0.0
@@ -76,17 +76,52 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     return check_program(context=context, current_doc=current_doc)
 
 
-def generate_doc(*, llm: LLM, context: str) -> ComponentDocumentation:
+def _build_human_intent_section(human_intent: HumanIntent) -> str:
+    """
+    Builds a formatted string from human intent data.
+
+    Args:
+        human_intent: The HumanIntent object containing user responses.
+
+    Returns:
+        Formatted string with human-provided context, or empty string if no data.
+    """
+    intent_fields = [
+        ("Problems Solved", human_intent.problems_solved),
+        ("Core Responsibilities", human_intent.core_responsibilities),
+        ("Non-Responsibilities", human_intent.non_responsibilities),
+        ("System Context", human_intent.system_context),
+    ]
+
+    intent_lines = [
+        f"{label}: {value}" for label, value in intent_fields if value is not None
+    ]
+
+    if not intent_lines:
+        return ""
+
+    return "\n--- HUMAN-PROVIDED CONTEXT ---\n" + "\n".join(intent_lines) + "\n"
+
+
+def generate_doc(
+    *, llm: LLM, context: str, human_intent: HumanIntent | None = None
+) -> ComponentDocumentation:
     """
     Generates structured documentation for a component based on code context.
 
     Args:
         llm: The LLM client instance.
         context: The code context to generate documentation from.
+        human_intent: Optional human-provided intent and context for the module.
 
     Returns:
         A ComponentDocumentation object with structured documentation data.
     """
+    # Build human intent section if provided
+    human_intent_section = (
+        _build_human_intent_section(human_intent) if human_intent else ""
+    )
+
     # Use LLMTextCompletionProgram for structured Pydantic output
     generate_program = LLMTextCompletionProgram.from_defaults(
         output_cls=ComponentDocumentation,
@@ -95,4 +130,4 @@ def generate_doc(*, llm: LLM, context: str) -> ComponentDocumentation:
     )
 
     # Run the generation
-    return generate_program(context=context)
+    return generate_program(context=context, human_intent_section=human_intent_section)

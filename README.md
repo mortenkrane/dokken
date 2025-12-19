@@ -5,8 +5,9 @@ AI-powered documentation generation and drift detection tool that keeps your cod
 ## Features
 
 - **Drift Detection**: Automatically detect when documentation is out of sync with code
-- **Multi-Provider LLM Support**: Use Claude, OpenAI, or Google Gemini
-- **Cost-Optimized**: Uses fast, budget-friendly models with temperature=0.0 for reproducible output
+- **Multi-Provider LLM Support**: Use Claude, OpenAI, or Google Gemini for documentation generation
+- **Cost-Optimized**: Uses fast, budget-friendly models (Haiku, GPT-4o-mini, Gemini Flash)
+- **Human-in-the-Loop**: Interactive questionnaire to capture intent that AI cannot infer from code alone
 - **CI/CD Ready**: Exit codes designed for pipeline integration
 
 ## Installation
@@ -35,6 +36,33 @@ dokken check src/module_name
 # Generate or update documentation
 dokken generate src/module_name
 ```
+
+### Generate Documentation
+
+When you run `dokken generate`, it will:
+
+1. Analyze your code and detect drift
+1. **Prompt you with an interactive questionnaire** to capture human intent (see below)
+1. Generate updated documentation using both code analysis and human input
+1. Write to `README.md` in the module directory
+
+#### Human Intent Capture
+
+When generating documentation, Dokken will ask you questions to capture context that AI cannot infer from code alone:
+
+- **What problems does this module solve?**
+- **What are the module's core responsibilities?**
+- **What is NOT this module's responsibility?**
+- **How does the module fit into the larger system?**
+
+**Tips:**
+
+- Press `ESC` on any question to skip it
+- Press `ESC` on the first question to skip the entire questionnaire
+- Press `Enter` twice to submit your answer (supports multiline input)
+- Leave answers blank if you don't have relevant information
+
+Your responses help create more accurate, context-aware documentation that reflects the true intent behind your code.
 
 ### Excluding Files and Symbols
 

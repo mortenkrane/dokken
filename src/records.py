@@ -84,3 +84,27 @@ class ComponentDocumentation(BaseModel):
             "what each dependency is used for."
         ),
     )
+
+
+class HumanIntent(BaseModel):
+    """
+    Human-provided intent and context for module documentation.
+    Captures information that AI cannot infer from code alone.
+    """
+
+    problems_solved: str | None = Field(
+        None,
+        description="What problems does this module solve?",
+    )
+    core_responsibilities: str | None = Field(
+        None,
+        description="What are the module's core responsibilities?",
+    )
+    non_responsibilities: str | None = Field(
+        None,
+        description="What is not this module's responsibility?",
+    )
+    system_context: str | None = Field(
+        None,
+        description="How does the module fit into the larger system?",
+    )

@@ -92,8 +92,12 @@ def test_drift_check_prompt_formatting() -> None:
 def test_documentation_generation_prompt_formatting() -> None:
     """Test that DOCUMENTATION_GENERATION_PROMPT can be formatted with context."""
     context = "Sample code context"
+    human_intent_section = ""
 
-    formatted = DOCUMENTATION_GENERATION_PROMPT.format(context=context)
+    formatted = DOCUMENTATION_GENERATION_PROMPT.format(
+        context=context, human_intent_section=human_intent_section
+    )
 
     assert context in formatted
     assert "{context}" not in formatted
+    assert "{human_intent_section}" not in formatted

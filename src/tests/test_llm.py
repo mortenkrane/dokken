@@ -219,7 +219,7 @@ def test_generate_doc_creates_program(
     assert "prompt_template_str" in call_kwargs
 
     # Verify program was called with correct arguments
-    mock_program.assert_called_once_with(context=context)
+    mock_program.assert_called_once_with(context=context, human_intent_section="")
     assert result == sample_component_documentation
 
 
@@ -313,5 +313,83 @@ def test_generate_doc_handles_various_contexts(
     result = generate_doc(llm=mock_llm_client, context=context)
 
     # Verify the program was called with the provided context
-    mock_program.assert_called_once_with(context=context)
+    mock_program.assert_called_once_with(context=context, human_intent_section="")
     assert result is not None
+
+
+def test_generate_doc_with_human_intent(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
+    """Test generate_doc includes human intent when provided."""
+    from src.records import HumanIntent
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_component_documentation
+    mock_program_class.from_defaults.return_value = mock_program
+
+    human_intent = HumanIntent(
+        problems_solved="Handles user authentication",
+        core_responsibilities="Login and registration",
+        non_responsibilities="Payment processing",
+        system_context="Part of auth system",
+    )
+
+    result = generate_doc(
+        llm=mock_llm_client, context="test context", human_intent=human_intent
+    )
+
+    # Verify the program was called with human intent section
+    call_args = mock_program.call_args
+    assert call_args is not None
+    assert "context" in call_args.kwargs
+    assert "human_intent_section" in call_args.kwargs
+
+    # Verify the human intent section contains the expected content
+    intent_section = call_args.kwargs["human_intent_section"]
+    assert "HUMAN-PROVIDED CONTEXT" in intent_section
+    assert "Handles user authentication" in intent_section
+    assert "Login and registration" in intent_section
+    assert "Payment processing" in intent_section
+    assert "Part of auth system" in intent_section
+
+    assert result == sample_component_documentation
+
+
+def test_generate_doc_with_partial_human_intent(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
+    """Test generate_doc handles partial human intent."""
+    from src.records import HumanIntent
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_component_documentation
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Only provide some fields
+    human_intent = HumanIntent(
+        problems_solved="Handles authentication", core_responsibilities="User login"
+    )
+
+    result = generate_doc(
+        llm=mock_llm_client, context="test context", human_intent=human_intent
+    )
+
+    # Verify the program was called with human intent section
+    call_args = mock_program.call_args
+    assert call_args is not None
+    intent_section = call_args.kwargs["human_intent_section"]
+
+    # Should include provided fields
+    assert "Handles authentication" in intent_section
+    assert "User login" in intent_section
+
+    # Should not include empty fields
+    assert "Non-Responsibilities" not in intent_section
+
+    assert result == sample_component_documentation
