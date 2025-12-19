@@ -33,10 +33,26 @@ def sample_component_documentation() -> ComponentDocumentation:
     return ComponentDocumentation(
         component_name="Sample Component",
         purpose_and_scope="This component handles sample operations for testing.",
-        design_decisions={
-            "DB_CHOICE": "We chose MongoDB over SQL for flexible schema management.",
-            "CACHE_STRATEGY": "We use Redis for caching to improve performance.",
-        },
+        architecture_overview=(
+            "The component consists of three main modules: data access, "
+            "business logic, and API layer. Data flows from the API through "
+            "validation, business rules, and finally to the database layer."
+        ),
+        main_entry_points=(
+            "The primary entry point is `process_request()` which accepts "
+            "user input and orchestrates the operation. For batch operations, "
+            "use `batch_process()`."
+        ),
+        control_flow=(
+            "Requests enter through the API layer, are validated, processed "
+            "by business logic, and results are persisted to the database. "
+            "Errors trigger rollback."
+        ),
+        key_design_decisions=(
+            "We chose MongoDB over SQL for flexible schema management in the "
+            "early phase. Redis was selected for caching to improve "
+            "performance and reduce database load."
+        ),
         external_dependencies="Redis, MongoDB",
     )
 
