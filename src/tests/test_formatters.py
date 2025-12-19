@@ -12,9 +12,12 @@ def test_generate_markdown_basic_structure(
     """Test generate_markdown creates correct basic structure."""
     markdown = generate_markdown(doc_data=sample_component_documentation)
 
-    assert markdown.startswith("# Sample Component Overview")
+    assert markdown.startswith("# Sample Component\n")
     assert "## Purpose & Scope" in markdown
-    assert "## Key Design Decisions (The 'Why')" in markdown
+    assert "## Architecture Overview" in markdown
+    assert "## Main Entry Points" in markdown
+    assert "## Control Flow" in markdown
+    assert "## Key Design Decisions" in markdown
 
 
 def test_generate_markdown_includes_component_name(
@@ -23,7 +26,7 @@ def test_generate_markdown_includes_component_name(
     """Test generate_markdown includes the component name as H1 header."""
     markdown = generate_markdown(doc_data=sample_component_documentation)
 
-    assert "# Sample Component Overview" in markdown
+    assert "# Sample Component\n" in markdown
 
 
 def test_generate_markdown_includes_purpose(
@@ -52,7 +55,10 @@ def test_generate_markdown_without_dependencies() -> None:
     doc_data = ComponentDocumentation(
         component_name="Test Component",
         purpose_and_scope="Test purpose",
-        design_decisions={"KEY": "value"},
+        architecture_overview="Test architecture",
+        main_entry_points="Test entry points",
+        control_flow="Test control flow",
+        key_design_decisions="Test decisions",
         external_dependencies=None,
     )
 
@@ -64,35 +70,41 @@ def test_generate_markdown_without_dependencies() -> None:
 def test_generate_markdown_includes_design_decisions(
     sample_component_documentation: ComponentDocumentation,
 ) -> None:
-    """Test generate_markdown includes all design decisions."""
+    """Test generate_markdown includes design decisions."""
     markdown = generate_markdown(doc_data=sample_component_documentation)
 
-    for key, value in sample_component_documentation.design_decisions.items():
-        assert f"### Decision: {key}" in markdown
-        assert value in markdown
+    assert "## Key Design Decisions" in markdown
+    assert sample_component_documentation.key_design_decisions in markdown
 
 
-def test_generate_markdown_sorts_design_decisions() -> None:
-    """Test generate_markdown sorts design decisions alphabetically."""
-    doc_data = ComponentDocumentation(
-        component_name="Test",
-        purpose_and_scope="Test",
-        design_decisions={
-            "ZZZZZ": "Last alphabetically",
-            "AAAAA": "First alphabetically",
-            "MMMMM": "Middle alphabetically",
-        },
-    )
+def test_generate_markdown_includes_architecture_overview(
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
+    """Test generate_markdown includes architecture overview."""
+    markdown = generate_markdown(doc_data=sample_component_documentation)
 
-    markdown = generate_markdown(doc_data=doc_data)
+    assert "## Architecture Overview" in markdown
+    assert sample_component_documentation.architecture_overview in markdown
 
-    # Find positions of each decision
-    pos_a = markdown.find("### Decision: AAAAA")
-    pos_m = markdown.find("### Decision: MMMMM")
-    pos_z = markdown.find("### Decision: ZZZZZ")
 
-    # Verify they appear in alphabetical order
-    assert pos_a < pos_m < pos_z
+def test_generate_markdown_includes_main_entry_points(
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
+    """Test generate_markdown includes main entry points."""
+    markdown = generate_markdown(doc_data=sample_component_documentation)
+
+    assert "## Main Entry Points" in markdown
+    assert sample_component_documentation.main_entry_points in markdown
+
+
+def test_generate_markdown_includes_control_flow(
+    sample_component_documentation: ComponentDocumentation,
+) -> None:
+    """Test generate_markdown includes control flow."""
+    markdown = generate_markdown(doc_data=sample_component_documentation)
+
+    assert "## Control Flow" in markdown
+    assert sample_component_documentation.control_flow in markdown
 
 
 @pytest.mark.parametrize(
@@ -104,27 +116,32 @@ def test_generate_markdown_various_component_names(component_name: str) -> None:
     doc_data = ComponentDocumentation(
         component_name=component_name,
         purpose_and_scope="Test purpose",
-        design_decisions={"KEY": "value"},
+        architecture_overview="Test architecture",
+        main_entry_points="Test entry points",
+        control_flow="Test control flow",
+        key_design_decisions="Test decisions",
     )
 
     markdown = generate_markdown(doc_data=doc_data)
 
-    assert f"# {component_name} Overview" in markdown
+    assert f"# {component_name}\n" in markdown
 
 
-def test_generate_markdown_empty_design_decisions() -> None:
-    """Test generate_markdown handles empty design decisions."""
+def test_generate_markdown_minimal_design_decisions() -> None:
+    """Test generate_markdown handles minimal design decisions."""
     doc_data = ComponentDocumentation(
         component_name="Test",
         purpose_and_scope="Test",
-        design_decisions={},
+        architecture_overview="Test architecture",
+        main_entry_points="Test entry points",
+        control_flow="Test control flow",
+        key_design_decisions="No significant design decisions were made.",
     )
 
     markdown = generate_markdown(doc_data=doc_data)
 
-    assert "## Key Design Decisions (The 'Why')" in markdown
-    # No decision subsections should be present
-    assert "### Decision:" not in markdown
+    assert "## Key Design Decisions" in markdown
+    assert "No significant design decisions were made." in markdown
 
 
 def test_generate_markdown_multiline_content() -> None:
@@ -132,13 +149,16 @@ def test_generate_markdown_multiline_content() -> None:
     doc_data = ComponentDocumentation(
         component_name="Test",
         purpose_and_scope="Line 1\nLine 2\nLine 3",
-        design_decisions={"DECISION": "Explanation line 1\nExplanation line 2"},
+        architecture_overview="Arch line 1\nArch line 2",
+        main_entry_points="Entry line 1\nEntry line 2",
+        control_flow="Flow line 1\nFlow line 2",
+        key_design_decisions="Decision line 1\nDecision line 2",
     )
 
     markdown = generate_markdown(doc_data=doc_data)
 
     assert "Line 1\nLine 2\nLine 3" in markdown
-    assert "Explanation line 1\nExplanation line 2" in markdown
+    assert "Decision line 1\nDecision line 2" in markdown
 
 
 def test_generate_markdown_special_characters() -> None:
@@ -146,7 +166,10 @@ def test_generate_markdown_special_characters() -> None:
     doc_data = ComponentDocumentation(
         component_name="Test*Component*",
         purpose_and_scope="Purpose with **bold** and _italic_",
-        design_decisions={"KEY": "Value with `code` and [link](url)"},
+        architecture_overview="Architecture with **emphasis**",
+        main_entry_points="Entry points with `code`",
+        control_flow="Flow with [link](url)",
+        key_design_decisions="Decisions with **formatting**",
     )
 
     markdown = generate_markdown(doc_data=doc_data)
@@ -172,7 +195,10 @@ def test_generate_markdown_ends_with_newlines() -> None:
     doc_data = ComponentDocumentation(
         component_name="Test",
         purpose_and_scope="Purpose",
-        design_decisions={"KEY": "Value"},
+        architecture_overview="Architecture",
+        main_entry_points="Entry points",
+        control_flow="Flow",
+        key_design_decisions="Decisions",
     )
 
     markdown = generate_markdown(doc_data=doc_data)
@@ -186,7 +212,10 @@ def test_generate_markdown_section_order() -> None:
     doc_data = ComponentDocumentation(
         component_name="Test",
         purpose_and_scope="Purpose",
-        design_decisions={"KEY": "Value"},
+        architecture_overview="Architecture",
+        main_entry_points="Entry points",
+        control_flow="Flow",
+        key_design_decisions="Decisions",
         external_dependencies="Deps",
     )
 
@@ -194,32 +223,36 @@ def test_generate_markdown_section_order() -> None:
 
     # Find section positions
     purpose_pos = markdown.find("## Purpose & Scope")
+    arch_pos = markdown.find("## Architecture Overview")
+    entry_pos = markdown.find("## Main Entry Points")
+    flow_pos = markdown.find("## Control Flow")
     deps_pos = markdown.find("## External Dependencies")
     decisions_pos = markdown.find("## Key Design Decisions")
 
     # Verify correct order
-    assert purpose_pos < deps_pos < decisions_pos
+    assert purpose_pos < arch_pos < entry_pos < flow_pos < deps_pos < decisions_pos
 
 
 @pytest.mark.parametrize(
-    "decision_key,decision_value",
+    "decision_text",
     [
-        ("SIMPLE_KEY", "Simple value"),
-        ("KEY_WITH_UNDERSCORES", "Value with spaces"),
-        ("123_NUMERIC", "Numeric prefix"),
+        "We chose approach A because it provides better performance.",
+        "The decision to use pattern X was driven by maintainability concerns.",
+        "Multiple factors influenced this choice, including scalability and cost.",
     ],
 )
-def test_generate_markdown_decision_formats(
-    decision_key: str, decision_value: str
-) -> None:
-    """Test generate_markdown handles various decision key formats."""
+def test_generate_markdown_decision_formats(decision_text: str) -> None:
+    """Test generate_markdown handles various decision text formats."""
     doc_data = ComponentDocumentation(
         component_name="Test",
         purpose_and_scope="Test",
-        design_decisions={decision_key: decision_value},
+        architecture_overview="Test architecture",
+        main_entry_points="Test entry points",
+        control_flow="Test control flow",
+        key_design_decisions=decision_text,
     )
 
     markdown = generate_markdown(doc_data=doc_data)
 
-    assert f"### Decision: {decision_key}" in markdown
-    assert decision_value in markdown
+    assert "## Key Design Decisions" in markdown
+    assert decision_text in markdown

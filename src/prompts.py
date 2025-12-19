@@ -40,10 +40,43 @@ Analyze methodically:
 Respond ONLY with the JSON object schema provided."""
 
 
-DOCUMENTATION_GENERATION_PROMPT = """You are an expert technical writer. Based on the
-provided code context, generate a complete, structured documentation overview.
-Focus on the component's main purpose, scope, and the 'why' behind its design.
-Do not include simple function signature details (assume those are in docstrings).
+DOCUMENTATION_GENERATION_PROMPT = """You are an expert technical writer creating
+developer-focused documentation. Your goal is to help developers quickly understand and
+work with this codebase.
+
+Analyze the code context and generate comprehensive documentation that covers:
+
+1. **Purpose & Scope**: What this component does and its boundaries (2-3 paragraphs)
+
+2. **Architecture Overview**: How the component is structured - key modules, their
+   interactions, data flow patterns, and overall design
+
+3. **Main Entry Points**: The primary functions, classes, or CLI commands developers
+   use to interact with this component. For each entry point, explain what it does and
+   when to use it
+
+4. **Control Flow**: How requests or operations flow through the system from start to
+   finish. Trace the key execution paths, decision points, and data transformations
+
+5. **Key Design Decisions**: The most important architectural choices and WHY they were
+   made. Write this as flowing prose, not bullet points. Explain patterns, technologies,
+   and approaches in a cohesive narrative that helps developers understand the rationale
+
+6. **External Dependencies**: Third-party libraries, APIs, or systems used and what
+   role they play
+
+Focus on information that helps developers:
+- Understand the system's architecture quickly
+- Know where to start when making changes
+- Trace how data and control flow through the code
+- Understand why certain design choices were made
+
+Do NOT include:
+- Function signature details (those belong in docstrings)
+- Line-by-line code explanations
+- Installation or setup instructions
+
 --- CODE CONTEXT ---
 {context}
+
 Respond ONLY with the JSON object schema provided."""

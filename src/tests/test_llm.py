@@ -259,7 +259,7 @@ def test_generate_doc_returns_component_documentation(
 
     assert result == sample_component_documentation
     assert result.component_name == "Sample Component"
-    assert result.design_decisions
+    assert result.key_design_decisions
 
 
 @pytest.mark.parametrize(
