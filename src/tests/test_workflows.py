@@ -185,7 +185,9 @@ def test_generate_documentation_generates_when_drift(
     mock_generate_doc = mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch("src.workflows.generate_markdown", return_value="# Markdown")
+    mocker.patch(
+        "src.formatters.format_module_documentation", return_value="# Markdown"
+    )
 
     result = generate_documentation(target_module_path=str(module_dir))
 
@@ -218,7 +220,8 @@ def test_generate_documentation_writes_readme(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
     mocker.patch(
-        "src.workflows.generate_markdown", return_value="# New Markdown Content"
+        "src.formatters.format_module_documentation",
+        return_value="# New Markdown Content",
     )
 
     generate_documentation(target_module_path=str(module_dir))
@@ -245,7 +248,9 @@ def test_generate_documentation_creates_readme_if_missing(
     mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch("src.workflows.generate_markdown", return_value="# New Docs")
+    mocker.patch(
+        "src.formatters.format_module_documentation", return_value="# New Docs"
+    )
 
     generate_documentation(target_module_path=str(temp_module_dir))
 
