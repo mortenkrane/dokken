@@ -91,7 +91,7 @@ def test_get_module_context_sorts_files(tmp_path: Path, mocker: MockerFixture) -
 def test_get_module_context_handles_exception(
     tmp_path: Path, mocker: MockerFixture
 ) -> None:
-    """Test that get_module_context handles exceptions gracefully."""
+    """Test that get_module_context handles file read exceptions gracefully."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
     (module_dir / "test.py").write_text("code")
@@ -102,9 +102,13 @@ def test_get_module_context_handles_exception(
 
     context = get_module_context(module_path=str(module_dir))
 
-    assert context == ""
-    mock_console.print.assert_called_once()
-    assert "Error getting module context" in str(mock_console.print.call_args)
+    # Should still return module header even if individual files fail
+    assert f"--- MODULE PATH: {module_dir} ---" in context
+    # Should have logged the file read error
+    mock_console.print.assert_called()
+    assert any(
+        "Could not read" in str(call) for call in mock_console.print.call_args_list
+    )
 
 
 def test_get_module_context_multiple_files(

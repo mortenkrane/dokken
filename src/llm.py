@@ -94,16 +94,11 @@ def _build_human_intent_section(
     Returns:
         Formatted string with human-provided context, or empty string if no data.
     """
-    # Get all fields from the intent model
-    intent_dict = human_intent.model_dump()
-
-    # Build formatted lines for non-null values
-    intent_lines = []
-    for key, value in intent_dict.items():
-        if value is not None:
-            # Convert snake_case to Title Case
-            label = key.replace("_", " ").title()
-            intent_lines.append(f"{label}: {value}")
+    intent_lines = [
+        f"{key.replace('_', ' ').title()}: {value}"
+        for key, value in human_intent.model_dump().items()
+        if value is not None
+    ]
 
     if not intent_lines:
         return ""

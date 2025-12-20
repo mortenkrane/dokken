@@ -8,12 +8,12 @@ from llama_index.core.llms import LLM
 from rich.console import Console
 
 from src.code_analyzer import get_module_context
-from src.config import _find_repo_root
 from src.doc_configs import DOC_CONFIGS, DocConfig
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.human_in_the_loop import ask_human_intent
 from src.llm import check_drift, generate_doc, initialize_llm
+from src.utils import ensure_output_directory, find_repo_root, resolve_output_path
 
 console = Console()
 
@@ -29,47 +29,6 @@ class DocumentationContext:
     output_path: str
     analysis_path: str
     analysis_depth: int
-
-
-def resolve_output_path(*, doc_type: DocType, module_path: str) -> str:
-    """
-    Resolve output path with explicit error handling.
-
-    Args:
-        doc_type: Type of documentation being generated.
-        module_path: Path to the module directory (or any directory in the repo).
-
-    Returns:
-        Absolute path to the output documentation file.
-
-    Raises:
-        ValueError: If git root not found for repo-wide doc types.
-        PermissionError: If cannot create necessary directories.
-    """
-    if doc_type == DocType.MODULE_README:
-        return os.path.join(module_path, "README.md")
-
-    # Find git root for repo-wide docs
-    repo_root = _find_repo_root(module_path)
-    if not repo_root:
-        raise ValueError(
-            f"Cannot generate {doc_type.value}: not in a git repository. "
-            f"Initialize git or use MODULE_README type."
-        )
-
-    if doc_type == DocType.PROJECT_README:
-        return os.path.join(repo_root, "README.md")
-
-    if doc_type == DocType.STYLE_GUIDE:
-        # Explicit side effect: create docs/ directory
-        docs_dir = os.path.join(repo_root, "docs")
-        try:
-            os.makedirs(docs_dir, exist_ok=True)
-        except PermissionError as e:
-            raise PermissionError(f"Cannot create {docs_dir}: {e}") from e
-        return os.path.join(docs_dir, "style-guide.md")
-
-    raise ValueError(f"Unknown doc type: {doc_type}")
 
 
 def prepare_documentation_context(
@@ -106,15 +65,13 @@ def prepare_documentation_context(
 
     # Determine analysis path and depth
     if doc_config.analyze_entire_repo:
-        repo_root = _find_repo_root(target_module_path)
+        repo_root = find_repo_root(target_module_path)
         if repo_root is None:
             console.print(
                 f"[red]Error:[/red] Cannot process {doc_type.value}: "
                 "not in a git repository"
             )
             sys.exit(1)
-        # Type narrowing: repo_root is str here (sys.exit prevents None case)
-        assert repo_root is not None
         analysis_path = repo_root
     else:
         analysis_path = target_module_path
@@ -236,17 +193,18 @@ def fix_documentation_drift(
     )
 
     with console.status("[cyan]Generating documentation..."):
-        # Type checker can't infer ask_human_intent returns specific intent type,
-        # but it's guaranteed by intent_model parameter matching doc_config
         new_doc_data = generate_doc(
             llm=llm_client,
             context=code_context,
-            human_intent=human_intent,  # type: ignore[arg-type]
+            human_intent=human_intent,
             output_model=doc_config.model,
             prompt_template=doc_config.prompt,
         )
 
     final_markdown = doc_config.formatter(doc_data=new_doc_data)
+
+    # Ensure parent directory exists before writing
+    ensure_output_directory(output_path)
 
     with open(output_path, "w") as f:
         f.write(final_markdown)
@@ -341,12 +299,10 @@ def generate_documentation(
         "[bold cyan]Step 3:[/bold cyan] Generating new structured documentation..."
     )
     with console.status("[cyan]Generating documentation..."):
-        # Type checker can't infer ask_human_intent returns specific intent type,
-        # but it's guaranteed by intent_model parameter matching doc_config
         new_doc_data = generate_doc(
             llm=llm_client,
             context=code_context,
-            human_intent=human_intent,  # type: ignore[arg-type]
+            human_intent=human_intent,
             output_model=ctx.doc_config.model,
             prompt_template=ctx.doc_config.prompt,
         )
@@ -355,6 +311,9 @@ def generate_documentation(
     final_markdown = ctx.doc_config.formatter(doc_data=new_doc_data)
 
     # 6. Write documentation to output path
+    # Ensure parent directory exists before writing
+    ensure_output_directory(ctx.output_path)
+
     with open(ctx.output_path, "w") as f:
         f.write(final_markdown)
 
