@@ -258,6 +258,7 @@ def test_generate_doc_returns_component_documentation(
     result = generate_doc(llm=mock_llm_client, context="ctx")
 
     assert result == sample_component_documentation
+    assert isinstance(result, ComponentDocumentation)
     assert result.component_name == "Sample Component"
     assert result.key_design_decisions
 

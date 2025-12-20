@@ -54,6 +54,7 @@ def test_ask_human_intent_skip_later_questions():
         result = ask_human_intent()
 
         assert result is not None
+        assert isinstance(result, HumanIntent)
         assert result.problems_solved == "Handles authentication"
         assert result.core_responsibilities == "User login and registration"
         assert result.non_responsibilities is None
@@ -74,6 +75,7 @@ def test_ask_human_intent_empty_responses():
         result = ask_human_intent()
 
         assert result is not None
+        assert isinstance(result, HumanIntent)
         assert result.problems_solved == "Has a value"
         assert result.core_responsibilities is None
         assert result.non_responsibilities is None
