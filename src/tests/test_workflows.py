@@ -397,3 +397,89 @@ def test_check_documentation_drift_fix_with_drift(
 
     # Should call fix function
     mock_fix.assert_called_once()
+
+
+def test_generate_documentation_project_readme_in_git_repo(
+    mocker: MockerFixture,
+    tmp_path: Path,
+    sample_drift_check_with_drift: DocumentationDriftCheck,
+) -> None:
+    """Test generating PROJECT_README in a git repository."""
+    # Create a git repo structure
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()  # Simulate git repo
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.initialize_llm")
+    mocker.patch("src.workflows.get_module_context", return_value="code context")
+    mocker.patch(
+        "src.workflows.check_drift", return_value=sample_drift_check_with_drift
+    )
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
+    mock_generate_doc = mocker.patch("src.workflows.generate_doc")
+
+    # Mock formatter
+    from dataclasses import replace
+    from src.records import ProjectDocumentation
+
+    mock_formatter = mocker.Mock(return_value="# Project Docs")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.PROJECT_README], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.PROJECT_README: test_doc_config}
+    )
+
+    generate_documentation(
+        target_module_path=str(repo_dir), doc_type=DocType.PROJECT_README
+    )
+
+    # Should generate doc
+    mock_generate_doc.assert_called_once()
+    # Should create README.md in repo root
+    readme_path = repo_dir / "README.md"
+    assert readme_path.exists()
+
+
+def test_generate_documentation_style_guide_creates_docs_dir(
+    mocker: MockerFixture,
+    tmp_path: Path,
+    sample_drift_check_with_drift: DocumentationDriftCheck,
+) -> None:
+    """Test generating STYLE_GUIDE creates docs/ directory."""
+    # Create a git repo structure
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()  # Simulate git repo
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.initialize_llm")
+    mocker.patch("src.workflows.get_module_context", return_value="code context")
+    mocker.patch(
+        "src.workflows.check_drift", return_value=sample_drift_check_with_drift
+    )
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
+    mock_generate_doc = mocker.patch("src.workflows.generate_doc")
+
+    # Mock formatter
+    from dataclasses import replace
+
+    mock_formatter = mocker.Mock(return_value="# Style Guide")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.STYLE_GUIDE], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.STYLE_GUIDE: test_doc_config}
+    )
+
+    generate_documentation(
+        target_module_path=str(repo_dir), doc_type=DocType.STYLE_GUIDE
+    )
+
+    # Should generate doc
+    mock_generate_doc.assert_called_once()
+    # Should create docs/style-guide.md
+    style_guide_path = repo_dir / "docs" / "style-guide.md"
+    assert style_guide_path.exists()
+    assert (repo_dir / "docs").is_dir()
