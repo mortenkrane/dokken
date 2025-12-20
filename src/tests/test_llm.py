@@ -7,7 +7,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from src.llm import TEMPERATURE, check_drift, generate_doc, initialize_llm
-from src.records import ComponentDocumentation, DocumentationDriftCheck
+from src.records import DocumentationDriftCheck, ModuleDocumentation
 
 # --- Tests for initialize_llm() ---
 
@@ -200,7 +200,7 @@ def test_check_drift_returns_drift_check_object(
 def test_generate_doc_creates_program(
     mocker: MockerFixture,
     mock_llm_client: Any,
-    sample_component_documentation: ComponentDocumentation,
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc creates LLMTextCompletionProgram with correct parameters."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -226,7 +226,7 @@ def test_generate_doc_creates_program(
 def test_generate_doc_uses_generation_prompt(
     mocker: MockerFixture,
     mock_llm_client: Any,
-    sample_component_documentation: ComponentDocumentation,
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc uses DOCUMENTATION_GENERATION_PROMPT template."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -247,9 +247,9 @@ def test_generate_doc_uses_generation_prompt(
 def test_generate_doc_returns_component_documentation(
     mocker: MockerFixture,
     mock_llm_client: Any,
-    sample_component_documentation: ComponentDocumentation,
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_doc returns ComponentDocumentation object."""
+    """Test generate_doc returns ModuleDocumentation object."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_component_documentation
@@ -258,7 +258,7 @@ def test_generate_doc_returns_component_documentation(
     result = generate_doc(llm=mock_llm_client, context="ctx")
 
     assert result == sample_component_documentation
-    assert isinstance(result, ComponentDocumentation)
+    assert isinstance(result, ModuleDocumentation)
     assert result.component_name == "Sample Component"
     assert result.key_design_decisions
 
@@ -302,7 +302,7 @@ def test_check_drift_handles_various_inputs(
 def test_generate_doc_handles_various_contexts(
     mocker: MockerFixture,
     mock_llm_client: Any,
-    sample_component_documentation: ComponentDocumentation,
+    sample_component_documentation: ModuleDocumentation,
     context: str,
 ) -> None:
     """Test generate_doc handles various code contexts."""
@@ -321,7 +321,7 @@ def test_generate_doc_handles_various_contexts(
 def test_generate_doc_with_human_intent(
     mocker: MockerFixture,
     mock_llm_client: Any,
-    sample_component_documentation: ComponentDocumentation,
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc includes human intent when provided."""
     from src.records import HumanIntent
@@ -362,7 +362,7 @@ def test_generate_doc_with_human_intent(
 def test_generate_doc_with_partial_human_intent(
     mocker: MockerFixture,
     mock_llm_client: Any,
-    sample_component_documentation: ComponentDocumentation,
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc handles partial human intent."""
     from src.records import HumanIntent

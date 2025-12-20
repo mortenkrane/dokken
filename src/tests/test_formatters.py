@@ -6,20 +6,19 @@ from src.formatters import (
     format_module_documentation,
     format_project_documentation,
     format_style_guide,
-    generate_markdown,
 )
 from src.records import (
-    ComponentDocumentation,
+    ModuleDocumentation,
     ProjectDocumentation,
     StyleGuideDocumentation,
 )
 
 
-def test_generate_markdown_basic_structure(
-    sample_component_documentation: ComponentDocumentation,
+def test_format_module_documentation_basic_structure(
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_markdown creates correct basic structure."""
-    markdown = generate_markdown(doc_data=sample_component_documentation)
+    """Test format_module_documentation creates correct basic structure."""
+    markdown = format_module_documentation(doc_data=sample_component_documentation)
 
     assert markdown.startswith("# Sample Component\n")
     assert "## Purpose & Scope" in markdown
@@ -29,39 +28,39 @@ def test_generate_markdown_basic_structure(
     assert "## Key Design Decisions" in markdown
 
 
-def test_generate_markdown_includes_component_name(
-    sample_component_documentation: ComponentDocumentation,
+def test_format_module_documentation_includes_component_name(
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_markdown includes the component name as H1 header."""
-    markdown = generate_markdown(doc_data=sample_component_documentation)
+    """Test format_module_documentation includes the component name as H1 header."""
+    markdown = format_module_documentation(doc_data=sample_component_documentation)
 
     assert "# Sample Component\n" in markdown
 
 
-def test_generate_markdown_includes_purpose(
-    sample_component_documentation: ComponentDocumentation,
+def test_format_module_documentation_includes_purpose(
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_markdown includes purpose and scope section."""
-    markdown = generate_markdown(doc_data=sample_component_documentation)
+    """Test format_module_documentation includes purpose and scope section."""
+    markdown = format_module_documentation(doc_data=sample_component_documentation)
 
     assert "## Purpose & Scope" in markdown
     assert sample_component_documentation.purpose_and_scope in markdown
 
 
-def test_generate_markdown_includes_dependencies(
-    sample_component_documentation: ComponentDocumentation,
+def test_format_module_documentation_includes_dependencies(
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_markdown includes external dependencies section."""
-    markdown = generate_markdown(doc_data=sample_component_documentation)
+    """Test format_module_documentation includes external dependencies section."""
+    markdown = format_module_documentation(doc_data=sample_component_documentation)
 
     assert "## External Dependencies" in markdown
     assert sample_component_documentation.external_dependencies is not None
     assert sample_component_documentation.external_dependencies in markdown
 
 
-def test_generate_markdown_without_dependencies() -> None:
-    """Test generate_markdown handles missing external dependencies."""
-    doc_data = ComponentDocumentation(
+def test_format_module_documentation_without_dependencies() -> None:
+    """Test format_module_documentation handles missing external dependencies."""
+    doc_data = ModuleDocumentation(
         component_name="Test Component",
         purpose_and_scope="Test purpose",
         architecture_overview="Test architecture",
@@ -71,46 +70,46 @@ def test_generate_markdown_without_dependencies() -> None:
         external_dependencies=None,
     )
 
-    markdown = generate_markdown(doc_data=doc_data)
+    markdown = format_module_documentation(doc_data=doc_data)
 
     assert "## External Dependencies" not in markdown
 
 
-def test_generate_markdown_includes_design_decisions(
-    sample_component_documentation: ComponentDocumentation,
+def test_format_module_documentation_includes_design_decisions(
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_markdown includes design decisions."""
-    markdown = generate_markdown(doc_data=sample_component_documentation)
+    """Test format_module_documentation includes design decisions."""
+    markdown = format_module_documentation(doc_data=sample_component_documentation)
 
     assert "## Key Design Decisions" in markdown
     assert sample_component_documentation.key_design_decisions in markdown
 
 
-def test_generate_markdown_includes_architecture_overview(
-    sample_component_documentation: ComponentDocumentation,
+def test_format_module_documentation_includes_architecture_overview(
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_markdown includes architecture overview."""
-    markdown = generate_markdown(doc_data=sample_component_documentation)
+    """Test format_module_documentation includes architecture overview."""
+    markdown = format_module_documentation(doc_data=sample_component_documentation)
 
     assert "## Architecture Overview" in markdown
     assert sample_component_documentation.architecture_overview in markdown
 
 
-def test_generate_markdown_includes_main_entry_points(
-    sample_component_documentation: ComponentDocumentation,
+def test_format_module_documentation_includes_main_entry_points(
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_markdown includes main entry points."""
-    markdown = generate_markdown(doc_data=sample_component_documentation)
+    """Test format_module_documentation includes main entry points."""
+    markdown = format_module_documentation(doc_data=sample_component_documentation)
 
     assert "## Main Entry Points" in markdown
     assert sample_component_documentation.main_entry_points in markdown
 
 
-def test_generate_markdown_includes_control_flow(
-    sample_component_documentation: ComponentDocumentation,
+def test_format_module_documentation_includes_control_flow(
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_markdown includes control flow."""
-    markdown = generate_markdown(doc_data=sample_component_documentation)
+    """Test format_module_documentation includes control flow."""
+    markdown = format_module_documentation(doc_data=sample_component_documentation)
 
     assert "## Control Flow" in markdown
     assert sample_component_documentation.control_flow in markdown
@@ -120,9 +119,11 @@ def test_generate_markdown_includes_control_flow(
     "component_name",
     ["Payment Service", "User Auth Module", "Data Pipeline"],
 )
-def test_generate_markdown_various_component_names(component_name: str) -> None:
-    """Test generate_markdown with various component names."""
-    doc_data = ComponentDocumentation(
+def test_format_module_documentation_various_component_names(
+    component_name: str,
+) -> None:
+    """Test format_module_documentation with various component names."""
+    doc_data = ModuleDocumentation(
         component_name=component_name,
         purpose_and_scope="Test purpose",
         architecture_overview="Test architecture",
@@ -131,14 +132,14 @@ def test_generate_markdown_various_component_names(component_name: str) -> None:
         key_design_decisions="Test decisions",
     )
 
-    markdown = generate_markdown(doc_data=doc_data)
+    markdown = format_module_documentation(doc_data=doc_data)
 
     assert f"# {component_name}\n" in markdown
 
 
-def test_generate_markdown_minimal_design_decisions() -> None:
-    """Test generate_markdown handles minimal design decisions."""
-    doc_data = ComponentDocumentation(
+def test_format_module_documentation_minimal_design_decisions() -> None:
+    """Test format_module_documentation handles minimal design decisions."""
+    doc_data = ModuleDocumentation(
         component_name="Test",
         purpose_and_scope="Test",
         architecture_overview="Test architecture",
@@ -147,15 +148,15 @@ def test_generate_markdown_minimal_design_decisions() -> None:
         key_design_decisions="No significant design decisions were made.",
     )
 
-    markdown = generate_markdown(doc_data=doc_data)
+    markdown = format_module_documentation(doc_data=doc_data)
 
     assert "## Key Design Decisions" in markdown
     assert "No significant design decisions were made." in markdown
 
 
-def test_generate_markdown_multiline_content() -> None:
-    """Test generate_markdown handles multiline content correctly."""
-    doc_data = ComponentDocumentation(
+def test_format_module_documentation_multiline_content() -> None:
+    """Test format_module_documentation handles multiline content correctly."""
+    doc_data = ModuleDocumentation(
         component_name="Test",
         purpose_and_scope="Line 1\nLine 2\nLine 3",
         architecture_overview="Arch line 1\nArch line 2",
@@ -164,15 +165,15 @@ def test_generate_markdown_multiline_content() -> None:
         key_design_decisions="Decision line 1\nDecision line 2",
     )
 
-    markdown = generate_markdown(doc_data=doc_data)
+    markdown = format_module_documentation(doc_data=doc_data)
 
     assert "Line 1\nLine 2\nLine 3" in markdown
     assert "Decision line 1\nDecision line 2" in markdown
 
 
-def test_generate_markdown_special_characters() -> None:
-    """Test generate_markdown handles special markdown characters."""
-    doc_data = ComponentDocumentation(
+def test_format_module_documentation_special_characters() -> None:
+    """Test format_module_documentation handles special markdown characters."""
+    doc_data = ModuleDocumentation(
         component_name="Test*Component*",
         purpose_and_scope="Purpose with **bold** and _italic_",
         architecture_overview="Architecture with **emphasis**",
@@ -181,7 +182,7 @@ def test_generate_markdown_special_characters() -> None:
         key_design_decisions="Decisions with **formatting**",
     )
 
-    markdown = generate_markdown(doc_data=doc_data)
+    markdown = format_module_documentation(doc_data=doc_data)
 
     # These should be preserved as-is
     assert "Test*Component*" in markdown
@@ -189,19 +190,19 @@ def test_generate_markdown_special_characters() -> None:
     assert "`code`" in markdown
 
 
-def test_generate_markdown_deterministic_output(
-    sample_component_documentation: ComponentDocumentation,
+def test_format_module_documentation_deterministic_output(
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_markdown produces deterministic output."""
-    markdown1 = generate_markdown(doc_data=sample_component_documentation)
-    markdown2 = generate_markdown(doc_data=sample_component_documentation)
+    """Test format_module_documentation produces deterministic output."""
+    markdown1 = format_module_documentation(doc_data=sample_component_documentation)
+    markdown2 = format_module_documentation(doc_data=sample_component_documentation)
 
     assert markdown1 == markdown2
 
 
-def test_generate_markdown_ends_with_newlines() -> None:
-    """Test generate_markdown ends sections with proper newlines."""
-    doc_data = ComponentDocumentation(
+def test_format_module_documentation_ends_with_newlines() -> None:
+    """Test format_module_documentation ends sections with proper newlines."""
+    doc_data = ModuleDocumentation(
         component_name="Test",
         purpose_and_scope="Purpose",
         architecture_overview="Architecture",
@@ -210,15 +211,15 @@ def test_generate_markdown_ends_with_newlines() -> None:
         key_design_decisions="Decisions",
     )
 
-    markdown = generate_markdown(doc_data=doc_data)
+    markdown = format_module_documentation(doc_data=doc_data)
 
     # Each section should end with double newline for proper markdown spacing
     assert "## Purpose & Scope\n\nPurpose\n\n" in markdown
 
 
-def test_generate_markdown_section_order() -> None:
-    """Test generate_markdown produces sections in correct order."""
-    doc_data = ComponentDocumentation(
+def test_format_module_documentation_section_order() -> None:
+    """Test format_module_documentation produces sections in correct order."""
+    doc_data = ModuleDocumentation(
         component_name="Test",
         purpose_and_scope="Purpose",
         architecture_overview="Architecture",
@@ -228,7 +229,7 @@ def test_generate_markdown_section_order() -> None:
         external_dependencies="Deps",
     )
 
-    markdown = generate_markdown(doc_data=doc_data)
+    markdown = format_module_documentation(doc_data=doc_data)
 
     # Find section positions
     purpose_pos = markdown.find("## Purpose & Scope")
@@ -250,9 +251,9 @@ def test_generate_markdown_section_order() -> None:
         "Multiple factors influenced this choice, including scalability and cost.",
     ],
 )
-def test_generate_markdown_decision_formats(decision_text: str) -> None:
-    """Test generate_markdown handles various decision text formats."""
-    doc_data = ComponentDocumentation(
+def test_format_module_documentation_decision_formats(decision_text: str) -> None:
+    """Test format_module_documentation handles various decision text formats."""
+    doc_data = ModuleDocumentation(
         component_name="Test",
         purpose_and_scope="Test",
         architecture_overview="Test architecture",
@@ -261,15 +262,10 @@ def test_generate_markdown_decision_formats(decision_text: str) -> None:
         key_design_decisions=decision_text,
     )
 
-    markdown = generate_markdown(doc_data=doc_data)
+    markdown = format_module_documentation(doc_data=doc_data)
 
     assert "## Key Design Decisions" in markdown
     assert decision_text in markdown
-
-
-def test_format_module_documentation_alias() -> None:
-    """Test that generate_markdown is an alias for format_module_documentation."""
-    assert generate_markdown == format_module_documentation
 
 
 # Tests for format_project_documentation

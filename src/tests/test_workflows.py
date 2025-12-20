@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 from src.doc_configs import DOC_CONFIGS
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
-from src.records import ComponentDocumentation, DocumentationDriftCheck
+from src.records import DocumentationDriftCheck, ModuleDocumentation
 from src.workflows import (
     check_documentation_drift,
     fix_documentation_drift,
@@ -166,7 +166,7 @@ def test_generate_documentation_generates_when_drift(
     mocker: MockerFixture,
     tmp_path: Path,
     sample_drift_check_with_drift: DocumentationDriftCheck,
-    sample_component_documentation: ComponentDocumentation,
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_documentation generates docs when drift detected."""
     # Create module dir with README
@@ -206,7 +206,7 @@ def test_generate_documentation_writes_readme(
     mocker: MockerFixture,
     tmp_path: Path,
     sample_drift_check_with_drift: DocumentationDriftCheck,
-    sample_component_documentation: ComponentDocumentation,
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_documentation writes README.md file."""
     # Create module dir with README
@@ -246,7 +246,7 @@ def test_generate_documentation_creates_readme_if_missing(
     mocker: MockerFixture,
     temp_module_dir: Path,
     sample_drift_check_with_drift: DocumentationDriftCheck,
-    sample_component_documentation: ComponentDocumentation,
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_documentation creates README.md if it doesn't exist."""
     mocker.patch("src.workflows.console")
@@ -332,7 +332,7 @@ def test_fix_documentation_drift_generates_and_writes(
     mocker: MockerFixture,
     tmp_path: Path,
     mock_llm_client,
-    sample_component_documentation: ComponentDocumentation,
+    sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test fix_documentation_drift generates and writes updated documentation."""
     readme_path = tmp_path / "README.md"

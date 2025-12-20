@@ -77,7 +77,3 @@ def format_style_guide(*, doc_data: StyleGuideDocumentation) -> str:
     md += f"## Dependencies Management\n\n{doc_data.dependencies_management}\n\n"
 
     return md
-
-
-# Backward compatibility alias
-generate_markdown = format_module_documentation

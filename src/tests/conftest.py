@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from pytest_mock import MockerFixture
 
-from src.records import ComponentDocumentation, DocumentationDriftCheck
+from src.records import DocumentationDriftCheck, ModuleDocumentation
 
 
 @pytest.fixture
@@ -28,9 +28,9 @@ def sample_drift_check_with_drift() -> DocumentationDriftCheck:
 
 
 @pytest.fixture
-def sample_component_documentation() -> ComponentDocumentation:
-    """Sample ComponentDocumentation."""
-    return ComponentDocumentation(
+def sample_component_documentation() -> ModuleDocumentation:
+    """Sample ModuleDocumentation."""
+    return ModuleDocumentation(
         component_name="Sample Component",
         purpose_and_scope="This component handles sample operations for testing.",
         architecture_overview=(

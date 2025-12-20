@@ -174,7 +174,3 @@ Do NOT include:
 {context}
 {human_intent_section}
 Respond ONLY with the JSON object schema provided."""
-
-
-# Backward compatibility alias
-DOCUMENTATION_GENERATION_PROMPT = MODULE_GENERATION_PROMPT
