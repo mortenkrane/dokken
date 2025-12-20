@@ -560,19 +560,6 @@ Tests should:
 - Complete in under 10 seconds for fast feedback
 - Not require external services (use mocks!)
 
-## Implementation Notes
-
-### Exclusion System
-
-The exclusion system (`.dokken.toml` config) is implemented in `code_analyzer.py` and `config.py`:
-
-- Config is loaded by `config.py` using Pydantic models
-- `code_analyzer.py` applies exclusions during code scanning
-- Module-level config extends (not replaces) repo-level config
-- Files are filtered using glob pattern matching (via `fnmatch`)
-- Symbols are filtered using AST parsing - only top-level functions/classes are excluded
-- Nested functions and class methods are preserved even if they match exclusion patterns
-
 ### Key Design Decisions
 
 - **Configurable Depth Analysis**: `code_analyzer.py` supports configurable directory traversal depth (0=root only, 1=root+1 level, -1=infinite recursion)
@@ -581,4 +568,3 @@ The exclusion system (`.dokken.toml` config) is implemented in `code_analyzer.py
 - **Stabilized Drift Detection**: Uses criteria-based checklist in `DRIFT_CHECK_PROMPT` - explicitly defines what constitutes drift vs. minor changes
 - **Human-in-the-Loop**: Interactive questionnaire captures developer intent that AI cannot infer from code alone
 
-## Documentation
