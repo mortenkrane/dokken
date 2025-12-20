@@ -185,8 +185,16 @@ def test_generate_documentation_generates_when_drift(
     mock_generate_doc = mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch(
-        "src.formatters.format_module_documentation", return_value="# Markdown"
+
+    # Mock the formatter in DOC_CONFIGS
+    from dataclasses import replace
+
+    mock_formatter = mocker.Mock(return_value="# Markdown")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.MODULE_README: test_doc_config}
     )
 
     result = generate_documentation(target_module_path=str(module_dir))
@@ -219,9 +227,16 @@ def test_generate_documentation_writes_readme(
     mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch(
-        "src.formatters.format_module_documentation",
-        return_value="# New Markdown Content",
+
+    # Mock the formatter in DOC_CONFIGS
+    from dataclasses import replace
+
+    mock_formatter = mocker.Mock(return_value="# New Markdown Content")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.MODULE_README: test_doc_config}
     )
 
     generate_documentation(target_module_path=str(module_dir))
@@ -248,8 +263,16 @@ def test_generate_documentation_creates_readme_if_missing(
     mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch(
-        "src.formatters.format_module_documentation", return_value="# New Docs"
+
+    # Mock the formatter in DOC_CONFIGS
+    from dataclasses import replace
+
+    mock_formatter = mocker.Mock(return_value="# New Docs")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.MODULE_README: test_doc_config}
     )
 
     generate_documentation(target_module_path=str(temp_module_dir))
@@ -325,15 +348,20 @@ def test_fix_documentation_drift_generates_and_writes(
     mock_generate_doc = mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch(
-        "src.formatters.format_module_documentation", return_value="# Updated Docs"
+
+    # Create a custom doc_config with mocked formatter
+    from dataclasses import replace
+
+    mock_formatter = mocker.Mock(return_value="# Updated Docs")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
     )
 
     fix_documentation_drift(
         llm_client=mock_llm_client,
         code_context="code context",
         output_path=str(readme_path),
-        doc_config=DOC_CONFIGS[DocType.MODULE_README],
+        doc_config=test_doc_config,
     )
 
     # Should generate documentation

@@ -236,10 +236,12 @@ def fix_documentation_drift(
     )
 
     with console.status("[cyan]Generating documentation..."):
+        # Type checker can't infer ask_human_intent returns specific intent type,
+        # but it's guaranteed by intent_model parameter matching doc_config
         new_doc_data = generate_doc(
             llm=llm_client,
             context=code_context,
-            human_intent=human_intent,
+            human_intent=human_intent,  # type: ignore[arg-type]
             output_model=doc_config.model,
             prompt_template=doc_config.prompt,
         )
@@ -339,10 +341,12 @@ def generate_documentation(
         "[bold cyan]Step 3:[/bold cyan] Generating new structured documentation..."
     )
     with console.status("[cyan]Generating documentation..."):
+        # Type checker can't infer ask_human_intent returns specific intent type,
+        # but it's guaranteed by intent_model parameter matching doc_config
         new_doc_data = generate_doc(
             llm=llm_client,
             context=code_context,
-            human_intent=human_intent,
+            human_intent=human_intent,  # type: ignore[arg-type]
             output_model=ctx.doc_config.model,
             prompt_template=ctx.doc_config.prompt,
         )
