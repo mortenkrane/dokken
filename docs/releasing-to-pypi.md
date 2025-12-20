@@ -110,13 +110,13 @@ When the GitHub release is created:
 
 Release-please follows semantic versioning:
 
-| Commit Type                    | Version Change                  | Example                   |
+| Commit Type | Version Change | Example |
 | ------------------------------ | ------------------------------- | ------------------------- |
-| `fix:`                         | Patch (0.1.0 → 0.1.1)           | Bug fixes                 |
-| `feat:`                        | Minor (0.1.0 → 0.2.0)           | New features              |
-| `feat!:` or `BREAKING CHANGE:` | Major (0.1.0 → 1.0.0)           | Breaking changes          |
-| `docs:`, `refactor:`, `perf:`  | No bump (appears in changelog)  | Non-breaking improvements |
-| `test:`, `chore:`, `ci:`       | No bump (hidden from changelog) | Internal changes          |
+| `fix:` | Patch (0.1.0 → 0.1.1) | Bug fixes |
+| `feat:` | Minor (0.1.0 → 0.2.0) | New features |
+| `feat!:` or `BREAKING CHANGE:` | Major (0.1.0 → 1.0.0) | Breaking changes |
+| `docs:`, `refactor:`, `perf:` | No bump (appears in changelog) | Non-breaking improvements |
+| `test:`, `chore:`, `ci:` | No bump (hidden from changelog) | Internal changes |
 
 **Special cases:**
 
