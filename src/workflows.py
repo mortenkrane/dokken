@@ -107,17 +107,17 @@ def prepare_documentation_context(
     # Determine analysis path and depth
     if doc_config.analyze_entire_repo:
         repo_root = _find_repo_root(target_module_path)
-        if not repo_root:
+        if repo_root is None:
             console.print(
                 f"[red]Error:[/red] Cannot process {doc_type.value}: "
                 "not in a git repository"
             )
             sys.exit(1)
-        # Type checker doesn't understand sys.exit prevents None, so assert
+        # Type narrowing: repo_root is str here (sys.exit prevents None case)
         assert repo_root is not None
-        analysis_path: str = repo_root
+        analysis_path = repo_root
     else:
-        analysis_path: str = target_module_path
+        analysis_path = target_module_path
 
     analysis_depth = depth if depth is not None else doc_config.default_depth
 

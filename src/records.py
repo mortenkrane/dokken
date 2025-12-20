@@ -271,8 +271,3 @@ class StyleGuideIntent(BaseModel):
         None,
         description="Are there specific patterns to follow or avoid?",
     )
-
-
-# Backward compatibility aliases
-ComponentDocumentation = ModuleDocumentation  # Deprecated: use ModuleDocumentation
-HumanIntent = ModuleIntent  # Deprecated: use ModuleIntent

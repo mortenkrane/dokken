@@ -3,7 +3,7 @@
 from unittest.mock import patch
 
 from src.human_in_the_loop import ask_human_intent
-from src.records import HumanIntent
+from src.records import ModuleIntent
 
 
 def test_ask_human_intent_full_responses():
@@ -20,7 +20,7 @@ def test_ask_human_intent_full_responses():
         result = ask_human_intent()
 
         assert result is not None
-        assert isinstance(result, HumanIntent)
+        assert isinstance(result, ModuleIntent)
         assert result.problems_solved == "Handles payment processing"
         assert result.core_responsibilities == "Payment gateway integration"
         assert result.non_responsibilities == "Tax calculation"
@@ -54,7 +54,7 @@ def test_ask_human_intent_skip_later_questions():
         result = ask_human_intent()
 
         assert result is not None
-        assert isinstance(result, HumanIntent)
+        assert isinstance(result, ModuleIntent)
         assert result.problems_solved == "Handles authentication"
         assert result.core_responsibilities == "User login and registration"
         assert result.non_responsibilities is None
@@ -75,7 +75,7 @@ def test_ask_human_intent_empty_responses():
         result = ask_human_intent()
 
         assert result is not None
-        assert isinstance(result, HumanIntent)
+        assert isinstance(result, ModuleIntent)
         assert result.problems_solved == "Has a value"
         assert result.core_responsibilities is None
         assert result.non_responsibilities is None

@@ -5,7 +5,6 @@ from typing import Any
 import pytest
 
 from src.prompts import (
-    DOCUMENTATION_GENERATION_PROMPT,
     DRIFT_CHECK_PROMPT,
     MODULE_GENERATION_PROMPT,
     PROJECT_README_GENERATION_PROMPT,
@@ -20,29 +19,17 @@ def test_drift_check_prompt_exists() -> None:
     assert len(DRIFT_CHECK_PROMPT) > 0
 
 
-def test_documentation_generation_prompt_exists() -> None:
-    """Test that DOCUMENTATION_GENERATION_PROMPT constant exists and is non-empty."""
-    assert DOCUMENTATION_GENERATION_PROMPT
-    assert isinstance(DOCUMENTATION_GENERATION_PROMPT, str)
-    assert len(DOCUMENTATION_GENERATION_PROMPT) > 0
-
-
 def test_drift_check_prompt_contains_placeholders() -> None:
     """Test that DRIFT_CHECK_PROMPT contains required placeholders."""
     assert "{context}" in DRIFT_CHECK_PROMPT
     assert "{current_doc}" in DRIFT_CHECK_PROMPT
 
 
-def test_documentation_generation_prompt_contains_placeholders() -> None:
-    """Test that DOCUMENTATION_GENERATION_PROMPT contains required placeholders."""
-    assert "{context}" in DOCUMENTATION_GENERATION_PROMPT
-
-
 @pytest.mark.parametrize(
     "prompt_name,prompt_value",
     [
         ("DRIFT_CHECK_PROMPT", DRIFT_CHECK_PROMPT),
-        ("DOCUMENTATION_GENERATION_PROMPT", DOCUMENTATION_GENERATION_PROMPT),
+        ("MODULE_GENERATION_PROMPT", MODULE_GENERATION_PROMPT),
     ],
 )
 def test_prompts_are_strings(prompt_name: str, prompt_value: Any) -> None:
@@ -63,7 +50,7 @@ def test_prompts_are_strings(prompt_name: str, prompt_value: Any) -> None:
             ],
         ),
         (
-            DOCUMENTATION_GENERATION_PROMPT,
+            MODULE_GENERATION_PROMPT,
             ["technical writer", "code context", "documentation", "JSON"],
         ),
     ],
@@ -79,7 +66,7 @@ def test_prompts_contain_expected_keywords(
 def test_prompts_request_json_output() -> None:
     """Test that both prompts explicitly request JSON output."""
     assert "JSON" in DRIFT_CHECK_PROMPT
-    assert "JSON" in DOCUMENTATION_GENERATION_PROMPT
+    assert "JSON" in MODULE_GENERATION_PROMPT
 
 
 def test_drift_check_prompt_formatting() -> None:
@@ -93,25 +80,6 @@ def test_drift_check_prompt_formatting() -> None:
     assert current_doc in formatted
     assert "{context}" not in formatted
     assert "{current_doc}" not in formatted
-
-
-def test_documentation_generation_prompt_formatting() -> None:
-    """Test that DOCUMENTATION_GENERATION_PROMPT can be formatted with context."""
-    context = "Sample code context"
-    human_intent_section = ""
-
-    formatted = DOCUMENTATION_GENERATION_PROMPT.format(
-        context=context, human_intent_section=human_intent_section
-    )
-
-    assert context in formatted
-    assert "{context}" not in formatted
-    assert "{human_intent_section}" not in formatted
-
-
-def test_documentation_generation_prompt_is_alias() -> None:
-    """Test DOCUMENTATION_GENERATION_PROMPT is MODULE_GENERATION_PROMPT alias."""
-    assert DOCUMENTATION_GENERATION_PROMPT == MODULE_GENERATION_PROMPT
 
 
 # Tests for new prompts

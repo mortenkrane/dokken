@@ -4,14 +4,14 @@ import questionary
 from pydantic import BaseModel
 from rich.console import Console
 
-from src.records import HumanIntent
+from src.records import ModuleIntent
 
 console = Console()
 
 
 def ask_human_intent(
     *,
-    intent_model: type[BaseModel] = HumanIntent,
+    intent_model: type[BaseModel] = ModuleIntent,
     questions: list[dict[str, str]] | None = None,
 ) -> BaseModel | None:
     """

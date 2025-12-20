@@ -9,9 +9,8 @@ from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 from pydantic import BaseModel
 
-from src.prompts import DOCUMENTATION_GENERATION_PROMPT, DRIFT_CHECK_PROMPT
+from src.prompts import DRIFT_CHECK_PROMPT
 from src.records import (
-    ComponentDocumentation,
     DocumentationDriftCheck,
     ModuleIntent,
     ProjectIntent,
@@ -117,8 +116,8 @@ def generate_doc(
     llm: LLM,
     context: str,
     human_intent: ModuleIntent | ProjectIntent | StyleGuideIntent | None = None,
-    output_model: type[BaseModel] = ComponentDocumentation,
-    prompt_template: str = DOCUMENTATION_GENERATION_PROMPT,
+    output_model: type[BaseModel],
+    prompt_template: str,
 ) -> BaseModel:
     """
     Generates structured documentation based on code context.
