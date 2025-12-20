@@ -5,6 +5,8 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
+from src.doc_configs import DOC_CONFIGS, DocConfig
+from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.records import ComponentDocumentation, DocumentationDriftCheck
 from src.workflows import (
@@ -318,12 +320,13 @@ def test_fix_documentation_drift_generates_and_writes(
     mock_generate_doc = mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch("src.workflows.generate_markdown", return_value="# Updated Docs")
+    mocker.patch("src.formatters.format_module_documentation", return_value="# Updated Docs")
 
     fix_documentation_drift(
         llm_client=mock_llm_client,
         code_context="code context",
-        readme_path=str(readme_path),
+        output_path=str(readme_path),
+        doc_config=DOC_CONFIGS[DocType.MODULE_README],
     )
 
     # Should generate documentation
