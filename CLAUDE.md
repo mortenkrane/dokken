@@ -44,7 +44,7 @@ ruff check --fix
 uvx ty check
 
 # Format markdown
-uvx --with mdformat-gfm --with mdformat-tables mdformat .
+uvx --with mdformat-gfm --with mdformat-tables mdformat README.md CLAUDE.md docs/ src/
 
 # Run tests with coverage
 pytest src/tests/ --cov=src --cov-report=term-missing

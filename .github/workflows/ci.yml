@@ -49,7 +49,7 @@ jobs:
           - name: Type
             run: uvx ty check
           - name: Markdown Format
-            run: uvx --with mdformat-gfm --with mdformat-tables mdformat --check .
+            run: uvx --with mdformat-gfm --with mdformat-tables mdformat --check README.md CLAUDE.md docs/ src/
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
