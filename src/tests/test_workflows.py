@@ -1,5 +1,6 @@
 """Tests for src/workflows.py"""
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -187,8 +188,6 @@ def test_generate_documentation_generates_when_drift(
     )
 
     # Mock the formatter in DOC_CONFIGS
-    from dataclasses import replace
-
     mock_formatter = mocker.Mock(return_value="# Markdown")
     test_doc_config = replace(
         DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
@@ -229,8 +228,6 @@ def test_generate_documentation_writes_readme(
     )
 
     # Mock the formatter in DOC_CONFIGS
-    from dataclasses import replace
-
     mock_formatter = mocker.Mock(return_value="# New Markdown Content")
     test_doc_config = replace(
         DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
@@ -265,8 +262,6 @@ def test_generate_documentation_creates_readme_if_missing(
     )
 
     # Mock the formatter in DOC_CONFIGS
-    from dataclasses import replace
-
     mock_formatter = mocker.Mock(return_value="# New Docs")
     test_doc_config = replace(
         DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
@@ -350,8 +345,6 @@ def test_fix_documentation_drift_generates_and_writes(
     )
 
     # Create a custom doc_config with mocked formatter
-    from dataclasses import replace
-
     mock_formatter = mocker.Mock(return_value="# Updated Docs")
     test_doc_config = replace(
         DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
@@ -420,9 +413,6 @@ def test_generate_documentation_project_readme_in_git_repo(
     mock_generate_doc = mocker.patch("src.workflows.generate_doc")
 
     # Mock formatter
-    from dataclasses import replace
-    from src.records import ProjectDocumentation
-
     mock_formatter = mocker.Mock(return_value="# Project Docs")
     test_doc_config = replace(
         DOC_CONFIGS[DocType.PROJECT_README], formatter=mock_formatter
@@ -463,8 +453,6 @@ def test_generate_documentation_style_guide_creates_docs_dir(
     mock_generate_doc = mocker.patch("src.workflows.generate_doc")
 
     # Mock formatter
-    from dataclasses import replace
-
     mock_formatter = mocker.Mock(return_value="# Style Guide")
     test_doc_config = replace(
         DOC_CONFIGS[DocType.STYLE_GUIDE], formatter=mock_formatter
