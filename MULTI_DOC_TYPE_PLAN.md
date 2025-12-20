@@ -3,19 +3,22 @@
 ## Overview
 
 Extend Dokken to support three documentation types:
+
 1. **Module README** - Architectural design and structural choices (current functionality)
-2. **Top-level README** - Repository introduction, purpose, setup instructions
-3. **Style Guide** - Code patterns and coding conventions extracted from codebase
+1. **Top-level README** - Repository introduction, purpose, setup instructions
+1. **Style Guide** - Code patterns and coding conventions extracted from codebase
 
 ## Current System Analysis
 
 The current system is hardcoded for module READMEs:
+
 - Hardcoded `README.md` path in workflows.py (lines 40, 146)
 - Single `ComponentDocumentation` Pydantic model
 - Single generation prompt (`DOCUMENTATION_GENERATION_PROMPT`)
 - Formatter only handles module README structure
 
 **Strengths to preserve:**
+
 - Clean separation of concerns (workflows → analyzer → LLM → formatters)
 - Prompt-as-constants pattern
 - Structured output with Pydantic models
@@ -442,97 +445,114 @@ def capture_human_intent_for_doc_type(*, doc_type: DocType) -> HumanIntent:
 ## Implementation Steps (REVISED)
 
 ### Phase 1: Build All Components First
+
 1. Create `src/doc_types.py` with `DocType` enum
-2. Add ALL new Pydantic models to `src/records.py`:
+1. Add ALL new Pydantic models to `src/records.py`:
    - `ModuleDocumentation` (rename from `ComponentDocumentation`)
    - `ProjectDocumentation` (new)
    - `StyleGuideDocumentation` (new)
    - `ModuleIntent`, `ProjectIntent`, `StyleGuideIntent` (new)
-3. Add ALL new prompts to `src/prompts.py`:
+1. Add ALL new prompts to `src/prompts.py`:
    - `MODULE_GENERATION_PROMPT` (rename from `DOCUMENTATION_GENERATION_PROMPT`)
    - `PROJECT_README_GENERATION_PROMPT` (new)
    - `STYLE_GUIDE_GENERATION_PROMPT` (new)
-4. Add ALL new formatters to `src/formatters.py`:
+1. Add ALL new formatters to `src/formatters.py`:
    - `format_module_documentation` (rename from `generate_markdown`)
    - `format_project_documentation` (new)
    - `format_style_guide` (new)
-5. Add backward compatibility aliases for breaking changes
+1. Add backward compatibility aliases for breaking changes
 
 ### Phase 2: Create Complete Registry
+
 6. Create `src/doc_configs.py` with `DocConfig` dataclass
-7. Populate `DOC_CONFIGS` registry with ALL three doc types
-8. Add `resolve_output_path()` function to `src/workflows.py`
-9. Export `_find_repo_root()` from `src/config.py` (or make it importable)
+1. Populate `DOC_CONFIGS` registry with ALL three doc types
+1. Add `resolve_output_path()` function to `src/workflows.py`
+1. Export `_find_repo_root()` from `src/config.py` (or make it importable)
 
 ### Phase 3: Refactor Workflows
+
 10. Update `generate_documentation()` to accept `doc_type` parameter
-11. Implement code analysis path resolution (module vs repo-wide)
-12. Update drift checking to use doc type config
-13. Update human-in-the-loop to use intent models from config
-14. Use registry for prompt, model, and formatter selection
+01. Implement code analysis path resolution (module vs repo-wide)
+01. Update drift checking to use doc type config
+01. Update human-in-the-loop to use intent models from config
+01. Use registry for prompt, model, and formatter selection
 
 ### Phase 4: CLI Integration
+
 15. Update `generate` command to accept `--doc-type` option
-16. Update `check` command to accept `--doc-type` option
-17. Add doc type to help text and descriptions
-18. Handle optional module path for repo-wide doc types
+01. Update `check` command to accept `--doc-type` option
+01. Add doc type to help text and descriptions
+01. Handle optional module path for repo-wide doc types
 
 ### Phase 5: Testing
+
 19. Update existing tests to use new names (with aliases for compatibility)
-20. Add tests for project README generation
-21. Add tests for style guide generation
-22. Add tests for path resolution
-23. Add CLI tests for each doc type
-24. Integration tests for drift detection across doc types
+01. Add tests for project README generation
+01. Add tests for style guide generation
+01. Add tests for path resolution
+01. Add CLI tests for each doc type
+01. Integration tests for drift detection across doc types
 
 ### Phase 6: Refinement & Documentation
+
 25. Test prompts with real codebases and iterate
-26. Verify repo-wide analysis works for style guide
-27. Update project README and style guide
-28. Remove deprecation aliases in future major version
+01. Verify repo-wide analysis works for style guide
+01. Update project README and style guide
+01. Remove deprecation aliases in future major version
 
 ## Risks & Mitigations (REVISED)
 
 **Risk 1: Git root may not exist**
+
 - Problem: Repo-wide docs need git root, but user may run outside git repo
 - Mitigation: Explicit error handling in `resolve_output_path()` with clear error messages
 
 **Risk 2: Style guide needs repo-wide analysis**
+
 - Problem: Current system is module-centric, style guide should analyze entire repo
 - Solution: Add `analyze_entire_repo` flag to config; when true, use git root and full recursion
 
 **Risk 3: Drift detection prompt is module-specific**
+
 - Problem: Current checklist (structural changes, purpose mismatch) is for module READMEs
 - Mitigation: Start with shared prompt (pragmatic), plan for doc-type-specific drift prompts later
 - Future: Add style-guide-specific drift criteria ("new patterns emerged", "conventions changed")
 
 **Risk 4: Breaking changes without deprecation**
+
 - Problem: Renaming `ComponentDocumentation` breaks imports
 - Solution: Add backward compatibility aliases with deprecation warnings
 
 **Risk 5: CLI UX for repo-wide docs**
+
 - Problem: `dokken generate src/ --doc-type style-guide` is confusing (why pass module?)
 - Solution: Make module path optional when doc type is repo-wide
 
 **Risk 6: Prompt quality for new doc types**
+
 - Mitigation: Iterate on prompts, test with real codebases
 
 **Risk 7: Output path conflicts**
+
 - Mitigation: Clear path resolution rules, validate before writing
 - Solution: Warn if overwriting important files
 
 ## Open Questions
 
 1. Should style guide be generated from entire repo or per-module?
+
    - **Recommendation**: Entire repo (single style guide in docs/)
 
-2. Should project README use git root detection or explicit path?
+1. Should project README use git root detection or explicit path?
+
    - **Recommendation**: Git root detection for convenience
 
-3. Should drift detection prompt be doc-type-specific?
+1. Should drift detection prompt be doc-type-specific?
+
    - **Recommendation**: Start with shared prompt, customize if needed
 
-4. Should we support custom output paths via CLI flags?
+1. Should we support custom output paths via CLI flags?
+
    - **Recommendation**: Phase 2 enhancement, use defaults first
 
 ## Success Criteria
