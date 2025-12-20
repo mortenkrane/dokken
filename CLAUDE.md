@@ -50,6 +50,20 @@ uvx --with mdformat-gfm --with mdformat-tables mdformat *.md docs/ src/
 pytest src/tests/ --cov=src --cov-report=term-missing
 ```
 
+**Claude Code hooks (automated for AI sessions):**
+
+Claude Code hooks are configured in `.claude/settings.json` to automatically run quality checks:
+
+- **After file changes** (PostToolUse): Runs `ruff format`, `ruff check --fix`, `mdformat`, and `ty check` on changed files only
+- **At session end** (SessionEnd): Runs full test suite with coverage
+
+Hook scripts are in `.claude/hooks/`:
+
+- `format-and-lint.sh` - Code quality checks on changed files
+- `run-tests.sh` - Full test suite
+
+These hooks run automatically when Claude Code edits files. No setup required!
+
 ## Git Commits
 
 **All commits to `main` MUST use [Conventional Commits](https://www.conventionalcommits.org/)** (e.g., `feat:`, `fix:`, `docs:`). See [docs/style-guide.md](docs/style-guide.md#git-workflow) for details
