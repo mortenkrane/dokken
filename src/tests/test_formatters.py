@@ -2,8 +2,17 @@
 
 import pytest
 
-from src.formatters import generate_markdown
-from src.records import ComponentDocumentation
+from src.formatters import (
+    format_module_documentation,
+    format_project_documentation,
+    format_style_guide,
+    generate_markdown,
+)
+from src.records import (
+    ComponentDocumentation,
+    ProjectDocumentation,
+    StyleGuideDocumentation,
+)
 
 
 def test_generate_markdown_basic_structure(
@@ -256,3 +265,284 @@ def test_generate_markdown_decision_formats(decision_text: str) -> None:
 
     assert "## Key Design Decisions" in markdown
     assert decision_text in markdown
+
+
+def test_format_module_documentation_alias() -> None:
+    """Test that generate_markdown is an alias for format_module_documentation."""
+    assert generate_markdown == format_module_documentation
+
+
+# Tests for format_project_documentation
+
+
+def test_format_project_documentation_basic_structure() -> None:
+    """Test format_project_documentation creates correct basic structure."""
+    doc_data = ProjectDocumentation(
+        project_name="Test Project",
+        project_purpose="Test purpose",
+        key_features="Test features",
+        installation="Test installation",
+        development_setup="Test dev setup",
+        usage_examples="Test usage",
+        project_structure="Test structure",
+        contributing="Test contributing",
+    )
+
+    markdown = format_project_documentation(doc_data=doc_data)
+
+    assert markdown.startswith("# Test Project\n")
+    assert "## Purpose" in markdown
+    assert "## Key Features" in markdown
+    assert "## Installation" in markdown
+    assert "## Development Setup" in markdown
+    assert "## Usage" in markdown
+    assert "## Project Structure" in markdown
+    assert "## Contributing" in markdown
+
+
+def test_format_project_documentation_includes_all_fields() -> None:
+    """Test format_project_documentation includes all field values."""
+    doc_data = ProjectDocumentation(
+        project_name="My Project",
+        project_purpose="Solves problems",
+        key_features="Feature A\nFeature B",
+        installation="pip install myproject",
+        development_setup="Setup instructions",
+        usage_examples="Example usage",
+        project_structure="Directory structure",
+        contributing="Contribution guidelines",
+    )
+
+    markdown = format_project_documentation(doc_data=doc_data)
+
+    assert "# My Project\n" in markdown
+    assert "Solves problems" in markdown
+    assert "Feature A\nFeature B" in markdown
+    assert "pip install myproject" in markdown
+    assert "Setup instructions" in markdown
+    assert "Example usage" in markdown
+    assert "Directory structure" in markdown
+    assert "Contribution guidelines" in markdown
+
+
+def test_format_project_documentation_without_contributing() -> None:
+    """Test format_project_documentation handles missing contributing section."""
+    doc_data = ProjectDocumentation(
+        project_name="Test Project",
+        project_purpose="Test purpose",
+        key_features="Test features",
+        installation="Test installation",
+        development_setup="Test dev setup",
+        usage_examples="Test usage",
+        project_structure="Test structure",
+        contributing=None,
+    )
+
+    markdown = format_project_documentation(doc_data=doc_data)
+
+    assert "## Contributing" not in markdown
+
+
+def test_format_project_documentation_section_order() -> None:
+    """Test format_project_documentation produces sections in correct order."""
+    doc_data = ProjectDocumentation(
+        project_name="Test",
+        project_purpose="Purpose",
+        key_features="Features",
+        installation="Install",
+        development_setup="Dev",
+        usage_examples="Usage",
+        project_structure="Structure",
+        contributing="Contributing",
+    )
+
+    markdown = format_project_documentation(doc_data=doc_data)
+
+    purpose_pos = markdown.find("## Purpose")
+    features_pos = markdown.find("## Key Features")
+    install_pos = markdown.find("## Installation")
+    dev_pos = markdown.find("## Development Setup")
+    usage_pos = markdown.find("## Usage")
+    structure_pos = markdown.find("## Project Structure")
+    contrib_pos = markdown.find("## Contributing")
+
+    assert (
+        purpose_pos
+        < features_pos
+        < install_pos
+        < dev_pos
+        < usage_pos
+        < structure_pos
+        < contrib_pos
+    )
+
+
+def test_format_project_documentation_deterministic() -> None:
+    """Test format_project_documentation produces deterministic output."""
+    doc_data = ProjectDocumentation(
+        project_name="Test",
+        project_purpose="Purpose",
+        key_features="Features",
+        installation="Install",
+        development_setup="Dev",
+        usage_examples="Usage",
+        project_structure="Structure",
+    )
+
+    markdown1 = format_project_documentation(doc_data=doc_data)
+    markdown2 = format_project_documentation(doc_data=doc_data)
+
+    assert markdown1 == markdown2
+
+
+# Tests for format_style_guide
+
+
+def test_format_style_guide_basic_structure() -> None:
+    """Test format_style_guide creates correct basic structure."""
+    doc_data = StyleGuideDocumentation(
+        project_name="Test Project",
+        languages=["Python", "TypeScript"],
+        code_style_patterns="Test patterns",
+        architectural_patterns="Test arch",
+        testing_conventions="Test testing",
+        git_workflow="Test git",
+        module_organization="Test modules",
+        dependencies_management="Test deps",
+    )
+
+    markdown = format_style_guide(doc_data=doc_data)
+
+    assert markdown.startswith("# Test Project Style Guide\n")
+    assert "## Languages" in markdown
+    assert "## Code Style Patterns" in markdown
+    assert "## Architectural Patterns" in markdown
+    assert "## Testing Conventions" in markdown
+    assert "## Git Workflow" in markdown
+    assert "## Module Organization" in markdown
+    assert "## Dependencies Management" in markdown
+
+
+def test_format_style_guide_includes_all_fields() -> None:
+    """Test format_style_guide includes all field values."""
+    doc_data = StyleGuideDocumentation(
+        project_name="My Project",
+        languages=["Python", "JavaScript", "Go"],
+        code_style_patterns="Use black for formatting",
+        architectural_patterns="MVC pattern",
+        testing_conventions="pytest for testing",
+        git_workflow="Feature branch workflow",
+        module_organization="Flat structure",
+        dependencies_management="pip-tools",
+    )
+
+    markdown = format_style_guide(doc_data=doc_data)
+
+    assert "# My Project Style Guide\n" in markdown
+    assert "Python, JavaScript, Go" in markdown
+    assert "Use black for formatting" in markdown
+    assert "MVC pattern" in markdown
+    assert "pytest for testing" in markdown
+    assert "Feature branch workflow" in markdown
+    assert "Flat structure" in markdown
+    assert "pip-tools" in markdown
+
+
+def test_format_style_guide_languages_as_comma_separated() -> None:
+    """Test format_style_guide formats languages as comma-separated list."""
+    doc_data = StyleGuideDocumentation(
+        project_name="Test",
+        languages=["Python", "Rust", "TypeScript"],
+        code_style_patterns="Patterns",
+        architectural_patterns="Arch",
+        testing_conventions="Testing",
+        git_workflow="Git",
+        module_organization="Modules",
+        dependencies_management="Deps",
+    )
+
+    markdown = format_style_guide(doc_data=doc_data)
+
+    assert "Python, Rust, TypeScript" in markdown
+
+
+def test_format_style_guide_single_language() -> None:
+    """Test format_style_guide handles single language."""
+    doc_data = StyleGuideDocumentation(
+        project_name="Test",
+        languages=["Python"],
+        code_style_patterns="Patterns",
+        architectural_patterns="Arch",
+        testing_conventions="Testing",
+        git_workflow="Git",
+        module_organization="Modules",
+        dependencies_management="Deps",
+    )
+
+    markdown = format_style_guide(doc_data=doc_data)
+
+    assert "## Languages\n\nPython\n\n" in markdown
+
+
+def test_format_style_guide_section_order() -> None:
+    """Test format_style_guide produces sections in correct order."""
+    doc_data = StyleGuideDocumentation(
+        project_name="Test",
+        languages=["Python"],
+        code_style_patterns="Patterns",
+        architectural_patterns="Arch",
+        testing_conventions="Testing",
+        git_workflow="Git",
+        module_organization="Modules",
+        dependencies_management="Deps",
+    )
+
+    markdown = format_style_guide(doc_data=doc_data)
+
+    lang_pos = markdown.find("## Languages")
+    style_pos = markdown.find("## Code Style Patterns")
+    arch_pos = markdown.find("## Architectural Patterns")
+    test_pos = markdown.find("## Testing Conventions")
+    git_pos = markdown.find("## Git Workflow")
+    mod_pos = markdown.find("## Module Organization")
+    deps_pos = markdown.find("## Dependencies Management")
+
+    assert lang_pos < style_pos < arch_pos < test_pos < git_pos < mod_pos < deps_pos
+
+
+def test_format_style_guide_deterministic() -> None:
+    """Test format_style_guide produces deterministic output."""
+    doc_data = StyleGuideDocumentation(
+        project_name="Test",
+        languages=["Python", "Go"],
+        code_style_patterns="Patterns",
+        architectural_patterns="Arch",
+        testing_conventions="Testing",
+        git_workflow="Git",
+        module_organization="Modules",
+        dependencies_management="Deps",
+    )
+
+    markdown1 = format_style_guide(doc_data=doc_data)
+    markdown2 = format_style_guide(doc_data=doc_data)
+
+    assert markdown1 == markdown2
+
+
+def test_format_style_guide_multiline_content() -> None:
+    """Test format_style_guide handles multiline content."""
+    doc_data = StyleGuideDocumentation(
+        project_name="Test",
+        languages=["Python"],
+        code_style_patterns="Line 1\nLine 2\nLine 3",
+        architectural_patterns="Arch line 1\nArch line 2",
+        testing_conventions="Testing",
+        git_workflow="Git",
+        module_organization="Modules",
+        dependencies_management="Deps",
+    )
+
+    markdown = format_style_guide(doc_data=doc_data)
+
+    assert "Line 1\nLine 2\nLine 3" in markdown
+    assert "Arch line 1\nArch line 2" in markdown

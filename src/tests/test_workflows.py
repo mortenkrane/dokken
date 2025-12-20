@@ -1,10 +1,13 @@
 """Tests for src/workflows.py"""
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from pytest_mock import MockerFixture
 
+from src.doc_configs import DOC_CONFIGS
+from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.records import ComponentDocumentation, DocumentationDriftCheck
 from src.workflows import (
@@ -183,7 +186,15 @@ def test_generate_documentation_generates_when_drift(
     mock_generate_doc = mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch("src.workflows.generate_markdown", return_value="# Markdown")
+
+    # Mock the formatter in DOC_CONFIGS
+    mock_formatter = mocker.Mock(return_value="# Markdown")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.MODULE_README: test_doc_config}
+    )
 
     result = generate_documentation(target_module_path=str(module_dir))
 
@@ -215,8 +226,14 @@ def test_generate_documentation_writes_readme(
     mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch(
-        "src.workflows.generate_markdown", return_value="# New Markdown Content"
+
+    # Mock the formatter in DOC_CONFIGS
+    mock_formatter = mocker.Mock(return_value="# New Markdown Content")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.MODULE_README: test_doc_config}
     )
 
     generate_documentation(target_module_path=str(module_dir))
@@ -243,7 +260,15 @@ def test_generate_documentation_creates_readme_if_missing(
     mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch("src.workflows.generate_markdown", return_value="# New Docs")
+
+    # Mock the formatter in DOC_CONFIGS
+    mock_formatter = mocker.Mock(return_value="# New Docs")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.MODULE_README: test_doc_config}
+    )
 
     generate_documentation(target_module_path=str(temp_module_dir))
 
@@ -318,12 +343,18 @@ def test_fix_documentation_drift_generates_and_writes(
     mock_generate_doc = mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
-    mocker.patch("src.workflows.generate_markdown", return_value="# Updated Docs")
+
+    # Create a custom doc_config with mocked formatter
+    mock_formatter = mocker.Mock(return_value="# Updated Docs")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
+    )
 
     fix_documentation_drift(
         llm_client=mock_llm_client,
         code_context="code context",
-        readme_path=str(readme_path),
+        output_path=str(readme_path),
+        doc_config=test_doc_config,
     )
 
     # Should generate documentation
@@ -359,3 +390,84 @@ def test_check_documentation_drift_fix_with_drift(
 
     # Should call fix function
     mock_fix.assert_called_once()
+
+
+def test_generate_documentation_project_readme_in_git_repo(
+    mocker: MockerFixture,
+    tmp_path: Path,
+    sample_drift_check_with_drift: DocumentationDriftCheck,
+) -> None:
+    """Test generating PROJECT_README in a git repository."""
+    # Create a git repo structure
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()  # Simulate git repo
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.initialize_llm")
+    mocker.patch("src.workflows.get_module_context", return_value="code context")
+    mocker.patch(
+        "src.workflows.check_drift", return_value=sample_drift_check_with_drift
+    )
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
+    mock_generate_doc = mocker.patch("src.workflows.generate_doc")
+
+    # Mock formatter
+    mock_formatter = mocker.Mock(return_value="# Project Docs")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.PROJECT_README], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.PROJECT_README: test_doc_config}
+    )
+
+    generate_documentation(
+        target_module_path=str(repo_dir), doc_type=DocType.PROJECT_README
+    )
+
+    # Should generate doc
+    mock_generate_doc.assert_called_once()
+    # Should create README.md in repo root
+    readme_path = repo_dir / "README.md"
+    assert readme_path.exists()
+
+
+def test_generate_documentation_style_guide_creates_docs_dir(
+    mocker: MockerFixture,
+    tmp_path: Path,
+    sample_drift_check_with_drift: DocumentationDriftCheck,
+) -> None:
+    """Test generating STYLE_GUIDE creates docs/ directory."""
+    # Create a git repo structure
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()  # Simulate git repo
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.initialize_llm")
+    mocker.patch("src.workflows.get_module_context", return_value="code context")
+    mocker.patch(
+        "src.workflows.check_drift", return_value=sample_drift_check_with_drift
+    )
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
+    mock_generate_doc = mocker.patch("src.workflows.generate_doc")
+
+    # Mock formatter
+    mock_formatter = mocker.Mock(return_value="# Style Guide")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.STYLE_GUIDE], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.STYLE_GUIDE: test_doc_config}
+    )
+
+    generate_documentation(
+        target_module_path=str(repo_dir), doc_type=DocType.STYLE_GUIDE
+    )
+
+    # Should generate doc
+    mock_generate_doc.assert_called_once()
+    # Should create docs/style-guide.md
+    style_guide_path = repo_dir / "docs" / "style-guide.md"
+    assert style_guide_path.exists()
+    assert (repo_dir / "docs").is_dir()

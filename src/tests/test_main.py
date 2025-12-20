@@ -6,6 +6,7 @@ import pytest
 from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
+from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.main import check, cli, generate
 
@@ -62,7 +63,10 @@ def test_check_command_with_valid_path(
 
     assert result.exit_code == 0
     mock_check.assert_called_once_with(
-        target_module_path=str(temp_module_dir), fix=False, depth=0
+        target_module_path=str(temp_module_dir),
+        fix=False,
+        depth=None,
+        doc_type=DocType.MODULE_README,
     )
 
 
@@ -132,7 +136,9 @@ def test_generate_command_with_valid_path(
 
     assert result.exit_code == 0
     mock_generate.assert_called_once_with(
-        target_module_path=str(temp_module_dir), depth=0
+        target_module_path=str(temp_module_dir),
+        depth=None,
+        doc_type=DocType.MODULE_README,
     )
 
 
@@ -289,7 +295,10 @@ def test_check_command_with_fix_flag(
 
     assert result.exit_code == 0
     mock_check.assert_called_once_with(
-        target_module_path=str(temp_module_dir), fix=True, depth=0
+        target_module_path=str(temp_module_dir),
+        fix=True,
+        depth=None,
+        doc_type=DocType.MODULE_README,
     )
 
 
@@ -299,7 +308,7 @@ def test_check_command_fix_flag_in_help(runner: CliRunner) -> None:
 
     assert result.exit_code == 0
     assert "--fix" in result.output
-    assert "README.md" in result.output
+    assert "documentation" in result.output.lower()
 
 
 def test_check_command_with_depth_flag(
@@ -313,7 +322,10 @@ def test_check_command_with_depth_flag(
 
     assert result.exit_code == 0
     mock_check.assert_called_once_with(
-        target_module_path=str(temp_module_dir), fix=False, depth=2
+        target_module_path=str(temp_module_dir),
+        fix=False,
+        depth=2,
+        doc_type=DocType.MODULE_README,
     )
 
 
@@ -328,7 +340,9 @@ def test_generate_command_with_depth_flag(
 
     assert result.exit_code == 0
     mock_generate.assert_called_once_with(
-        target_module_path=str(temp_module_dir), depth=-1
+        target_module_path=str(temp_module_dir),
+        depth=-1,
+        doc_type=DocType.MODULE_README,
     )
 
 
