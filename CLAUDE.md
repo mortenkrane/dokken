@@ -13,7 +13,27 @@ Dokken is an AI-powered documentation generation and drift detection tool. Comma
 
 ## Code Quality Commands
 
-**ALWAYS run these commands after making changes:**
+**Automated checks via pre-commit hooks:**
+
+Pre-commit hooks are configured to automatically run checks on changed files:
+
+- On commit: `ruff format`, `ruff check --fix`, `mdformat`, and `ty check`
+- On push: full test suite with coverage
+
+To install hooks (already done if you ran `uv sync`):
+
+```bash
+uv run pre-commit install
+uv run pre-commit install --hook-type pre-push
+```
+
+To run hooks manually on all files:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+**Manual commands (if needed):**
 
 ```bash
 # Format and lint
@@ -24,11 +44,25 @@ ruff check --fix
 uvx ty check
 
 # Format markdown
-uvx mdformat *.md docs/ src/
+uvx --with mdformat-gfm --with mdformat-tables mdformat *.md docs/ src/
 
 # Run tests with coverage
 pytest src/tests/ --cov=src --cov-report=term-missing
 ```
+
+**Claude Code hooks (automated for AI sessions):**
+
+Claude Code hooks are configured in `.claude/settings.json` to automatically run quality checks:
+
+- **After file changes** (PostToolUse): Runs `ruff format`, `ruff check --fix`, `mdformat`, and `ty check` on changed files only
+- **At session end** (SessionEnd): Runs full test suite with coverage
+
+Hook scripts are in `.claude/hooks/`:
+
+- `format-and-lint.sh` - Code quality checks on changed files
+- `run-tests.sh` - Full test suite
+
+These hooks run automatically when Claude Code edits files. No setup required!
 
 ## Git Commits
 
