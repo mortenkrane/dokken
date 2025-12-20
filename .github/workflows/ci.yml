@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        check:
+        include:
           - name: Format
             run: uv run ruff format --check
           - name: Lint
