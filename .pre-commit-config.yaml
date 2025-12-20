@@ -1,40 +1,40 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: v0.14.10
-    hooks:
-      # Run the formatter
-      - id: ruff-format
-        name: ruff format
-        types_or: [python, pyi]
-      # Run the linter with --fix
-      - id: ruff
-        name: ruff check --fix
-        args: [--fix]
-        types_or: [python, pyi]
-
-  - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.22
-    hooks:
-      - id: mdformat
-        name: mdformat
-        files: \.(md|markdown)$
-
   - repo: local
     hooks:
-      - id: ty-check
-        name: ty check
-        entry: uvx ty check
+      - id: format
+        name: make format
+        entry: make format
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: lint-fix
+        name: make lint-fix
+        entry: make lint-fix
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: mdformat
+        name: make mdformat
+        entry: make mdformat
+        language: system
+        types: [markdown]
+        pass_filenames: false
+
+      - id: typecheck
+        name: make typecheck
+        entry: make typecheck
         language: system
         types: [python]
         pass_filenames: false
         stages: [pre-commit]
 
-      - id: pytest
-        name: pytest
-        entry: uv run pytest src/tests/ --cov=src --cov-report=term-missing
+      - id: test
+        name: make test
+        entry: make test
         language: system
         pass_filenames: false
         stages: [pre-push]
