@@ -7,6 +7,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from src.llm import TEMPERATURE, check_drift, generate_doc, initialize_llm
+from src.prompts import MODULE_GENERATION_PROMPT
 from src.records import DocumentationDriftCheck, ModuleDocumentation
 
 # --- Tests for initialize_llm() ---
@@ -210,7 +211,12 @@ def test_generate_doc_creates_program(
 
     context = "Sample code context"
 
-    result = generate_doc(llm=mock_llm_client, context=context)
+    result = generate_doc(
+        llm=mock_llm_client,
+        context=context,
+        output_model=ModuleDocumentation,
+        prompt_template=MODULE_GENERATION_PROMPT,
+    )
 
     # Verify program was created with correct parameters
     mock_program_class.from_defaults.assert_called_once()
@@ -234,7 +240,12 @@ def test_generate_doc_uses_generation_prompt(
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
 
-    generate_doc(llm=mock_llm_client, context="ctx")
+    generate_doc(
+        llm=mock_llm_client,
+        context="ctx",
+        output_model=ModuleDocumentation,
+        prompt_template=MODULE_GENERATION_PROMPT,
+    )
 
     call_kwargs = mock_program_class.from_defaults.call_args[1]
     prompt = call_kwargs["prompt_template_str"]
@@ -255,7 +266,12 @@ def test_generate_doc_returns_component_documentation(
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
 
-    result = generate_doc(llm=mock_llm_client, context="ctx")
+    result = generate_doc(
+        llm=mock_llm_client,
+        context="ctx",
+        output_model=ModuleDocumentation,
+        prompt_template=MODULE_GENERATION_PROMPT,
+    )
 
     assert result == sample_component_documentation
     assert isinstance(result, ModuleDocumentation)
@@ -311,7 +327,12 @@ def test_generate_doc_handles_various_contexts(
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
 
-    result = generate_doc(llm=mock_llm_client, context=context)
+    result = generate_doc(
+        llm=mock_llm_client,
+        context=context,
+        output_model=ModuleDocumentation,
+        prompt_template=MODULE_GENERATION_PROMPT,
+    )
 
     # Verify the program was called with the provided context
     mock_program.assert_called_once_with(context=context, human_intent_section="")
@@ -324,14 +345,14 @@ def test_generate_doc_with_human_intent(
     sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc includes human intent when provided."""
-    from src.records import HumanIntent
+    from src.records import ModuleIntent
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
 
-    human_intent = HumanIntent(
+    human_intent = ModuleIntent(
         problems_solved="Handles user authentication",
         core_responsibilities="Login and registration",
         non_responsibilities="Payment processing",
@@ -339,7 +360,11 @@ def test_generate_doc_with_human_intent(
     )
 
     result = generate_doc(
-        llm=mock_llm_client, context="test context", human_intent=human_intent
+        llm=mock_llm_client,
+        context="test context",
+        human_intent=human_intent,
+        output_model=ModuleDocumentation,
+        prompt_template=MODULE_GENERATION_PROMPT,
     )
 
     # Verify the program was called with human intent section
@@ -365,7 +390,7 @@ def test_generate_doc_with_partial_human_intent(
     sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc handles partial human intent."""
-    from src.records import HumanIntent
+    from src.records import ModuleIntent
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -373,12 +398,16 @@ def test_generate_doc_with_partial_human_intent(
     mock_program_class.from_defaults.return_value = mock_program
 
     # Only provide some fields
-    human_intent = HumanIntent(
+    human_intent = ModuleIntent(
         problems_solved="Handles authentication", core_responsibilities="User login"
     )
 
     result = generate_doc(
-        llm=mock_llm_client, context="test context", human_intent=human_intent
+        llm=mock_llm_client,
+        context="test context",
+        human_intent=human_intent,
+        output_model=ModuleDocumentation,
+        prompt_template=MODULE_GENERATION_PROMPT,
     )
 
     # Verify the program was called with human intent section
