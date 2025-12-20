@@ -13,12 +13,21 @@ from src.workflows import check_documentation_drift, generate_documentation
 console = Console()
 
 # Constants for CLI options
-DEPTH_HELP = "Directory depth to traverse (0=root only, 1=root+1 level, -1=infinite)"
-DOC_TYPE_HELP = (
-    "Type of documentation to generate: "
-    "module-readme (module architectural docs), "
-    "project-readme (top-level project README), "
-    "style-guide (code conventions guide)"
+DEPTH_HELP = (
+    "Directory depth to traverse (0=root only, 1=root+1 level, -1=infinite). "
+    "Defaults: module-readme=0, project-readme=1, style-guide=-1"
+)
+
+# Doc type descriptions for help text
+DOC_TYPE_DESCRIPTIONS = {
+    DocType.MODULE_README: "module architectural docs",
+    DocType.PROJECT_README: "top-level project README",
+    DocType.STYLE_GUIDE: "code conventions guide",
+}
+
+# Build help text dynamically from enum
+DOC_TYPE_HELP = "Type of documentation to generate: " + ", ".join(
+    f"{dt.value} ({DOC_TYPE_DESCRIPTIONS[dt]})" for dt in DocType
 )
 
 
@@ -48,14 +57,12 @@ def cli():
     "--depth",
     type=click.IntRange(min=-1),
     default=None,
-    help=DEPTH_HELP + " (defaults to doc type's default)",
+    help=DEPTH_HELP,
 )
 @click.option(
     "--doc-type",
-    type=click.Choice(
-        ["module-readme", "project-readme", "style-guide"], case_sensitive=False
-    ),
-    default="module-readme",
+    type=click.Choice([dt.value for dt in DocType], case_sensitive=False),
+    default=DocType.MODULE_README.value,
     help=DOC_TYPE_HELP,
 )
 def check(module_path: str, fix: bool, depth: int | None, doc_type: str):
@@ -102,14 +109,12 @@ def check(module_path: str, fix: bool, depth: int | None, doc_type: str):
     "--depth",
     type=click.IntRange(min=-1),
     default=None,
-    help=DEPTH_HELP + " (defaults to doc type's default)",
+    help=DEPTH_HELP,
 )
 @click.option(
     "--doc-type",
-    type=click.Choice(
-        ["module-readme", "project-readme", "style-guide"], case_sensitive=False
-    ),
-    default="module-readme",
+    type=click.Choice([dt.value for dt in DocType], case_sensitive=False),
+    default=DocType.MODULE_README.value,
     help=DOC_TYPE_HELP,
 )
 def generate(module_path: str, depth: int | None, doc_type: str):

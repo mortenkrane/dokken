@@ -53,7 +53,8 @@ def ask_human_intent(
 
     console.print(
         "\n[bold cyan]Human Intent Capture[/bold cyan]\n"
-        "[dim]Help us understand the intent behind your documentation.[/dim]\n"
+        "[dim]Help us understand the intent behind the code you need to "
+        "document.[/dim]\n"
         "[dim]Press Ctrl+C to skip questions, Meta+Enter or Esc+Enter to "
         "submit.[/dim]\n"
     )

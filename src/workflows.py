@@ -2,6 +2,7 @@
 
 import os
 import sys
+from dataclasses import dataclass
 
 from llama_index.core.llms import LLM
 from rich.console import Console
@@ -18,6 +19,16 @@ console = Console()
 
 # Constants
 NO_DOC_MARKER = "No existing documentation provided."
+
+
+@dataclass
+class DocumentationContext:
+    """Context information for documentation generation or drift checking."""
+
+    doc_config: DocConfig
+    output_path: str
+    analysis_path: str
+    analysis_depth: int
 
 
 def resolve_output_path(*, doc_type: DocType, module_path: str) -> str:
@@ -61,7 +72,67 @@ def resolve_output_path(*, doc_type: DocType, module_path: str) -> str:
     raise ValueError(f"Unknown doc type: {doc_type}")
 
 
-def check_documentation_drift(  # noqa: C901
+def prepare_documentation_context(
+    *,
+    target_module_path: str,
+    doc_type: DocType,
+    depth: int | None,
+) -> DocumentationContext:
+    """
+    Prepare context for documentation generation or drift checking.
+
+    Args:
+        target_module_path: Path to the module directory.
+        doc_type: Type of documentation to process.
+        depth: Directory depth to traverse, or None to use doc type's default.
+
+    Returns:
+        DocumentationContext with all necessary paths and configuration.
+
+    Raises:
+        SystemExit: If the target path is invalid or git root not found.
+    """
+    if not os.path.isdir(target_module_path):
+        console.print(
+            f"[red]Error:[/red] {target_module_path} is not a valid directory"
+        )
+        sys.exit(1)
+
+    # Get doc type configuration
+    doc_config = DOC_CONFIGS[doc_type]
+
+    # Resolve output path based on doc type
+    output_path = resolve_output_path(doc_type=doc_type, module_path=target_module_path)
+
+    # Determine analysis path and depth
+    if doc_config.analyze_entire_repo:
+        repo_root = _find_repo_root(target_module_path)
+        if not repo_root:
+            console.print(
+                f"[red]Error:[/red] Cannot process {doc_type.value}: "
+                "not in a git repository"
+            )
+            sys.exit(1)
+        analysis_path = repo_root
+    else:
+        analysis_path = target_module_path
+
+    analysis_depth = depth if depth is not None else doc_config.default_depth
+
+    # Print context information
+    console.print(f"\n[dim]Doc type:[/dim] {doc_type.value}")
+    console.print(f"[dim]Analysis path:[/dim] {analysis_path}")
+    console.print(f"[dim]Documentation path:[/dim] {output_path}\n")
+
+    return DocumentationContext(
+        doc_config=doc_config,
+        output_path=output_path,
+        analysis_path=analysis_path,
+        analysis_depth=analysis_depth,
+    )
+
+
+def check_documentation_drift(
     *,
     target_module_path: str,
     fix: bool = False,
@@ -82,36 +153,12 @@ def check_documentation_drift(  # noqa: C901
         DocumentationDriftError: If documentation drift is detected and fix=False.
         SystemExit: If the target path is invalid.
     """
-    if not os.path.isdir(target_module_path):
-        console.print(
-            f"[red]Error:[/red] {target_module_path} is not a valid directory"
-        )
-        sys.exit(1)
-
-    # Get doc type configuration
-    doc_config = DOC_CONFIGS[doc_type]
-
-    # Resolve output path based on doc type
-    output_path = resolve_output_path(doc_type=doc_type, module_path=target_module_path)
-
-    # Determine analysis path and depth
-    if doc_config.analyze_entire_repo:
-        repo_root = _find_repo_root(target_module_path)
-        if not repo_root:
-            console.print(
-                f"[red]Error:[/red] Cannot check {doc_type.value}: "
-                "not in a git repository"
-            )
-            sys.exit(1)
-        analysis_path = repo_root
-        analysis_depth = depth if depth is not None else doc_config.default_depth
-    else:
-        analysis_path = target_module_path
-        analysis_depth = depth if depth is not None else doc_config.default_depth
-
-    console.print(f"\n[dim]Doc type:[/dim] {doc_type.value}")
-    console.print(f"[dim]Analysis path:[/dim] {analysis_path}")
-    console.print(f"[dim]Documentation path:[/dim] {output_path}\n")
+    # Prepare documentation context
+    ctx = prepare_documentation_context(
+        target_module_path=target_module_path,
+        doc_type=doc_type,
+        depth=depth,
+    )
 
     # 1. Setup
     with console.status("[cyan]Initializing LLM..."):
@@ -119,7 +166,7 @@ def check_documentation_drift(  # noqa: C901
 
     with console.status("[cyan]Analyzing code context..."):
         code_context = get_module_context(
-            module_path=analysis_path, depth=analysis_depth
+            module_path=ctx.analysis_path, depth=ctx.analysis_depth
         )
 
     if not code_context:
@@ -129,9 +176,9 @@ def check_documentation_drift(  # noqa: C901
         return
 
     # Check for existing documentation
-    if not os.path.exists(output_path):
+    if not os.path.exists(ctx.output_path):
         console.print(
-            f"[yellow]⚠[/yellow] No existing documentation found at {output_path}. "
+            f"[yellow]⚠[/yellow] No existing documentation found at {ctx.output_path}. "
             f"Try running `dokken generate --doc-type {doc_type.value}` first."
         )
         raise DocumentationDriftError(
@@ -139,7 +186,7 @@ def check_documentation_drift(  # noqa: C901
             module_path=target_module_path,
         )
 
-    with open(output_path) as f:
+    with open(ctx.output_path) as f:
         current_doc_content = f.read()
     console.print("[green]✓[/green] Found existing documentation\n")
 
@@ -157,8 +204,8 @@ def check_documentation_drift(  # noqa: C901
             fix_documentation_drift(
                 llm_client=llm_client,
                 code_context=code_context,
-                output_path=output_path,
-                doc_config=doc_config,
+                output_path=ctx.output_path,
+                doc_config=ctx.doc_config,
             )
             return
 
@@ -228,38 +275,12 @@ def generate_documentation(
         SystemExit: If the target path is invalid.
         ValueError: If git root not found for repo-wide doc types.
     """
-    if not os.path.isdir(target_module_path):
-        console.print(
-            f"[red]Error:[/red] {target_module_path} is not a valid directory"
-        )
-        sys.exit(1)
-
-    # Get doc type configuration
-    doc_config = DOC_CONFIGS[doc_type]
-
-    # Resolve output path based on doc type
-    output_path = resolve_output_path(doc_type=doc_type, module_path=target_module_path)
-
-    # Determine analysis path and depth
-    if doc_config.analyze_entire_repo:
-        # For repo-wide docs, analyze from git root
-        repo_root = _find_repo_root(target_module_path)
-        if not repo_root:
-            console.print(
-                f"[red]Error:[/red] Cannot generate {doc_type.value}: "
-                "not in a git repository"
-            )
-            sys.exit(1)
-        analysis_path = repo_root
-        analysis_depth = depth if depth is not None else doc_config.default_depth
-    else:
-        # For module docs, analyze the specified module
-        analysis_path = target_module_path
-        analysis_depth = depth if depth is not None else doc_config.default_depth
-
-    console.print(f"\n[dim]Doc type:[/dim] {doc_type.value}")
-    console.print(f"[dim]Analysis path:[/dim] {analysis_path}")
-    console.print(f"[dim]Documentation output:[/dim] {output_path}\n")
+    # Prepare documentation context
+    ctx = prepare_documentation_context(
+        target_module_path=target_module_path,
+        doc_type=doc_type,
+        depth=depth,
+    )
 
     # 1. Setup
     with console.status("[cyan]Initializing LLM..."):
@@ -267,7 +288,7 @@ def generate_documentation(
 
     with console.status("[cyan]Analyzing code context..."):
         code_context = get_module_context(
-            module_path=analysis_path, depth=analysis_depth
+            module_path=ctx.analysis_path, depth=ctx.analysis_depth
         )
 
     if not code_context:
@@ -275,8 +296,8 @@ def generate_documentation(
         return None
 
     # Check for existing documentation
-    if os.path.exists(output_path):
-        with open(output_path) as f:
+    if os.path.exists(ctx.output_path):
+        with open(ctx.output_path) as f:
             current_doc_content = f.read()
         console.print("[green]✓[/green] Found existing documentation")
     else:
@@ -307,7 +328,8 @@ def generate_documentation(
         "[bold cyan]Step 2:[/bold cyan] Capturing human intent for documentation..."
     )
     human_intent = ask_human_intent(
-        intent_model=doc_config.intent_model, questions=doc_config.intent_questions
+        intent_model=ctx.doc_config.intent_model,
+        questions=ctx.doc_config.intent_questions,
     )
 
     # 4. Step 3: Generate New Structured Documentation (doc-type-specific)
@@ -319,20 +341,20 @@ def generate_documentation(
             llm=llm_client,
             context=code_context,
             human_intent=human_intent,
-            output_model=doc_config.model,
-            prompt_template=doc_config.prompt,
+            output_model=ctx.doc_config.model,
+            prompt_template=ctx.doc_config.prompt,
         )
 
     # 5. Generate Final Markdown (doc-type-specific formatter)
-    final_markdown = doc_config.formatter(doc_data=new_doc_data)
+    final_markdown = ctx.doc_config.formatter(doc_data=new_doc_data)
 
     # 6. Write documentation to output path
-    with open(output_path, "w") as f:
+    with open(ctx.output_path, "w") as f:
         f.write(final_markdown)
 
     console.print(
         f"\n[green]✓[/green] New documentation generated and saved to: "
-        f"[bold]{output_path}[/bold]"
+        f"[bold]{ctx.output_path}[/bold]"
     )
 
     return final_markdown

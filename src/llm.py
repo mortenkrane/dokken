@@ -10,7 +10,13 @@ from llama_index.llms.openai import OpenAI
 from pydantic import BaseModel
 
 from src.prompts import DOCUMENTATION_GENERATION_PROMPT, DRIFT_CHECK_PROMPT
-from src.records import ComponentDocumentation, DocumentationDriftCheck
+from src.records import (
+    ComponentDocumentation,
+    DocumentationDriftCheck,
+    ModuleIntent,
+    ProjectIntent,
+    StyleGuideIntent,
+)
 
 # Temperature setting for deterministic, reproducible documentation output
 TEMPERATURE = 0.0
@@ -77,9 +83,11 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     return check_program(context=context, current_doc=current_doc)
 
 
-def _build_human_intent_section(human_intent: BaseModel) -> str:
+def _build_human_intent_section(
+    human_intent: ModuleIntent | ProjectIntent | StyleGuideIntent,
+) -> str:
     """
-    Builds a formatted string from human intent data (any BaseModel).
+    Builds a formatted string from human intent data.
 
     Args:
         human_intent: The intent model containing user responses.
@@ -108,7 +116,7 @@ def generate_doc(
     *,
     llm: LLM,
     context: str,
-    human_intent: BaseModel | None = None,
+    human_intent: ModuleIntent | ProjectIntent | StyleGuideIntent | None = None,
     output_model: type[BaseModel] = ComponentDocumentation,
     prompt_template: str = DOCUMENTATION_GENERATION_PROMPT,
 ) -> BaseModel:
