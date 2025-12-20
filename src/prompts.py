@@ -58,11 +58,23 @@ Analyze the code context and generate comprehensive documentation that covers:
 4. **Control Flow**: How requests or operations flow through the system from start to
    finish. Trace the key execution paths, decision points, and data transformations
 
-5. **Key Design Decisions**: The most important architectural choices and WHY they were
+5. **Control Flow Diagram** (optional): If the control flow has meaningful decision
+   points or branching logic, create a Mermaid flowchart diagram to visualize it. Use
+   Mermaid flowchart syntax (```mermaid flowchart TD```). Create butterfly-style
+   diagrams where appropriate, showing how execution branches and reconverges. Include:
+   - Entry points (use rounded rectangles)
+   - Decision points (use diamonds for conditionals)
+   - Process steps (use rectangles)
+   - Data flow arrows with labels
+   - Exit points or return paths
+   Example structure: Entry → Decision → Branch A/B → Processing → Converge → Exit
+   Skip this if the flow is purely linear with no meaningful branches
+
+6. **Key Design Decisions**: The most important architectural choices and WHY they were
    made. Write this as flowing prose, not bullet points. Explain patterns, technologies,
    and approaches in a cohesive narrative that helps developers understand the rationale
 
-6. **External Dependencies**: Third-party libraries, APIs, or systems used and what
+7. **External Dependencies**: Third-party libraries, APIs, or systems used and what
    role they play
 
 Focus on information that helps developers:

@@ -68,6 +68,16 @@ class ModuleDocumentation(BaseModel):
             "execution paths."
         ),
     )
+    control_flow_diagram: str | None = Field(
+        None,
+        description=(
+            "A Mermaid flowchart diagram visualizing the control flow. Use Mermaid "
+            "flowchart syntax to show entry points, decision branches, process steps, "
+            "and exit points. Create a butterfly-style diagram where relevant, with "
+            "branching paths that show different execution flows. Only include if the "
+            "control flow has meaningful decision points or branching logic."
+        ),
+    )
     key_design_decisions: str = Field(
         ...,
         description=(

@@ -25,6 +25,10 @@ def format_module_documentation(*, doc_data: ModuleDocumentation) -> str:
     md += f"## Main Entry Points\n\n{doc_data.main_entry_points}\n\n"
     md += f"## Control Flow\n\n{doc_data.control_flow}\n\n"
 
+    # Add control flow diagram if present
+    if doc_data.control_flow_diagram:
+        md += f"{doc_data.control_flow_diagram}\n\n"
+
     if doc_data.external_dependencies:
         md += f"## External Dependencies\n\n{doc_data.external_dependencies}\n\n"
 
