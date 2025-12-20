@@ -34,7 +34,8 @@ src/
 
 ```python
 @cli.command()
-def check(module_path: str):
+def check(module_path: str) -> None:
+    """Check for documentation drift in a module."""
     # Just CLI glue - delegates to workflows
     check_documentation_drift(target_module_path=module_path)
 ```
@@ -321,13 +322,13 @@ src/tests/
 
 ```python
 # ✅ Good - function-based
-def test_generate_markdown_includes_title(sample_doc):
+def test_generate_markdown_includes_title(sample_doc: ComponentDocumentation) -> None:
     markdown = generate_markdown(doc_data=sample_doc)
     assert "# Component Overview" in markdown
 
 # ❌ Bad - class-based
 class TestGenerateMarkdown:
-    def test_includes_title(self):
+    def test_includes_title(self) -> None:
         ...
 ```
 
@@ -344,7 +345,7 @@ Parametrize tests to test multiple scenarios without code duplication:
         ("value3", "result3"),
     ],
 )
-def test_function_with_various_inputs(input_value, expected):
+def test_function_with_various_inputs(input_value: str, expected: str) -> None:
     result = function_under_test(input_value)
     assert result == expected
 ```
@@ -359,7 +360,7 @@ def test_function_with_various_inputs(input_value, expected):
 - Mock console output
 
 ```python
-def test_check_drift(mocker, mock_llm_client):
+def test_check_drift(mocker: MockerFixture, mock_llm_client: Gemini) -> None:
     # Mock the LLM program to avoid actual API calls
     mock_program = mocker.patch("src.llm.LLMTextCompletionProgram")
     expected_result = DocumentationDriftCheck(drift_detected=False, rationale="Up to date")
@@ -378,7 +379,7 @@ Define reusable test data in `conftest.py`:
 ```python
 # In conftest.py
 @pytest.fixture
-def sample_component_documentation():
+def sample_component_documentation() -> ComponentDocumentation:
     return ComponentDocumentation(
         component_name="Sample",
         purpose_and_scope="Test purpose",
@@ -386,7 +387,7 @@ def sample_component_documentation():
     )
 
 # In test files
-def test_something(sample_component_documentation):
+def test_something(sample_component_documentation: ComponentDocumentation) -> None:
     # Use the fixture
     ...
 ```
@@ -397,8 +398,9 @@ Each test should focus on a single unit:
 
 ```python
 # ✅ Good - tests only check_drift function
-def test_check_drift_returns_correct_object(mocker, mock_llm_client):
+def test_check_drift_returns_correct_object(mocker: MockerFixture, mock_llm_client: Gemini) -> None:
     mock_program = mocker.patch("src.llm.LLMTextCompletionProgram")
+    expected_result = DocumentationDriftCheck(drift_detected=False, rationale="Up to date")
     mock_program.from_defaults.return_value.return_value = expected_result
 
     result = check_drift(llm=mock_llm_client, context="...", current_doc="...")
@@ -406,7 +408,7 @@ def test_check_drift_returns_correct_object(mocker, mock_llm_client):
     assert result == expected_result
 
 # ❌ Bad - tests multiple units together
-def test_entire_workflow_end_to_end():
+def test_entire_workflow_end_to_end() -> None:
     # This tests too much at once
     ...
 ```
@@ -449,11 +451,11 @@ pytest src/tests/ --cov=src --cov-report=html
 
 ```python
 # ✅ Good - clear what is being tested
-def test_generate_markdown_sorts_design_decisions_alphabetically():
+def test_generate_markdown_sorts_design_decisions_alphabetically() -> None:
     ...
 
 # ❌ Bad - unclear what is being tested
-def test_markdown():
+def test_markdown() -> None:
     ...
 ```
 
@@ -463,14 +465,14 @@ Keep tests focused, but don't artificially limit assertions:
 
 ```python
 # ✅ Good - multiple related assertions
-def test_generate_markdown_includes_all_sections(sample_doc):
+def test_generate_markdown_includes_all_sections(sample_doc: ComponentDocumentation) -> None:
     markdown = generate_markdown(doc_data=sample_doc)
     assert "## Purpose & Scope" in markdown
     assert "## Key Design Decisions" in markdown
     assert sample_doc.purpose_and_scope in markdown
 
 # ❌ Bad - testing unrelated things
-def test_everything(sample_doc):
+def test_everything(sample_doc: ComponentDocumentation) -> None:
     assert generate_markdown(...)  # markdown generation
     assert check_drift(...)         # drift checking (unrelated!)
 ```
@@ -478,12 +480,12 @@ def test_everything(sample_doc):
 #### Test Both Happy and Sad Paths
 
 ```python
-def test_initialize_llm_success(mocker):
+def test_initialize_llm_success(mocker: MockerFixture) -> None:
     mocker.patch.dict(os.environ, {"GOOGLE_API_KEY": "test_key"})
     llm = initialize_llm()
     assert llm is not None
 
-def test_initialize_llm_missing_api_key(mocker):
+def test_initialize_llm_missing_api_key(mocker: MockerFixture) -> None:
     mocker.patch.dict(os.environ, {}, clear=True)
     with pytest.raises(ValueError, match="GOOGLE_API_KEY"):
         initialize_llm()
@@ -492,7 +494,7 @@ def test_initialize_llm_missing_api_key(mocker):
 #### Use Temporary Directories for File Operations
 
 ```python
-def test_function_writes_file(tmp_path):
+def test_function_writes_file(tmp_path: Path) -> None:
     # tmp_path is a pytest fixture that creates a temp directory
     output_file = tmp_path / "output.txt"
 
@@ -508,13 +510,13 @@ Mock at the boundary of your module, not deep inside dependencies:
 
 ```python
 # ✅ Good - mock at the module boundary
-def test_check_drift(mocker, mock_llm_client):
+def test_check_drift(mocker: MockerFixture, mock_llm_client: Gemini) -> None:
     mock_program = mocker.patch("src.llm.LLMTextCompletionProgram")
     check_drift(llm=mock_llm_client, context="...", current_doc="...")
     mock_program.from_defaults.assert_called()
 
 # ❌ Bad - mocking too deep in dependencies
-def test_check_drift(mocker, mock_llm_client):
+def test_check_drift(mocker: MockerFixture, mock_llm_client: Gemini) -> None:
     mocker.patch("llama_index.core.program.base.BaseLLMProgram")  # Too low-level
     ...
 ```
@@ -526,7 +528,7 @@ Use Click's `CliRunner` for testing CLI commands:
 ```python
 from click.testing import CliRunner
 
-def test_check_command_success(runner, mocker):
+def test_check_command_success(runner: CliRunner, mocker: MockerFixture) -> None:
     runner = CliRunner()
     mocker.patch("src.main.check_documentation_drift")
 
@@ -567,4 +569,3 @@ Tests should:
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists (saves LLM calls)
 - **Stabilized Drift Detection**: Uses criteria-based checklist in `DRIFT_CHECK_PROMPT` - explicitly defines what constitutes drift vs. minor changes
 - **Human-in-the-Loop**: Interactive questionnaire captures developer intent that AI cannot infer from code alone
-
