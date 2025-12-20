@@ -27,7 +27,7 @@ class DocConfig:
 
     model: type[BaseModel]  # Pydantic model for structured output
     prompt: str  # Prompt template
-    formatter: Callable[[BaseModel], str]  # Formatter function
+    formatter: Callable[..., str]  # Formatter function (keyword-only args)
     intent_model: type[BaseModel]  # Intent model for human-in-the-loop
     intent_questions: list[dict[str, str]]  # Questions for intent capture
     default_depth: int  # Default code analysis depth
