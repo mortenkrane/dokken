@@ -20,9 +20,6 @@ repos:
     hooks:
       - id: mdformat
         name: mdformat
-        additional_dependencies:
-          - mdformat-gfm
-          - mdformat-tables
         files: \.(md|markdown)$
 
   - repo: local
