@@ -122,6 +122,18 @@ Contributions are welcome! Please:
 - Use [Conventional Commits](https://www.conventionalcommits.org/)
 - Pass all CI checks (tests, linting, formatting, type checking)
 
+**Optional: Pre-commit hooks**
+
+For convenience, pre-commit hooks are available to automatically run code quality checks:
+
+```bash
+# Install hooks (optional)
+uv run pre-commit install
+uv run pre-commit install --hook-type pre-push
+```
+
+This will automatically run formatters, linters, and type checks on commit, and tests on push. You can also run checks manually with `uv run pre-commit run --all-files`.
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details

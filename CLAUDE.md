@@ -13,7 +13,27 @@ Dokken is an AI-powered documentation generation and drift detection tool. Comma
 
 ## Code Quality Commands
 
-**ALWAYS run these commands after making changes:**
+**Automated checks via pre-commit hooks:**
+
+Pre-commit hooks are configured to automatically run checks on changed files:
+
+- On commit: `ruff format`, `ruff check --fix`, `mdformat`, and `ty check`
+- On push: full test suite with coverage
+
+To install hooks (already done if you ran `uv sync`):
+
+```bash
+uv run pre-commit install
+uv run pre-commit install --hook-type pre-push
+```
+
+To run hooks manually on all files:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+**Manual commands (if needed):**
 
 ```bash
 # Format and lint

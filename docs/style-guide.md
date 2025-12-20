@@ -203,18 +203,18 @@ Dokken uses [release-please](https://github.com/googleapis/release-please) for a
 
 #### Required Commit Types
 
-| Type | Description | Version Bump | In Changelog |
-|------|-------------|--------------|--------------|
-| `feat:` | New feature | Minor (0.1.0 → 0.2.0) | ✅ Yes |
-| `fix:` | Bug fix | Patch (0.1.0 → 0.1.1) | ✅ Yes |
-| `docs:` | Documentation changes | None | ✅ Yes |
-| `refactor:` | Code refactoring | None | ✅ Yes |
-| `perf:` | Performance improvements | None | ✅ Yes |
-| `test:` | Test changes | None | ❌ No |
-| `chore:` | Maintenance tasks | None | ❌ No |
-| `ci:` | CI/CD changes | None | ❌ No |
-| `build:` | Build system changes | None | ❌ No |
-| `style:` | Code style changes (formatting) | None | ❌ No |
+| Type        | Description                     | Version Bump          | In Changelog |
+| ----------- | ------------------------------- | --------------------- | ------------ |
+| `feat:`     | New feature                     | Minor (0.1.0 → 0.2.0) | ✅ Yes       |
+| `fix:`      | Bug fix                         | Patch (0.1.0 → 0.1.1) | ✅ Yes       |
+| `docs:`     | Documentation changes           | None                  | ✅ Yes       |
+| `refactor:` | Code refactoring                | None                  | ✅ Yes       |
+| `perf:`     | Performance improvements        | None                  | ✅ Yes       |
+| `test:`     | Test changes                    | None                  | ❌ No        |
+| `chore:`    | Maintenance tasks               | None                  | ❌ No        |
+| `ci:`       | CI/CD changes                   | None                  | ❌ No        |
+| `build:`    | Build system changes            | None                  | ❌ No        |
+| `style:`    | Code style changes (formatting) | None                  | ❌ No        |
 
 #### Breaking Changes
 
