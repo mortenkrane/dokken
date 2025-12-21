@@ -5,8 +5,8 @@ Thank you for your interest in contributing to Dokken! We welcome contributions 
 ## Getting Started
 
 1. Fork the repository and clone your fork
-2. Install dependencies: `mise install && uv sync`
-3. Set up pre-commit hooks (optional but recommended):
+1. Install dependencies: `mise install && uv sync`
+1. Set up pre-commit hooks (optional but recommended):
    ```bash
    uv run pre-commit install
    uv run pre-commit install --hook-type pre-push
@@ -30,6 +30,7 @@ Follow the [style guide](docs/style-guide.md) for comprehensive architecture, co
 **With pre-commit hooks (recommended):**
 
 Pre-commit hooks automatically run on changed files:
+
 - On commit: `ruff format`, `ruff check --fix`, `mdformat`, and `ty check`
 - On push: full test suite with coverage
 
@@ -67,16 +68,17 @@ pytest src/tests/ -v
 ## Pull Request Process
 
 1. Create a feature branch from `main`
-2. Make your changes following the style guide
-3. Ensure all tests pass and coverage is maintained at 99%
-4. Run all code quality checks (formatting, linting, type checking)
-5. Commit using [Conventional Commits](https://www.conventionalcommits.org/) format
-6. Push your branch and open a pull request
-7. Wait for CI checks to pass and address any feedback
+1. Make your changes following the style guide
+1. Ensure all tests pass and coverage is maintained at 99%
+1. Run all code quality checks (formatting, linting, type checking)
+1. Commit using [Conventional Commits](https://www.conventionalcommits.org/) format
+1. Push your branch and open a pull request
+1. Wait for CI checks to pass and address any feedback
 
 ### CI Requirements
 
 All pull requests must pass:
+
 - ✅ Tests with 99% coverage
 - ✅ Linting (ruff)
 - ✅ Formatting (ruff format)
