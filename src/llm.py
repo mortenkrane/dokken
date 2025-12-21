@@ -83,7 +83,7 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
 
 
 def _build_human_intent_section(
-    human_intent: ModuleIntent | ProjectIntent | StyleGuideIntent,
+    human_intent: BaseModel,
 ) -> str:
     """
     Builds a formatted string from human intent data.
@@ -110,7 +110,7 @@ def generate_doc(
     *,
     llm: LLM,
     context: str,
-    human_intent: ModuleIntent | ProjectIntent | StyleGuideIntent | None = None,
+    human_intent: BaseModel | None = None,
     output_model: type[BaseModel],
     prompt_template: str,
 ) -> BaseModel:

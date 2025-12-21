@@ -3,6 +3,7 @@
 import os
 import sys
 from dataclasses import dataclass
+from typing import cast
 
 from llama_index.core.llms import LLM
 from rich.console import Console
@@ -72,7 +73,8 @@ def prepare_documentation_context(
                 "not in a git repository"
             )
             sys.exit(1)
-        analysis_path = repo_root
+        # Type narrowing: repo_root is guaranteed to be str here (sys.exit prevents None)
+        analysis_path = cast(str, repo_root)
     else:
         analysis_path = target_module_path
 
