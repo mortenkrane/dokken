@@ -15,16 +15,6 @@ IntentModelT = TypeVar("IntentModelT", bound=BaseModel)
 
 
 # Overloads for specific intent types
-# Default case (no arguments) - returns ModuleIntent
-@overload
-def ask_human_intent(
-    *,
-    intent_model: type[ModuleIntent] = ...,
-    questions: list[dict[str, str]] | None = None,
-) -> ModuleIntent | None: ...
-
-
-# Explicit ModuleIntent
 @overload
 def ask_human_intent(
     *,
@@ -33,7 +23,6 @@ def ask_human_intent(
 ) -> ModuleIntent | None: ...
 
 
-# Explicit ProjectIntent
 @overload
 def ask_human_intent(
     *,
@@ -42,7 +31,6 @@ def ask_human_intent(
 ) -> ProjectIntent | None: ...
 
 
-# Explicit StyleGuideIntent
 @overload
 def ask_human_intent(
     *,
@@ -51,7 +39,6 @@ def ask_human_intent(
 ) -> StyleGuideIntent | None: ...
 
 
-# Generic case
 @overload
 def ask_human_intent(
     *,
@@ -63,7 +50,7 @@ def ask_human_intent(
 # Actual implementation
 def ask_human_intent(
     *,
-    intent_model: type[BaseModel] = ModuleIntent,
+    intent_model: type[BaseModel],
     questions: list[dict[str, str]] | None = None,
 ) -> BaseModel | None:
     """
