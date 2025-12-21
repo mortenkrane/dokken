@@ -393,7 +393,67 @@ def generate_doc(
 
 ______________________________________________________________________
 
-### 2. Add Runtime Type Validation
+### 2. Make DocConfig Generic for Full Type Safety
+
+**Current State:** `DocConfig` has fields typed as `type[BaseModel]`, losing specific type information
+
+**Recommendation:** Make `DocConfig` a generic dataclass to preserve intent and model types
+
+**Example:**
+
+```python
+from typing import Generic, TypeVar
+from pydantic import BaseModel
+
+# Define type variables
+IntentT = TypeVar("IntentT", bound=BaseModel)
+ModelT = TypeVar("ModelT", bound=BaseModel)
+
+@dataclass
+class DocConfig(Generic[IntentT, ModelT]):
+    """Configuration for a specific documentation type."""
+
+    intent_model: type[IntentT]
+    model: type[ModelT]
+    formatter: Callable[[ModelT], str]
+    prompt: str
+    # ... other fields
+
+# Specific configurations with precise types
+MODULE_README_CONFIG = DocConfig[ModuleIntent, ModuleDocumentation](
+    intent_model=ModuleIntent,
+    model=ModuleDocumentation,
+    formatter=format_module_documentation,
+    ...
+)
+
+PROJECT_README_CONFIG = DocConfig[ProjectIntent, ProjectDocumentation](
+    intent_model=ProjectIntent,
+    model=ProjectDocumentation,
+    formatter=format_project_documentation,
+    ...
+)
+
+# Now type inference works perfectly
+config = DOC_CONFIGS[DocType.MODULE_README]  # type: DocConfig[ModuleIntent, ModuleDocumentation]
+intent = ask_human_intent(intent_model=config.intent_model)  # type: ModuleIntent | None
+```
+
+**Benefits:**
+
+- Full type safety throughout the workflow
+- Type checker understands intent types from config
+- No `BaseModel | None` - precise `ModuleIntent | None` instead
+- Better IDE autocomplete
+- Catches mismatched intent/model combinations at type-check time
+
+**Effort:** Medium (affects `doc_configs.py`, `workflows.py`, type annotations)
+
+**Impact:** High (eliminates remaining type safety gaps)
+
+______________________________________________________________________
+
+### 3. Add Runtime Type Validation
 
 **Current State:** Type hints are not enforced at runtime
 
@@ -531,6 +591,7 @@ ______________________________________________________________________
 | Add Integration Tests | Medium | High | **HIGH** |
 | Reduce Mocking | High | High | **HIGH** |
 | Cache Drift Detection | Medium | High | **HIGH** |
+| Make DocConfig Generic | Medium | High | **HIGH** |
 | Extract Git Operations | Low | Medium | **MEDIUM** |
 | Reduce Code Duplication | Low | Medium | **MEDIUM** |
 | Split Config Module | Low | Medium | **MEDIUM** |
