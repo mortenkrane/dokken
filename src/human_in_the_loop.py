@@ -1,14 +1,66 @@
 """Interactive questionnaire for capturing human intent in documentation."""
 
+from typing import TypeVar, overload
+
 import questionary
 from pydantic import BaseModel
 from rich.console import Console
 
-from src.records import ModuleIntent
+from src.records import ModuleIntent, ProjectIntent, StyleGuideIntent
 
 console = Console()
 
+# TypeVar for generic intent models
+IntentModelT = TypeVar("IntentModelT", bound=BaseModel)
 
+
+# Overloads for specific intent types
+# Default case (no arguments) - returns ModuleIntent
+@overload
+def ask_human_intent(
+    *,
+    intent_model: type[ModuleIntent] = ...,
+    questions: list[dict[str, str]] | None = None,
+) -> ModuleIntent | None: ...
+
+
+# Explicit ModuleIntent
+@overload
+def ask_human_intent(
+    *,
+    intent_model: type[ModuleIntent],
+    questions: list[dict[str, str]] | None = None,
+) -> ModuleIntent | None: ...
+
+
+# Explicit ProjectIntent
+@overload
+def ask_human_intent(
+    *,
+    intent_model: type[ProjectIntent],
+    questions: list[dict[str, str]] | None = None,
+) -> ProjectIntent | None: ...
+
+
+# Explicit StyleGuideIntent
+@overload
+def ask_human_intent(
+    *,
+    intent_model: type[StyleGuideIntent],
+    questions: list[dict[str, str]] | None = None,
+) -> StyleGuideIntent | None: ...
+
+
+# Generic case
+@overload
+def ask_human_intent(
+    *,
+    intent_model: type[IntentModelT],
+    questions: list[dict[str, str]] | None = None,
+) -> IntentModelT | None: ...
+
+
+# Actual implementation
 def ask_human_intent(
     *,
     intent_model: type[BaseModel] = ModuleIntent,
