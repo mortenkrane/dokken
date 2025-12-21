@@ -12,9 +12,6 @@ from pydantic import BaseModel
 from src.prompts import DRIFT_CHECK_PROMPT
 from src.records import (
     DocumentationDriftCheck,
-    ModuleIntent,
-    ProjectIntent,
-    StyleGuideIntent,
 )
 
 # Temperature setting for deterministic, reproducible documentation output
@@ -83,7 +80,7 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
 
 
 def _build_human_intent_section(
-    human_intent: ModuleIntent | ProjectIntent | StyleGuideIntent,
+    human_intent: BaseModel,
 ) -> str:
     """
     Builds a formatted string from human intent data.
@@ -94,16 +91,11 @@ def _build_human_intent_section(
     Returns:
         Formatted string with human-provided context, or empty string if no data.
     """
-    # Get all fields from the intent model
-    intent_dict = human_intent.model_dump()
-
-    # Build formatted lines for non-null values
-    intent_lines = []
-    for key, value in intent_dict.items():
-        if value is not None:
-            # Convert snake_case to Title Case
-            label = key.replace("_", " ").title()
-            intent_lines.append(f"{label}: {value}")
+    intent_lines = [
+        f"{key.replace('_', ' ').title()}: {value}"
+        for key, value in human_intent.model_dump().items()
+        if value is not None
+    ]
 
     if not intent_lines:
         return ""
@@ -115,7 +107,7 @@ def generate_doc(
     *,
     llm: LLM,
     context: str,
-    human_intent: ModuleIntent | ProjectIntent | StyleGuideIntent | None = None,
+    human_intent: BaseModel | None = None,
     output_model: type[BaseModel],
     prompt_template: str,
 ) -> BaseModel:

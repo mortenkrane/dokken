@@ -5,6 +5,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from src.utils import find_repo_root
+
 
 class ExclusionConfig(BaseModel):
     """Configuration for excluding files and symbols from documentation."""
@@ -42,7 +44,7 @@ def load_config(*, module_path: str) -> DokkenConfig:
     config_data = {"exclusions": {"files": [], "symbols": []}}
 
     # Load global config from repo root if it exists
-    repo_root = _find_repo_root(module_path)
+    repo_root = find_repo_root(module_path)
     if repo_root:
         _load_and_merge_config(Path(repo_root) / ".dokken.toml", config_data)
 
@@ -66,27 +68,6 @@ def _load_and_merge_config(config_path: Path, base_config: dict) -> None:
         with open(config_path, "rb") as f:
             config_data = tomllib.load(f)
             _merge_config(base_config, config_data)
-
-
-def _find_repo_root(start_path: str) -> str | None:
-    """
-    Find the repository root by searching for .git directory.
-
-    Args:
-        start_path: Path to start searching from.
-
-    Returns:
-        Path to repository root, or None if not found.
-    """
-    current = Path(start_path).resolve()
-
-    # Search up the directory tree
-    while current != current.parent:
-        if (current / ".git").exists():
-            return str(current)
-        current = current.parent
-
-    return None
 
 
 def _merge_config(base: dict, override: dict) -> None:

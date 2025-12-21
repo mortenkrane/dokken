@@ -50,21 +50,25 @@ def get_module_context(*, module_path: str, depth: int = 0) -> str:
         context = f"--- MODULE PATH: {module_path} ---\n\n"
 
         for file_path in sorted(filtered_files):
-            # Get the current file content
-            with open(file_path) as f:
-                code_content = f.read()
+            try:
+                # Get the current file content
+                with open(file_path) as f:
+                    code_content = f.read()
 
-            # Filter out excluded symbols
-            filtered_content = _filter_excluded_symbols(
-                code_content, config.exclusions.symbols
-            )
+                # Filter out excluded symbols
+                filtered_content = _filter_excluded_symbols(
+                    code_content, config.exclusions.symbols
+                )
 
-            # Add file context
-            context += f"--- FILE: {file_path} ---\n{filtered_content}\n\n"
+                # Add file context
+                context += f"--- FILE: {file_path} ---\n{filtered_content}\n\n"
+            except OSError as e:
+                console.print(f"[yellow]⚠[/yellow] Could not read {file_path}: {e}")
+                continue
 
         return context
-    except Exception as e:  # noqa: BLE001
-        console.print(f"[red]Error getting module context for {module_path}:[/red] {e}")
+    except OSError as e:
+        console.print(f"[red]Error accessing module path {module_path}:[/red] {e}")
         return ""
 
 

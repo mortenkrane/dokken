@@ -17,7 +17,7 @@ def test_ask_human_intent_full_responses():
             "Part of e-commerce system",
         ]
 
-        result = ask_human_intent()
+        result = ask_human_intent(intent_model=ModuleIntent)
 
         assert result is not None
         assert isinstance(result, ModuleIntent)
@@ -33,7 +33,7 @@ def test_ask_human_intent_skip_first_question():
         # Return None (ESC pressed) on first question
         mock_text.return_value.ask.return_value = None
 
-        result = ask_human_intent()
+        result = ask_human_intent(intent_model=ModuleIntent)
 
         assert result is None
         # Should only call once (first question)
@@ -51,7 +51,7 @@ def test_ask_human_intent_skip_later_questions():
             None,  # Question 4 - skipped
         ]
 
-        result = ask_human_intent()
+        result = ask_human_intent(intent_model=ModuleIntent)
 
         assert result is not None
         assert isinstance(result, ModuleIntent)
@@ -72,7 +72,7 @@ def test_ask_human_intent_empty_responses():
             "Another value",
         ]
 
-        result = ask_human_intent()
+        result = ask_human_intent(intent_model=ModuleIntent)
 
         assert result is not None
         assert isinstance(result, ModuleIntent)
@@ -88,7 +88,7 @@ def test_ask_human_intent_all_empty_responses():
         # Return all empty strings
         mock_text.return_value.ask.side_effect = ["", "", "", ""]
 
-        result = ask_human_intent()
+        result = ask_human_intent(intent_model=ModuleIntent)
 
         assert result is None
 
@@ -99,6 +99,6 @@ def test_ask_human_intent_keyboard_interrupt():
         # Raise KeyboardInterrupt on first question
         mock_text.return_value.ask.side_effect = KeyboardInterrupt()
 
-        result = ask_human_intent()
+        result = ask_human_intent(intent_model=ModuleIntent)
 
         assert result is None
