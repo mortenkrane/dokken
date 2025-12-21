@@ -1,6 +1,6 @@
 """Interactive questionnaire for capturing human intent in documentation."""
 
-from typing import TypeVar, overload
+from typing import overload
 
 import questionary
 from pydantic import BaseModel
@@ -9,9 +9,6 @@ from rich.console import Console
 from src.records import ModuleIntent, ProjectIntent, StyleGuideIntent
 
 console = Console()
-
-# TypeVar for generic intent models
-IntentModelT = TypeVar("IntentModelT", bound=BaseModel)
 
 
 # Overloads for specific intent types
@@ -40,7 +37,7 @@ def ask_human_intent(
 
 
 @overload
-def ask_human_intent(
+def ask_human_intent[IntentModelT: BaseModel](
     *,
     intent_model: type[IntentModelT],
     questions: list[dict[str, str]] | None = None,
