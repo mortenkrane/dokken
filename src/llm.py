@@ -12,9 +12,6 @@ from pydantic import BaseModel
 from src.prompts import DRIFT_CHECK_PROMPT
 from src.records import (
     DocumentationDriftCheck,
-    ModuleIntent,
-    ProjectIntent,
-    StyleGuideIntent,
 )
 
 # Temperature setting for deterministic, reproducible documentation output

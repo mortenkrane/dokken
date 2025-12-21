@@ -73,7 +73,7 @@ def prepare_documentation_context(
                 "not in a git repository"
             )
             sys.exit(1)
-        # Type narrowing: repo_root is guaranteed to be str here (sys.exit prevents None)
+        # Type narrowing: repo_root is str here (sys.exit prevents None)
         analysis_path = cast(str, repo_root)
     else:
         analysis_path = target_module_path
