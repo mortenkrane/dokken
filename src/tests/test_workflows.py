@@ -355,10 +355,18 @@ def test_fix_documentation_drift_generates_and_writes(
         code_context="code context",
         output_path=str(readme_path),
         doc_config=test_doc_config,
+        drift_rationale="Test drift rationale",
     )
 
-    # Should generate documentation
-    mock_generate_doc.assert_called_once()
+    # Should generate documentation with drift rationale
+    mock_generate_doc.assert_called_once_with(
+        llm=mock_llm_client,
+        context="code context",
+        human_intent=None,
+        drift_rationale="Test drift rationale",
+        output_model=test_doc_config.model,
+        prompt_template=test_doc_config.prompt,
+    )
     # Verify README was updated
     assert readme_path.read_text() == "# Updated Docs"
 

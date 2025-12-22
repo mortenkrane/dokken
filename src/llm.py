@@ -103,11 +103,43 @@ def _build_human_intent_section(
     return "\n--- HUMAN-PROVIDED CONTEXT ---\n" + "\n".join(intent_lines) + "\n"
 
 
+def _build_drift_context_section(
+    drift_rationale: str,
+) -> str:
+    """
+    Builds a formatted string from drift detection rationale.
+
+    The returned string includes educational context explaining what documentation
+    drift is and explicit instructions for the LLM to address the detected issues.
+    This verbose approach improves generation quality by ensuring the LLM
+    understands both the concept of drift and the specific problems to fix.
+
+    Args:
+        drift_rationale: The rationale explaining what drift was detected.
+
+    Returns:
+        Formatted string with drift detection context, ready to append to code context.
+    """
+    return (
+        "\n--- DETECTED DOCUMENTATION DRIFT ---\n"
+        "Documentation drift occurs when code changes but documentation doesn't, "
+        "causing the docs to become outdated or inaccurate. An automated analysis "
+        "has detected the following specific drift issues between the current "
+        "documentation and the actual code:\n\n"
+        f"{drift_rationale}\n\n"
+        "IMPORTANT: Your task is to generate updated documentation that "
+        "addresses these specific drift issues. Make sure the new documentation "
+        "accurately reflects the current code state and resolves each of the "
+        "concerns listed above.\n"
+    )
+
+
 def generate_doc(
     *,
     llm: LLM,
     context: str,
     human_intent: BaseModel | None = None,
+    drift_rationale: str | None = None,
     output_model: type[BaseModel],
     prompt_template: str,
 ) -> BaseModel:
@@ -118,6 +150,8 @@ def generate_doc(
         llm: The LLM client instance.
         context: The code context to generate documentation from.
         human_intent: Optional human-provided intent and context.
+        drift_rationale: Optional drift detection rationale explaining what
+            needs to be fixed.
         output_model: Pydantic model class for structured output.
         prompt_template: Prompt template string to use.
 
@@ -129,6 +163,14 @@ def generate_doc(
         _build_human_intent_section(human_intent) if human_intent else ""
     )
 
+    # Build drift context section if provided
+    drift_context_section = (
+        _build_drift_context_section(drift_rationale) if drift_rationale else ""
+    )
+
+    # Combine context sections
+    combined_context = context + drift_context_section
+
     # Use LLMTextCompletionProgram for structured Pydantic output
     generate_program = LLMTextCompletionProgram.from_defaults(
         output_cls=output_model,
@@ -137,4 +179,6 @@ def generate_doc(
     )
 
     # Run the generation
-    return generate_program(context=context, human_intent_section=human_intent_section)
+    return generate_program(
+        context=combined_context, human_intent_section=human_intent_section
+    )
