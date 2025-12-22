@@ -5,7 +5,7 @@ Thank you for your interest in contributing to Dokken! We welcome contributions 
 ## Getting Started
 
 1. Fork the repository and clone your fork
-1. Install dependencies: `mise install && uv sync`
+1. Install dependencies: `mise install && uv sync --all-groups`
 1. Set up pre-commit hooks (optional but recommended):
    ```bash
    uv run pre-commit install
@@ -40,7 +40,7 @@ Manual run: `uv run pre-commit run --all-files`
 
 ```bash
 # Format and lint
-ruff format && ruff check --fix
+uv run ruff format && uv run ruff check --fix
 
 # Type checking
 uvx ty check
@@ -49,20 +49,20 @@ uvx ty check
 uvx mdformat *.md docs/ src/
 
 # Run tests with coverage
-pytest src/tests/ --cov=src --cov-report=term-missing
+uv run pytest src/tests/ --cov=src --cov-report=term-missing
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests with coverage
-pytest src/tests/ --cov=src
+uv run pytest src/tests/ --cov=src
 
 # Run specific test file
-pytest src/tests/test_module.py
+uv run pytest src/tests/test_module.py
 
 # Run with verbose output
-pytest src/tests/ -v
+uv run pytest src/tests/ -v
 ```
 
 ## Pull Request Process
