@@ -9,6 +9,7 @@ from llama_index.core.llms import LLM
 from rich.console import Console
 
 from src.code_analyzer import get_module_context
+from src.config import load_config
 from src.doc_configs import DOC_CONFIGS, DocConfig
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
@@ -168,6 +169,8 @@ def check_documentation_drift(
                 output_path=ctx.output_path,
                 doc_config=ctx.doc_config,
                 drift_rationale=drift_check.rationale,
+                doc_type=doc_type,
+                module_path=target_module_path,
             )
             return
 
@@ -183,6 +186,8 @@ def fix_documentation_drift(
     output_path: str,
     doc_config: DocConfig,
     drift_rationale: str,
+    doc_type: DocType,
+    module_path: str,
 ) -> None:
     """
     Fix documentation drift by generating and writing updated documentation.
@@ -193,8 +198,13 @@ def fix_documentation_drift(
         output_path: Path to the documentation file to update.
         doc_config: DocConfig instance for the documentation type.
         drift_rationale: Explanation of what drift was detected.
+        doc_type: The type of documentation being generated.
+        module_path: Path to the module for loading config.
     """
     console.print("[cyan]Fixing drift by generating updated documentation...\n")
+
+    # Load configuration for custom prompts
+    config = load_config(module_path=module_path)
 
     # Capture human intent (doc-type-specific)
     human_intent = ask_human_intent(
@@ -207,6 +217,8 @@ def fix_documentation_drift(
             context=code_context,
             human_intent=human_intent,
             drift_rationale=drift_rationale,
+            custom_prompts=config.custom_prompts,
+            doc_type=doc_type,
             output_model=doc_config.model,
             prompt_template=doc_config.prompt,
         )
@@ -295,6 +307,9 @@ def generate_documentation(
         )
         return None
 
+    # Load configuration for custom prompts
+    config = load_config(module_path=target_module_path)
+
     # 3. Step 2: Capture Human Intent (doc-type-specific questions)
     console.print(
         "[bold cyan]Step 2:[/bold cyan] Capturing human intent for documentation..."
@@ -316,6 +331,8 @@ def generate_documentation(
             drift_rationale=(
                 drift_check.rationale if drift_check.drift_detected else None
             ),
+            custom_prompts=config.custom_prompts,
+            doc_type=doc_type,
             output_model=ctx.doc_config.model,
             prompt_template=ctx.doc_config.prompt,
         )

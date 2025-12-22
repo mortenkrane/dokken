@@ -99,6 +99,50 @@ symbols = [
 - Skip boilerplate files like `__init__.py`
 - Filter experimental or temporary code
 
+### Custom Prompts
+
+Inject your own preferences and instructions into the documentation generation process using custom prompts in `.dokken.toml`:
+
+**Configuration locations:**
+
+- Repository root: `.dokken.toml` - Global custom prompts
+- Module directory: `<module>/.dokken.toml` - Module-specific custom prompts
+
+**Example configuration:**
+
+```toml
+[custom_prompts]
+# Global prompt applies to all documentation types
+global_prompt = """
+Use British spelling throughout.
+Prefer active voice and present tense.
+Keep sentences concise and direct.
+"""
+
+# Doc-type-specific prompts
+module_readme = "Focus on architectural patterns and design decisions."
+project_readme = "Include a quick-start guide and highlight key features."
+style_guide = "Reference specific files and functions as examples."
+```
+
+**Available doc types:**
+
+- `global_prompt` - Applied to all documentation types
+- `module_readme` - Module-level documentation (`docs/module-readme.md`)
+- `project_readme` - Project README (`README.md`)
+- `style_guide` - Style guide documentation (`docs/style-guide.md`)
+
+**How it works:**
+
+Custom prompts are appended to the LLM generation prompt under a "USER PREFERENCES" section. Both global and doc-type-specific prompts are included when applicable. Module-level configs extend (and can override) repository-level configs.
+
+**Common use cases:**
+
+- Enforce specific writing style or tone
+- Request inclusion of particular sections
+- Emphasize certain aspects (security, performance, etc.)
+- Exclude topics you prefer not to document
+
 ## Development
 
 See [docs/style-guide.md](docs/style-guide.md) for comprehensive architecture, code style, testing guidelines, and git workflow.

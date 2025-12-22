@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from src.config import DokkenConfig, ExclusionConfig, load_config
+from src.config import CustomPrompts, DokkenConfig, ExclusionConfig, load_config
 
 
 def test_exclusion_config_defaults() -> None:
@@ -174,3 +174,150 @@ key = "value"
     # Should use defaults
     assert config.exclusions.files == []
     assert config.exclusions.symbols == []
+
+
+# --- Tests for CustomPrompts ---
+
+
+def test_custom_prompts_defaults() -> None:
+    """Test CustomPrompts has correct defaults."""
+    prompts = CustomPrompts()
+
+    assert prompts.global_prompt is None
+    assert prompts.module_readme is None
+    assert prompts.project_readme is None
+    assert prompts.style_guide is None
+
+
+def test_dokken_config_includes_custom_prompts() -> None:
+    """Test DokkenConfig includes custom_prompts field."""
+    config = DokkenConfig()
+
+    assert isinstance(config.custom_prompts, CustomPrompts)
+    assert config.custom_prompts.global_prompt is None
+
+
+def test_load_config_with_global_custom_prompt(tmp_path: Path) -> None:
+    """Test load_config loads global custom prompt."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+[custom_prompts]
+global_prompt = "Always use British spelling."
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    assert config.custom_prompts.global_prompt == "Always use British spelling."
+    assert config.custom_prompts.module_readme is None
+    assert config.custom_prompts.project_readme is None
+    assert config.custom_prompts.style_guide is None
+
+
+def test_load_config_with_doc_type_specific_prompts(tmp_path: Path) -> None:
+    """Test load_config loads doc-type-specific custom prompts."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+[custom_prompts]
+module_readme = "Focus on implementation details."
+project_readme = "Keep it concise for newcomers."
+style_guide = "Include specific code examples."
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    assert config.custom_prompts.global_prompt is None
+    assert config.custom_prompts.module_readme == "Focus on implementation details."
+    assert config.custom_prompts.project_readme == "Keep it concise for newcomers."
+    assert config.custom_prompts.style_guide == "Include specific code examples."
+
+
+def test_load_config_with_all_custom_prompts(tmp_path: Path) -> None:
+    """Test load_config loads both global and doc-type-specific prompts."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+[custom_prompts]
+global_prompt = "Use clear, simple language."
+module_readme = "Focus on architecture."
+project_readme = "Include quick-start guide."
+style_guide = "Reference existing code patterns."
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    assert config.custom_prompts.global_prompt == "Use clear, simple language."
+    assert config.custom_prompts.module_readme == "Focus on architecture."
+    assert config.custom_prompts.project_readme == "Include quick-start guide."
+    assert config.custom_prompts.style_guide == "Reference existing code patterns."
+
+
+def test_load_config_merge_custom_prompts(tmp_path: Path) -> None:
+    """Test custom prompts are merged from repo and module configs."""
+    # Create repo structure
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / ".git").mkdir()
+
+    module_dir = repo_root / "src" / "module"
+    module_dir.mkdir(parents=True)
+
+    # Create repo-level config with global prompt
+    repo_config = """
+[custom_prompts]
+global_prompt = "Use American spelling."
+module_readme = "Include diagrams."
+"""
+    (repo_root / ".dokken.toml").write_text(repo_config)
+
+    # Create module-level config that overrides module_readme
+    module_config = """
+[custom_prompts]
+module_readme = "Focus on implementation details."
+project_readme = "Keep it brief."
+"""
+    (module_dir / ".dokken.toml").write_text(module_config)
+
+    config = load_config(module_path=str(module_dir))
+
+    # Global prompt from repo should be preserved
+    assert config.custom_prompts.global_prompt == "Use American spelling."
+    # module_readme should be overridden by module config
+    assert config.custom_prompts.module_readme == "Focus on implementation details."
+    # project_readme from module should be added
+    assert config.custom_prompts.project_readme == "Keep it brief."
+    assert config.custom_prompts.style_guide is None
+
+
+def test_load_config_custom_prompts_and_exclusions(tmp_path: Path) -> None:
+    """Test load_config handles both custom_prompts and exclusions."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+[exclusions]
+files = ["__init__.py"]
+symbols = ["test_*"]
+
+[custom_prompts]
+global_prompt = "Be concise."
+module_readme = "Focus on patterns."
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    # Check exclusions
+    assert config.exclusions.files == ["__init__.py"]
+    assert config.exclusions.symbols == ["test_*"]
+
+    # Check custom prompts
+    assert config.custom_prompts.global_prompt == "Be concise."
+    assert config.custom_prompts.module_readme == "Focus on patterns."
