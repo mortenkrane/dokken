@@ -272,7 +272,9 @@ def test_build_drift_context_section_educational_content() -> None:
 
 def test_build_drift_context_section_with_special_characters() -> None:
     """Test _build_drift_context_section handles special characters."""
-    rationale = "Class `UserAuth` removed\nNew module: auth/oauth2.py\n- Added JWT support"
+    rationale = (
+        "Class `UserAuth` removed\nNew module: auth/oauth2.py\n- Added JWT support"
+    )
 
     result = _build_drift_context_section(rationale)
 

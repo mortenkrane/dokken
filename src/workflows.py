@@ -313,7 +313,9 @@ def generate_documentation(
             llm=llm_client,
             context=code_context,
             human_intent=human_intent,
-            drift_rationale=drift_check.rationale if drift_check.drift_detected else None,
+            drift_rationale=(
+                drift_check.rationale if drift_check.drift_detected else None
+            ),
             output_model=ctx.doc_config.model,
             prompt_template=ctx.doc_config.prompt,
         )

@@ -127,9 +127,10 @@ def _build_drift_context_section(
         "has detected the following specific drift issues between the current "
         "documentation and the actual code:\n\n"
         f"{drift_rationale}\n\n"
-        "IMPORTANT: Your task is to generate updated documentation that addresses "
-        "these specific drift issues. Make sure the new documentation accurately "
-        "reflects the current code state and resolves each of the concerns listed above.\n"
+        "IMPORTANT: Your task is to generate updated documentation that "
+        "addresses these specific drift issues. Make sure the new documentation "
+        "accurately reflects the current code state and resolves each of the "
+        "concerns listed above.\n"
     )
 
 
@@ -149,7 +150,8 @@ def generate_doc(
         llm: The LLM client instance.
         context: The code context to generate documentation from.
         human_intent: Optional human-provided intent and context.
-        drift_rationale: Optional drift detection rationale explaining what needs to be fixed.
+        drift_rationale: Optional drift detection rationale explaining what
+            needs to be fixed.
         output_model: Pydantic model class for structured output.
         prompt_template: Prompt template string to use.
 
@@ -177,4 +179,6 @@ def generate_doc(
     )
 
     # Run the generation
-    return generate_program(context=combined_context, human_intent_section=human_intent_section)
+    return generate_program(
+        context=combined_context, human_intent_section=human_intent_section
+    )
