@@ -33,6 +33,9 @@ export GOOGLE_API_KEY="AIza..."
 # Check for documentation drift (useful in CI/CD)
 dokken check src/module_name
 
+# Check all modules configured in .dokken.toml
+dokken check --all
+
 # Generate or update documentation
 dokken generate src/module_name
 ```
@@ -64,18 +67,63 @@ When generating documentation, Dokken will ask you questions to capture context 
 
 Your responses help create more accurate, context-aware documentation that reflects the true intent behind your code.
 
+### Multi-Module Drift Detection
+
+For CI/CD integration, you can configure multiple modules to check in a single command using `.dokken.toml`:
+
+**Configuration:**
+
+```toml
+# List of modules to check (paths relative to repo root)
+modules = [
+    "src/auth",
+    "src/api",
+    "src/database",
+    "src/utils"
+]
+
+[exclusions]
+# Optional: exclude files or symbols from all modules
+files = ["__init__.py", "*_test.py"]
+```
+
+**Usage:**
+
+```bash
+# Check all configured modules
+dokken check --all
+
+# Check all modules and auto-fix drift
+dokken check --all --fix
+
+# Check a single module (still works)
+dokken check src/auth
+```
+
+**Output:**
+
+The `--all` flag will:
+
+- Process each module sequentially
+- Clearly report which modules have drift and which don't
+- Exit with code 1 if any module has drift (perfect for CI/CD)
+- Provide a summary of results at the end
+
 ### Excluding Files and Symbols
 
 Create a `.dokken.toml` file to exclude files or symbols from documentation:
 
 **Configuration locations:**
 
-- Repository root: `.dokken.toml` - Global exclusions
+- Repository root: `.dokken.toml` - Global exclusions and module list
 - Module directory: `<module>/.dokken.toml` - Module-specific exclusions
 
 **Example configuration:**
 
 ```toml
+# Configure modules to check (repo root only)
+modules = ["src/auth", "src/api"]
+
 [exclusions]
 # Exclude entire files (supports glob patterns)
 files = [

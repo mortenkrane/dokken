@@ -51,6 +51,10 @@ class DokkenConfig(BaseModel):
 
     exclusions: ExclusionConfig = Field(default_factory=ExclusionConfig)
     custom_prompts: CustomPrompts = Field(default_factory=CustomPrompts)
+    modules: list[str] = Field(
+        default_factory=list,
+        description="List of module paths to check for drift (relative to repo root)",
+    )
 
 
 def load_config(*, module_path: str) -> DokkenConfig:
@@ -75,6 +79,7 @@ def load_config(*, module_path: str) -> DokkenConfig:
             "project_readme": None,
             "style_guide": None,
         },
+        "modules": [],
     }
 
     # Load global config from repo root if it exists
@@ -96,7 +101,11 @@ def load_config(*, module_path: str) -> DokkenConfig:
     except ValidationError as e:
         raise ValueError(f"Invalid custom prompts configuration: {e}") from e
 
-    return DokkenConfig(exclusions=exclusion_config, custom_prompts=custom_prompts)
+    return DokkenConfig(
+        exclusions=exclusion_config,
+        custom_prompts=custom_prompts,
+        modules=config_data["modules"],  # type: ignore[arg-type]
+    )
 
 
 def _load_and_merge_config(config_path: Path, base_config: dict) -> None:
