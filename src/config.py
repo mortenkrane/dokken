@@ -104,7 +104,7 @@ def load_config(*, module_path: str) -> DokkenConfig:
     return DokkenConfig(
         exclusions=exclusion_config,
         custom_prompts=custom_prompts,
-        modules=config_data["modules"],
+        modules=config_data["modules"],  # type: ignore[arg-type]
     )
 
 

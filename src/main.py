@@ -78,7 +78,11 @@ def cli():
     help=DOC_TYPE_HELP,
 )
 def check(
-    module_path: str | None, check_all: bool, fix: bool, depth: int | None, doc_type: str
+    module_path: str | None,
+    check_all: bool,
+    fix: bool,
+    depth: int | None,
+    doc_type: str,
 ):
     """Check for documentation drift without generating new docs.
 
@@ -108,7 +112,8 @@ def check(
 
         if not check_all and not module_path:
             console.print(
-                "[bold red]Error:[/bold red] Must specify either a module path or --all flag."
+                "[bold red]Error:[/bold red] Must specify either a module "
+                "path or --all flag."
             )
             sys.exit(1)
 
@@ -126,7 +131,9 @@ def check(
             check_multiple_modules_drift(fix=fix, depth=depth, doc_type=doc_type_enum)
             console.print("\n[bold green]✓ All modules are up-to-date![/bold green]")
         else:
-            # Check single module
+            # Check single module - module_path guaranteed non-None
+            # by earlier validation
+            assert module_path is not None  # Type narrowing
             console.print(
                 Panel.fit(
                     "[bold blue]Documentation Drift Check[/bold blue]",
@@ -134,7 +141,10 @@ def check(
                 )
             )
             check_documentation_drift(
-                target_module_path=module_path, fix=fix, depth=depth, doc_type=doc_type_enum
+                target_module_path=module_path,
+                fix=fix,
+                depth=depth,
+                doc_type=doc_type_enum,
             )
             console.print("\n[bold green]✓ Documentation is up-to-date![/bold green]")
     except DocumentationDriftError as drift_error:

@@ -243,7 +243,7 @@ def fix_documentation_drift(
     )
 
 
-def check_multiple_modules_drift(
+def check_multiple_modules_drift(  # noqa: C901
     *,
     fix: bool = False,
     depth: int | None = None,
@@ -273,6 +273,9 @@ def check_multiple_modules_drift(
         )
         sys.exit(1)
 
+    # Type narrowing: repo_root is guaranteed str after sys.exit check
+    assert repo_root is not None
+
     # Load config from repo root
     config = load_config(module_path=repo_root)
 
@@ -283,7 +286,10 @@ def check_multiple_modules_drift(
         )
         sys.exit(1)
 
-    console.print(f"\n[bold cyan]Checking {len(config.modules)} modules for drift...[/bold cyan]\n")
+    console.print(
+        f"\n[bold cyan]Checking {len(config.modules)} modules for "
+        f"drift...[/bold cyan]\n"
+    )
 
     modules_with_drift = []
     modules_without_drift = []
@@ -299,7 +305,7 @@ def check_multiple_modules_drift(
         # Validate module path exists
         if not os.path.isdir(full_module_path):
             modules_skipped.append(module_path)
-            console.print(f"  [yellow]⚠[/yellow] Skipping - directory does not exist\n")
+            console.print("  [yellow]⚠[/yellow] Skipping - directory does not exist\n")
             continue
 
         try:
@@ -310,7 +316,7 @@ def check_multiple_modules_drift(
                 doc_type=doc_type,
             )
             modules_without_drift.append(module_path)
-            console.print(f"  [green]✓ No drift detected[/green]\n")
+            console.print("  [green]✓ No drift detected[/green]\n")
         except DocumentationDriftError as drift_error:
             modules_with_drift.append((module_path, drift_error.rationale))
             console.print(f"  [red]✗ Drift detected:[/red] {drift_error.rationale}\n")
@@ -325,7 +331,7 @@ def check_multiple_modules_drift(
 
     if modules_with_drift:
         console.print("\n[bold red]Modules with drift:[/bold red]")
-        for module_path, rationale in modules_with_drift:
+        for module_path, _ in modules_with_drift:
             console.print(f"  • {module_path}")
 
         # Aggregate rationales into error message for programmatic use
@@ -333,7 +339,10 @@ def check_multiple_modules_drift(
             f"  - {path}: {rationale}" for path, rationale in modules_with_drift
         )
         raise DocumentationDriftError(
-            rationale=f"{len(modules_with_drift)} module(s) have documentation drift:\n{rationales}",
+            rationale=(
+                f"{len(modules_with_drift)} module(s) have documentation "
+                f"drift:\n{rationales}"
+            ),
             module_path="multiple modules",
         )
 

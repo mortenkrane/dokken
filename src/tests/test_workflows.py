@@ -515,7 +515,9 @@ def test_check_multiple_modules_drift_no_modules_configured(
 
 
 def test_check_multiple_modules_drift_all_modules_pass(
-    mocker: MockerFixture, tmp_path: Path, sample_drift_check_no_drift: DocumentationDriftCheck
+    mocker: MockerFixture,
+    tmp_path: Path,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_multiple_modules_drift when all modules pass drift check."""
     # Create a git repo with modules
