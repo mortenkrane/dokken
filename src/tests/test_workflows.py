@@ -12,6 +12,7 @@ from src.exceptions import DocumentationDriftError
 from src.records import DocumentationDriftCheck, ModuleDocumentation
 from src.workflows import (
     check_documentation_drift,
+    check_multiple_modules_drift,
     fix_documentation_drift,
     generate_documentation,
 )
@@ -476,3 +477,190 @@ def test_generate_documentation_style_guide_creates_docs_dir(
     style_guide_path = repo_dir / "docs" / "style-guide.md"
     assert style_guide_path.exists()
     assert (repo_dir / "docs").is_dir()
+
+
+def test_check_multiple_modules_drift_not_in_git_repo(
+    mocker: MockerFixture,
+) -> None:
+    """Test check_multiple_modules_drift exits when not in a git repository."""
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.find_repo_root", return_value=None)
+
+    with pytest.raises(SystemExit) as exc_info:
+        check_multiple_modules_drift()
+
+    assert exc_info.value.code == 1
+
+
+def test_check_multiple_modules_drift_no_modules_configured(
+    mocker: MockerFixture, tmp_path: Path
+) -> None:
+    """Test check_multiple_modules_drift exits when no modules configured."""
+    # Create a git repo
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
+
+    # Mock load_config to return empty modules list
+    from src.config import DokkenConfig
+    mocker.patch("src.workflows.load_config", return_value=DokkenConfig(modules=[]))
+
+    with pytest.raises(SystemExit) as exc_info:
+        check_multiple_modules_drift()
+
+    assert exc_info.value.code == 1
+
+
+def test_check_multiple_modules_drift_all_modules_pass(
+    mocker: MockerFixture, tmp_path: Path, sample_drift_check_no_drift: DocumentationDriftCheck
+) -> None:
+    """Test check_multiple_modules_drift when all modules pass drift check."""
+    # Create a git repo with modules
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
+
+    module1 = repo_dir / "src" / "module1"
+    module1.mkdir(parents=True)
+    (module1 / "README.md").write_text("# Module 1")
+
+    module2 = repo_dir / "src" / "module2"
+    module2.mkdir(parents=True)
+    (module2 / "README.md").write_text("# Module 2")
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
+
+    # Mock config with two modules
+    from src.config import DokkenConfig
+    mocker.patch(
+        "src.workflows.load_config",
+        return_value=DokkenConfig(modules=["src/module1", "src/module2"]),
+    )
+
+    # Mock check_documentation_drift to succeed (no exception)
+    mock_check = mocker.patch("src.workflows.check_documentation_drift")
+
+    # Should not raise
+    check_multiple_modules_drift()
+
+    # Should check both modules
+    assert mock_check.call_count == 2
+
+
+def test_check_multiple_modules_drift_some_modules_fail(
+    mocker: MockerFixture,
+    tmp_path: Path,
+    sample_drift_check_with_drift: DocumentationDriftCheck,
+) -> None:
+    """Test check_multiple_modules_drift when some modules have drift."""
+    # Create a git repo with modules
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
+
+    module1 = repo_dir / "src" / "module1"
+    module1.mkdir(parents=True)
+    (module1 / "README.md").write_text("# Module 1")
+
+    module2 = repo_dir / "src" / "module2"
+    module2.mkdir(parents=True)
+    (module2 / "README.md").write_text("# Module 2")
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
+
+    # Mock config with two modules
+    from src.config import DokkenConfig
+    mocker.patch(
+        "src.workflows.load_config",
+        return_value=DokkenConfig(modules=["src/module1", "src/module2"]),
+    )
+
+    # First module passes, second module has drift
+    def check_side_effect(*args, **kwargs):
+        if "module2" in kwargs["target_module_path"]:
+            raise DocumentationDriftError(
+                rationale="Test drift", module_path=kwargs["target_module_path"]
+            )
+
+    mock_check = mocker.patch(
+        "src.workflows.check_documentation_drift", side_effect=check_side_effect
+    )
+
+    # Should raise DocumentationDriftError
+    with pytest.raises(DocumentationDriftError) as exc_info:
+        check_multiple_modules_drift()
+
+    assert "1 module(s) have documentation drift" in str(exc_info.value)
+    assert mock_check.call_count == 2
+
+
+def test_check_multiple_modules_drift_skips_nonexistent_modules(
+    mocker: MockerFixture, tmp_path: Path
+) -> None:
+    """Test check_multiple_modules_drift skips modules that don't exist."""
+    # Create a git repo with only one module
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
+
+    module1 = repo_dir / "src" / "module1"
+    module1.mkdir(parents=True)
+    (module1 / "README.md").write_text("# Module 1")
+
+    # module2 doesn't exist
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
+
+    # Mock config with two modules (one nonexistent)
+    from src.config import DokkenConfig
+    mocker.patch(
+        "src.workflows.load_config",
+        return_value=DokkenConfig(modules=["src/module1", "src/nonexistent"]),
+    )
+
+    mock_check = mocker.patch("src.workflows.check_documentation_drift")
+
+    # Should not raise
+    check_multiple_modules_drift()
+
+    # Should only check the existing module
+    assert mock_check.call_count == 1
+
+
+def test_check_multiple_modules_drift_with_fix(
+    mocker: MockerFixture, tmp_path: Path
+) -> None:
+    """Test check_multiple_modules_drift passes fix flag to individual checks."""
+    # Create a git repo with modules
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
+
+    module1 = repo_dir / "src" / "module1"
+    module1.mkdir(parents=True)
+    (module1 / "README.md").write_text("# Module 1")
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
+
+    # Mock config with one module
+    from src.config import DokkenConfig
+    mocker.patch(
+        "src.workflows.load_config",
+        return_value=DokkenConfig(modules=["src/module1"]),
+    )
+
+    mock_check = mocker.patch("src.workflows.check_documentation_drift")
+
+    # Call with fix=True
+    check_multiple_modules_drift(fix=True)
+
+    # Should pass fix=True to individual checks
+    mock_check.assert_called_once()
+    assert mock_check.call_args.kwargs["fix"] is True

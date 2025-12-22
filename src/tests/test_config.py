@@ -342,3 +342,88 @@ global_prompt = "{very_long_prompt}"
     # Should raise ValueError with helpful message
     with pytest.raises(ValueError, match="Invalid custom prompts configuration"):
         load_config(module_path=str(module_dir))
+
+
+# --- Tests for Modules ---
+
+
+def test_dokken_config_with_modules() -> None:
+    """Test DokkenConfig with modules list."""
+    config = DokkenConfig(modules=["src/module1", "src/module2"])
+
+    assert config.modules == ["src/module1", "src/module2"]
+    assert isinstance(config.exclusions, ExclusionConfig)
+
+
+def test_load_config_with_modules(tmp_path: Path) -> None:
+    """Test load_config loads modules from .dokken.toml."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+modules = ["src/auth", "src/api", "src/database"]
+
+[exclusions]
+files = ["__init__.py"]
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    assert config.modules == ["src/auth", "src/api", "src/database"]
+    assert config.exclusions.files == ["__init__.py"]
+
+
+def test_load_config_merge_modules(tmp_path: Path) -> None:
+    """Test module-level modules extend repo-level modules."""
+    # Create repo structure
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / ".git").mkdir()
+
+    module_dir = repo_root / "src" / "module"
+    module_dir.mkdir(parents=True)
+
+    # Create repo-level config
+    repo_config = """
+modules = ["src/core", "src/utils"]
+"""
+    (repo_root / ".dokken.toml").write_text(repo_config)
+
+    # Create module-level config
+    module_config = """
+modules = ["src/auth"]
+"""
+    (module_dir / ".dokken.toml").write_text(module_config)
+
+    config = load_config(module_path=str(module_dir))
+
+    # Both configs should be merged
+    assert set(config.modules) == {"src/core", "src/utils", "src/auth"}
+
+
+def test_load_config_modules_no_duplicates(tmp_path: Path) -> None:
+    """Test that merged module configs don't create duplicates."""
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / ".git").mkdir()
+
+    module_dir = repo_root / "src" / "module"
+    module_dir.mkdir(parents=True)
+
+    # Both configs have overlapping modules
+    repo_config = """
+modules = ["src/auth", "src/api"]
+"""
+    (repo_root / ".dokken.toml").write_text(repo_config)
+
+    module_config = """
+modules = ["src/auth", "src/database"]
+"""
+    (module_dir / ".dokken.toml").write_text(module_config)
+
+    config = load_config(module_path=str(module_dir))
+
+    # Check no duplicates
+    assert config.modules.count("src/auth") == 1
+    assert set(config.modules) == {"src/auth", "src/api", "src/database"}

@@ -8,7 +8,11 @@ from rich.panel import Panel
 
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
-from src.workflows import check_documentation_drift, generate_documentation
+from src.workflows import (
+    check_documentation_drift,
+    check_multiple_modules_drift,
+    generate_documentation,
+)
 
 console = Console()
 
@@ -46,7 +50,15 @@ def cli():
 
 @cli.command()
 @click.argument(
-    "module_path", type=click.Path(exists=True, file_okay=False, dir_okay=True)
+    "module_path",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    required=False,
+)
+@click.option(
+    "--all",
+    "check_all",
+    is_flag=True,
+    help="Check all modules configured in .dokken.toml",
 )
 @click.option(
     "--fix",
@@ -65,7 +77,9 @@ def cli():
     default=DocType.MODULE_README.value,
     help=DOC_TYPE_HELP,
 )
-def check(module_path: str, fix: bool, depth: int | None, doc_type: str):
+def check(
+    module_path: str | None, check_all: bool, fix: bool, depth: int | None, doc_type: str
+):
     """Check for documentation drift without generating new docs.
 
     This command analyzes your code and documentation to detect if they're out of sync.
@@ -73,26 +87,56 @@ def check(module_path: str, fix: bool, depth: int | None, doc_type: str):
 
     Use --fix to automatically update the documentation when drift is detected.
 
+    Use --all to check all modules configured in .dokken.toml.
+
     Example:
         dokken check src/payment_service
         dokken check src/payment_service --fix
+        dokken check --all
+        dokken check --all --fix
         dokken check src/payment_service --doc-type project-readme
         dokken check src/payment_service --depth 2
     """
     try:
+        # Validate arguments
+        if check_all and module_path:
+            console.print(
+                "[bold red]Error:[/bold red] Cannot use --all with a module path. "
+                "Use either --all or specify a module path."
+            )
+            sys.exit(1)
+
+        if not check_all and not module_path:
+            console.print(
+                "[bold red]Error:[/bold red] Must specify either a module path or --all flag."
+            )
+            sys.exit(1)
+
         # Convert string to DocType enum
         doc_type_enum = DocType(doc_type)
 
-        console.print(
-            Panel.fit(
-                "[bold blue]Documentation Drift Check[/bold blue]",
-                subtitle=f"Module: {module_path} | Type: {doc_type}",
+        if check_all:
+            # Check all modules from config
+            console.print(
+                Panel.fit(
+                    "[bold blue]Multi-Module Documentation Drift Check[/bold blue]",
+                    subtitle=f"Type: {doc_type}",
+                )
             )
-        )
-        check_documentation_drift(
-            target_module_path=module_path, fix=fix, depth=depth, doc_type=doc_type_enum
-        )
-        console.print("\n[bold green]✓ Documentation is up-to-date![/bold green]")
+            check_multiple_modules_drift(fix=fix, depth=depth, doc_type=doc_type_enum)
+            console.print("\n[bold green]✓ All modules are up-to-date![/bold green]")
+        else:
+            # Check single module
+            console.print(
+                Panel.fit(
+                    "[bold blue]Documentation Drift Check[/bold blue]",
+                    subtitle=f"Module: {module_path} | Type: {doc_type}",
+                )
+            )
+            check_documentation_drift(
+                target_module_path=module_path, fix=fix, depth=depth, doc_type=doc_type_enum
+            )
+            console.print("\n[bold green]✓ Documentation is up-to-date![/bold green]")
     except DocumentationDriftError as drift_error:
         console.print(f"\n[bold red]✗ {drift_error}[/bold red]")
         sys.exit(1)

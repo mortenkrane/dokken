@@ -3,6 +3,7 @@
 import os
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import cast
 
 from llama_index.core.llms import LLM
@@ -240,6 +241,93 @@ def fix_documentation_drift(
         f"[green]✓[/green] Documentation updated and saved to: "
         f"[bold]{output_path}[/bold]\n"
     )
+
+
+def check_multiple_modules_drift(
+    *,
+    fix: bool = False,
+    depth: int | None = None,
+    doc_type: DocType = DocType.MODULE_README,
+) -> None:
+    """
+    Check drift for all modules configured in .dokken.toml.
+
+    Processes modules sequentially and reports drift status for each.
+    Raises DocumentationDriftError if any module has drift and fix=False.
+
+    Args:
+        fix: If True, automatically fixes detected drift.
+        depth: Directory depth to traverse. If None, uses doc type's default.
+        doc_type: Type of documentation to check.
+
+    Raises:
+        DocumentationDriftError: If any module has drift and fix=False.
+        ValueError: If no modules are configured in .dokken.toml.
+    """
+    # Find repo root to load config
+    repo_root = find_repo_root(".")
+    if repo_root is None:
+        console.print(
+            "[red]Error:[/red] Not in a git repository. "
+            "Multi-module checking requires a git repository."
+        )
+        sys.exit(1)
+
+    # Load config from repo root
+    config = load_config(module_path=repo_root)
+
+    if not config.modules:
+        console.print(
+            "[red]Error:[/red] No modules configured in .dokken.toml. "
+            "Add a [modules] section with module paths to check."
+        )
+        sys.exit(1)
+
+    console.print(f"\n[bold cyan]Checking {len(config.modules)} modules for drift...[/bold cyan]\n")
+
+    modules_with_drift = []
+    modules_without_drift = []
+
+    # Process each module sequentially
+    for module_path in config.modules:
+        # Resolve module path relative to repo root
+        full_module_path = str(Path(repo_root) / module_path)
+
+        console.print(f"[bold]Module:[/bold] {module_path}")
+
+        # Validate module path exists
+        if not os.path.isdir(full_module_path):
+            console.print(f"  [yellow]⚠[/yellow] Skipping - directory does not exist\n")
+            continue
+
+        try:
+            check_documentation_drift(
+                target_module_path=full_module_path,
+                fix=fix,
+                depth=depth,
+                doc_type=doc_type,
+            )
+            modules_without_drift.append(module_path)
+            console.print(f"  [green]✓ No drift detected[/green]\n")
+        except DocumentationDriftError as drift_error:
+            modules_with_drift.append((module_path, drift_error.rationale))
+            console.print(f"  [red]✗ Drift detected:[/red] {drift_error.rationale}\n")
+
+    # Print summary
+    console.print("[bold cyan]Summary:[/bold cyan]")
+    console.print(f"  Total modules checked: {len(config.modules)}")
+    console.print(f"  [green]✓ Up-to-date:[/green] {len(modules_without_drift)}")
+    console.print(f"  [red]✗ With drift:[/red] {len(modules_with_drift)}")
+
+    if modules_with_drift:
+        console.print("\n[bold red]Modules with drift:[/bold red]")
+        for module_path, rationale in modules_with_drift:
+            console.print(f"  • {module_path}")
+
+        raise DocumentationDriftError(
+            rationale=f"{len(modules_with_drift)} module(s) have documentation drift",
+            module_path="multiple modules",
+        )
 
 
 def generate_documentation(
