@@ -109,11 +109,16 @@ def _build_drift_context_section(
     """
     Builds a formatted string from drift detection rationale.
 
+    The returned string includes educational context explaining what documentation
+    drift is and explicit instructions for the LLM to address the detected issues.
+    This verbose approach improves generation quality by ensuring the LLM
+    understands both the concept of drift and the specific problems to fix.
+
     Args:
         drift_rationale: The rationale explaining what drift was detected.
 
     Returns:
-        Formatted string with drift detection context.
+        Formatted string with drift detection context, ready to append to code context.
     """
     return (
         "\n--- DETECTED DOCUMENTATION DRIFT ---\n"

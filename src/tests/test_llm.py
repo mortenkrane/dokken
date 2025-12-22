@@ -6,9 +6,16 @@ from typing import Any
 import pytest
 from pytest_mock import MockerFixture
 
-from src.llm import TEMPERATURE, check_drift, generate_doc, initialize_llm
+from src.llm import (
+    TEMPERATURE,
+    _build_drift_context_section,
+    _build_human_intent_section,
+    check_drift,
+    generate_doc,
+    initialize_llm,
+)
 from src.prompts import MODULE_GENERATION_PROMPT
-from src.records import DocumentationDriftCheck, ModuleDocumentation
+from src.records import DocumentationDriftCheck, ModuleDocumentation, ModuleIntent
 
 # --- Tests for initialize_llm() ---
 
@@ -196,6 +203,96 @@ def test_check_drift_returns_drift_check_object(
 
     assert result == sample_drift_check_with_drift
     assert result.drift_detected is True
+
+
+# --- Tests for _build_human_intent_section() ---
+
+
+def test_build_human_intent_section_with_data() -> None:
+    """Test _build_human_intent_section formats human intent data correctly."""
+    intent = ModuleIntent(
+        problems_solved="Authentication and authorization",
+        core_responsibilities="Manage user sessions and permissions",
+    )
+
+    result = _build_human_intent_section(intent)
+
+    assert "--- HUMAN-PROVIDED CONTEXT ---" in result
+    assert "Problems Solved: Authentication and authorization" in result
+    assert "Core Responsibilities: Manage user sessions and permissions" in result
+
+
+def test_build_human_intent_section_with_partial_data() -> None:
+    """Test _build_human_intent_section handles partial intent data."""
+    intent = ModuleIntent(problems_solved="User management", core_responsibilities=None)
+
+    result = _build_human_intent_section(intent)
+
+    assert "--- HUMAN-PROVIDED CONTEXT ---" in result
+    assert "Problems Solved: User management" in result
+    assert "Core Responsibilities" not in result
+
+
+def test_build_human_intent_section_with_no_data() -> None:
+    """Test _build_human_intent_section returns empty string when no data."""
+    intent = ModuleIntent(problems_solved=None, core_responsibilities=None)
+
+    result = _build_human_intent_section(intent)
+
+    assert result == ""
+
+
+# --- Tests for _build_drift_context_section() ---
+
+
+def test_build_drift_context_section_basic() -> None:
+    """Test _build_drift_context_section formats drift rationale correctly."""
+    rationale = "API changed from v1 to v2, authentication module was removed"
+
+    result = _build_drift_context_section(rationale)
+
+    assert "--- DETECTED DOCUMENTATION DRIFT ---" in result
+    assert "API changed from v1 to v2, authentication module was removed" in result
+    assert "documentation drift occurs when" in result.lower()
+    assert "IMPORTANT" in result
+    assert "addresses these specific drift issues" in result.lower()
+
+
+def test_build_drift_context_section_educational_content() -> None:
+    """Test _build_drift_context_section includes educational context."""
+    rationale = "Functions renamed: process() -> handle_request()"
+
+    result = _build_drift_context_section(rationale)
+
+    # Check for educational elements
+    assert "code changes but documentation doesn't" in result.lower()
+    assert "automated analysis" in result.lower()
+    assert "current code state" in result.lower()
+
+
+def test_build_drift_context_section_with_special_characters() -> None:
+    """Test _build_drift_context_section handles special characters."""
+    rationale = "Class `UserAuth` removed\nNew module: auth/oauth2.py\n- Added JWT support"
+
+    result = _build_drift_context_section(rationale)
+
+    assert "Class `UserAuth` removed" in result
+    assert "New module: auth/oauth2.py" in result
+    assert "Added JWT support" in result
+
+
+def test_build_drift_context_section_multiline_rationale() -> None:
+    """Test _build_drift_context_section preserves multiline rationale formatting."""
+    rationale = """Major architectural changes:
+1. Switched from REST to GraphQL
+2. Removed legacy endpoints
+3. Updated authentication flow"""
+
+    result = _build_drift_context_section(rationale)
+
+    assert "Switched from REST to GraphQL" in result
+    assert "Removed legacy endpoints" in result
+    assert "Updated authentication flow" in result
 
 
 def test_generate_doc_creates_program(
