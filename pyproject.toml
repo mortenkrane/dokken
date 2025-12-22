@@ -14,15 +14,10 @@ dependencies = [
     "llama-index-llms-anthropic>=0.10.3",
     "llama-index-llms-google-genai>=0.8.2",
     "llama-index-llms-openai>=0.6.12",
-    "mccabe >= 0.7.0, <1",
     "pydantic>=2.12.5",
-    "pytest>=8.4.2",
-    "pytest-cov>=6.3.0",
-    "pytest-mock>=3.15.1",
     "python-dotenv>=1.2.1",
     "questionary>=2.0.0",
     "rich>=13.9.4",
-    "ruff>=0.14.10",
 ]
 
 [project.scripts]
@@ -117,9 +112,14 @@ extra-paths = [".venv/lib/python3.13/site-packages"]
 
 [dependency-groups]
 dev = [
+    "mccabe >= 0.7.0, <1",
     "mdformat>=0.7.22",
     "mdformat-gfm>=1.0.0",
     "mdformat-tables>=1.0.0",
     "pre-commit>=4.0.0",
+    "pytest>=8.4.2",
+    "pytest-cov>=6.3.0",
+    "pytest-mock>=3.15.1",
+    "ruff>=0.14.10",
 ]
 

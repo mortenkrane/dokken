@@ -445,23 +445,23 @@ dependencies = [
     { name = "llama-index-llms-anthropic" },
     { name = "llama-index-llms-google-genai" },
     { name = "llama-index-llms-openai" },
-    { name = "mccabe" },
     { name = "pydantic" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
     { name = "python-dotenv" },
     { name = "questionary" },
     { name = "rich" },
-    { name = "ruff" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "mccabe" },
     { name = "mdformat" },
     { name = "mdformat-gfm" },
     { name = "mdformat-tables" },
     { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
 ]
 
 [package.metadata]
@@ -471,23 +471,23 @@ requires-dist = [
     { name = "llama-index-llms-anthropic", specifier = ">=0.10.3" },
     { name = "llama-index-llms-google-genai", specifier = ">=0.8.2" },
     { name = "llama-index-llms-openai", specifier = ">=0.6.12" },
-    { name = "mccabe", specifier = ">=0.7.0,<1" },
     { name = "pydantic", specifier = ">=2.12.5" },
-    { name = "pytest", specifier = ">=8.4.2" },
-    { name = "pytest-cov", specifier = ">=6.3.0" },
-    { name = "pytest-mock", specifier = ">=3.15.1" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "questionary", specifier = ">=2.0.0" },
     { name = "rich", specifier = ">=13.9.4" },
-    { name = "ruff", specifier = ">=0.14.10" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "mccabe", specifier = ">=0.7.0,<1" },
     { name = "mdformat", specifier = ">=0.7.22" },
     { name = "mdformat-gfm", specifier = ">=1.0.0" },
     { name = "mdformat-tables", specifier = ">=1.0.0" },
     { name = "pre-commit", specifier = ">=4.0.0" },
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest-cov", specifier = ">=6.3.0" },
+    { name = "pytest-mock", specifier = ">=3.15.1" },
+    { name = "ruff", specifier = ">=0.14.10" },
 ]
 
 [[package]]
