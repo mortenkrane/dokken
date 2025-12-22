@@ -231,7 +231,7 @@ def test_format_module_documentation_section_order() -> None:
 
     markdown = format_module_documentation(doc_data=doc_data)
 
-    # Find section positions (new order: Entry Points first)
+    # Find section positions
     entry_pos = markdown.find("## Main Entry Points")
     purpose_pos = markdown.find("## Purpose & Scope")
     arch_pos = markdown.find("## Architecture Overview")
@@ -239,7 +239,7 @@ def test_format_module_documentation_section_order() -> None:
     deps_pos = markdown.find("## External Dependencies")
     decisions_pos = markdown.find("## Key Design Decisions")
 
-    # Verify correct order (entry points first for quick reference)
+    # Verify order: entry points first for quick reference
     assert entry_pos < purpose_pos < arch_pos < flow_pos < deps_pos < decisions_pos
 
 
@@ -290,7 +290,7 @@ def test_format_project_documentation_basic_structure() -> None:
     assert "## Purpose" in markdown
     assert "## Key Features" in markdown
     assert "## Installation" in markdown
-    assert "## Development" in markdown  # Changed from "Development Setup"
+    assert "## Development" in markdown
     assert "## Usage" in markdown
     assert "## Project Structure" in markdown
     assert "## Contributing" in markdown
@@ -354,7 +354,7 @@ def test_format_project_documentation_section_order() -> None:
 
     markdown = format_project_documentation(doc_data=doc_data)
 
-    # New order: Usage first (quick start), then Installation, Features, Purpose, Structure, Development, Contributing
+    # Section order: Usage first (quick start), then Installation, Features, Purpose, Structure, Development, Contributing
     usage_pos = markdown.find("## Usage")
     install_pos = markdown.find("## Installation")
     features_pos = markdown.find("## Key Features")
@@ -496,7 +496,7 @@ def test_format_style_guide_section_order() -> None:
 
     markdown = format_style_guide(doc_data=doc_data)
 
-    # New order: Languages & Tools, Code Style, Testing, Architecture, Module Org, Git, Dependencies
+    # Section order: Languages & Tools, Code Style, Testing, Architecture, Module Org, Git, Dependencies
     lang_pos = markdown.find("## Languages & Tools")
     style_pos = markdown.find("## Code Style")
     test_pos = markdown.find("## Testing Conventions")
