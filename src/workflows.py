@@ -287,6 +287,7 @@ def check_multiple_modules_drift(
 
     modules_with_drift = []
     modules_without_drift = []
+    modules_skipped = []
 
     # Process each module sequentially
     for module_path in config.modules:
@@ -297,6 +298,7 @@ def check_multiple_modules_drift(
 
         # Validate module path exists
         if not os.path.isdir(full_module_path):
+            modules_skipped.append(module_path)
             console.print(f"  [yellow]⚠[/yellow] Skipping - directory does not exist\n")
             continue
 
@@ -315,17 +317,23 @@ def check_multiple_modules_drift(
 
     # Print summary
     console.print("[bold cyan]Summary:[/bold cyan]")
-    console.print(f"  Total modules checked: {len(config.modules)}")
+    console.print(f"  Total modules configured: {len(config.modules)}")
     console.print(f"  [green]✓ Up-to-date:[/green] {len(modules_without_drift)}")
     console.print(f"  [red]✗ With drift:[/red] {len(modules_with_drift)}")
+    if modules_skipped:
+        console.print(f"  [yellow]⚠ Skipped:[/yellow] {len(modules_skipped)}")
 
     if modules_with_drift:
         console.print("\n[bold red]Modules with drift:[/bold red]")
         for module_path, rationale in modules_with_drift:
             console.print(f"  • {module_path}")
 
+        # Aggregate rationales into error message for programmatic use
+        rationales = "\n".join(
+            f"  - {path}: {rationale}" for path, rationale in modules_with_drift
+        )
         raise DocumentationDriftError(
-            rationale=f"{len(modules_with_drift)} module(s) have documentation drift",
+            rationale=f"{len(modules_with_drift)} module(s) have documentation drift:\n{rationales}",
             module_path="multiple modules",
         )
 

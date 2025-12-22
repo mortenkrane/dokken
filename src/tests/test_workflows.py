@@ -595,7 +595,10 @@ def test_check_multiple_modules_drift_some_modules_fail(
     with pytest.raises(DocumentationDriftError) as exc_info:
         check_multiple_modules_drift()
 
-    assert "1 module(s) have documentation drift" in str(exc_info.value)
+    error_msg = str(exc_info.value)
+    assert "1 module(s) have documentation drift" in error_msg
+    assert "src/module2" in error_msg  # Module name in rationale
+    assert "Test drift" in error_msg  # Individual rationale in error message
     assert mock_check.call_count == 2
 
 
