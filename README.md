@@ -18,8 +18,8 @@ AI-powered documentation generation and drift detection tool that keeps your cod
 # Clone and install
 git clone https://github.com/your-username/dokken.git
 cd dokken
-mise install  # Installs Python 3.13.7 and uv
-uv sync       # Install dependencies
+mise install         # Installs Python 3.13.7 and uv
+uv sync --all-groups # Install all dependencies (including dev)
 
 # Set up API key (choose one)
 export ANTHROPIC_API_KEY="sk-ant-..."  # Recommended
@@ -106,11 +106,14 @@ See [docs/style-guide.md](docs/style-guide.md) for comprehensive architecture, c
 **Quick start:**
 
 ```bash
+# Install dev dependencies
+uv sync --all-groups
+
 # Run tests
-pytest src/tests/ --cov=src
+uv run pytest src/tests/ --cov=src
 
 # Code quality
-ruff format && ruff check --fix && uvx ty check
+uv run ruff format && uv run ruff check --fix && uvx ty check
 ```
 
 ## Contributing

@@ -20,7 +20,7 @@ Pre-commit hooks are configured to automatically run checks on changed files:
 - On commit: `ruff format`, `ruff check --fix`, `mdformat`, and `ty check`
 - On push: full test suite with coverage
 
-To install hooks (already done if you ran `uv sync`):
+To install hooks (already done if you ran `uv sync --all-groups`):
 
 ```bash
 uv run pre-commit install
@@ -37,8 +37,8 @@ uv run pre-commit run --all-files
 
 ```bash
 # Format and lint
-ruff format
-ruff check --fix
+uv run ruff format
+uv run ruff check --fix
 
 # Type checking
 uvx ty check
@@ -47,7 +47,7 @@ uvx ty check
 uvx mdformat *.md docs/ src/
 
 # Run tests with coverage
-pytest src/tests/ --cov=src --cov-report=term-missing
+uv run pytest src/tests/ --cov=src --cov-report=term-missing
 ```
 
 **Claude Code hooks (automated for AI sessions):**
