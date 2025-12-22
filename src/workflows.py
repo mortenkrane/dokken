@@ -14,7 +14,7 @@ from src.doc_configs import DOC_CONFIGS, DocConfig
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.human_in_the_loop import ask_human_intent
-from src.llm import check_drift, generate_doc, initialize_llm
+from src.llm import GenerationConfig, check_drift, generate_doc, initialize_llm
 from src.utils import ensure_output_directory, find_repo_root, resolve_output_path
 
 console = Console()
@@ -211,14 +211,19 @@ def fix_documentation_drift(
         intent_model=doc_config.intent_model, questions=doc_config.intent_questions
     )
 
+    # Build generation configuration
+    gen_config = GenerationConfig(
+        custom_prompts=config.custom_prompts,
+        doc_type=doc_type,
+        human_intent=human_intent,
+        drift_rationale=drift_rationale,
+    )
+
     with console.status("[cyan]Generating documentation..."):
         new_doc_data = generate_doc(
             llm=llm_client,
             context=code_context,
-            human_intent=human_intent,
-            drift_rationale=drift_rationale,
-            custom_prompts=config.custom_prompts,
-            doc_type=doc_type,
+            config=gen_config,
             output_model=doc_config.model,
             prompt_template=doc_config.prompt,
         )
@@ -319,6 +324,14 @@ def generate_documentation(
         questions=ctx.doc_config.intent_questions,
     )
 
+    # Build generation configuration
+    gen_config = GenerationConfig(
+        custom_prompts=config.custom_prompts,
+        doc_type=doc_type,
+        human_intent=human_intent,
+        drift_rationale=(drift_check.rationale if drift_check.drift_detected else None),
+    )
+
     # 4. Step 3: Generate New Structured Documentation (doc-type-specific)
     console.print(
         "[bold cyan]Step 3:[/bold cyan] Generating new structured documentation..."
@@ -327,12 +340,7 @@ def generate_documentation(
         new_doc_data = generate_doc(
             llm=llm_client,
             context=code_context,
-            human_intent=human_intent,
-            drift_rationale=(
-                drift_check.rationale if drift_check.drift_detected else None
-            ),
-            custom_prompts=config.custom_prompts,
-            doc_type=doc_type,
+            config=gen_config,
             output_model=ctx.doc_config.model,
             prompt_template=ctx.doc_config.prompt,
         )

@@ -1,6 +1,7 @@
 """LLM client initialization and operations."""
 
 import os
+from dataclasses import dataclass
 
 from llama_index.core.llms import LLM
 from llama_index.core.program import LLMTextCompletionProgram
@@ -18,6 +19,16 @@ from src.records import (
 
 # Temperature setting for deterministic, reproducible documentation output
 TEMPERATURE = 0.0
+
+
+@dataclass
+class GenerationConfig:
+    """Configuration for documentation generation."""
+
+    custom_prompts: CustomPrompts | None = None
+    doc_type: DocType | None = None
+    human_intent: BaseModel | None = None
+    drift_rationale: str | None = None
 
 
 def initialize_llm() -> LLM:
@@ -149,7 +160,16 @@ def _build_custom_prompt_section(
     if not prompt_parts:
         return ""
 
-    return "\n--- USER PREFERENCES ---\n" + "\n\n".join(prompt_parts) + "\n"
+    # Add explicit instructions for the LLM to prioritize user preferences
+    header = (
+        "\n--- USER PREFERENCES (IMPORTANT) ---\n"
+        "The following are custom instructions from the user. These preferences "
+        "should be given HIGHEST PRIORITY and followed closely when generating "
+        "documentation. If there are conflicts between these preferences and "
+        "standard documentation guidelines, prefer the user's preferences.\n\n"
+    )
+
+    return header + "\n\n".join(prompt_parts) + "\n"
 
 
 def _build_drift_context_section(
@@ -183,14 +203,11 @@ def _build_drift_context_section(
     )
 
 
-def generate_doc(  # noqa: PLR0913
+def generate_doc(
     *,
     llm: LLM,
     context: str,
-    human_intent: BaseModel | None = None,
-    drift_rationale: str | None = None,
-    custom_prompts: CustomPrompts | None = None,
-    doc_type: DocType | None = None,
+    config: GenerationConfig | None = None,
     output_model: type[BaseModel],
     prompt_template: str,
 ) -> BaseModel:
@@ -200,28 +217,33 @@ def generate_doc(  # noqa: PLR0913
     Args:
         llm: The LLM client instance.
         context: The code context to generate documentation from.
-        human_intent: Optional human-provided intent and context.
-        drift_rationale: Optional drift detection rationale explaining what
-            needs to be fixed.
-        custom_prompts: Optional custom prompts from configuration.
-        doc_type: Optional documentation type for doc-type-specific prompts.
+        config: Generation configuration (custom prompts, intent, drift info).
+               If None, uses default empty configuration.
         output_model: Pydantic model class for structured output.
         prompt_template: Prompt template string to use.
 
     Returns:
         An instance of output_model with structured documentation data.
     """
+    # Use default config if none provided
+    if config is None:
+        config = GenerationConfig()
+
     # Build human intent section if provided
     human_intent_section = (
-        _build_human_intent_section(human_intent) if human_intent else ""
+        _build_human_intent_section(config.human_intent) if config.human_intent else ""
     )
 
     # Build custom prompt section if provided
-    custom_prompt_section = _build_custom_prompt_section(custom_prompts, doc_type)
+    custom_prompt_section = _build_custom_prompt_section(
+        config.custom_prompts, config.doc_type
+    )
 
     # Build drift context section if provided
     drift_context_section = (
-        _build_drift_context_section(drift_rationale) if drift_rationale else ""
+        _build_drift_context_section(config.drift_rationale)
+        if config.drift_rationale
+        else ""
     )
 
     # Combine all sections for the prompt
