@@ -136,12 +136,26 @@ style_guide = "Reference specific files and functions as examples."
 
 Custom prompts are appended to the LLM generation prompt under a "USER PREFERENCES" section. Both global and doc-type-specific prompts are included when applicable. Module-level configs extend (and can override) repository-level configs.
 
+**Example effect:**
+
+With `global_prompt = "Use British spelling throughout"`, generated documentation will use "colour" instead of "color", "organise" instead of "organize", "analyse" instead of "analyze", etc.
+
+With `module_readme = "Include a mermaid diagram showing component relationships"`, the generated module README will contain a visual diagram of how components interact.
+
 **Common use cases:**
 
 - Enforce specific writing style or tone
-- Request inclusion of particular sections
-- Emphasize certain aspects (security, performance, etc.)
+- Request inclusion of particular sections (diagrams, examples, etc.)
+- Emphasize certain aspects (security, performance, scalability)
 - Exclude topics you prefer not to document
+- Align documentation with company style guides
+
+**Limitations:**
+
+- Maximum prompt length: 5,000 characters per prompt field
+- Custom prompts are guidance for the LLM, not strict rules
+- Very specific formatting requests may not always be followed precisely
+- Prompts work best when aligned with the doc type's purpose
 
 ## Development
 

@@ -3,7 +3,7 @@
 import tomllib
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from src.utils import find_repo_root
 
@@ -27,18 +27,22 @@ class CustomPrompts(BaseModel):
     global_prompt: str | None = Field(
         default=None,
         description="Global custom prompt applied to all doc types",
+        max_length=5000,
     )
     module_readme: str | None = Field(
         default=None,
         description="Custom prompt for module README documentation",
+        max_length=5000,
     )
     project_readme: str | None = Field(
         default=None,
         description="Custom prompt for project README documentation",
+        max_length=5000,
     )
     style_guide: str | None = Field(
         default=None,
         description="Custom prompt for style guide documentation",
+        max_length=5000,
     )
 
 
@@ -82,9 +86,16 @@ def load_config(*, module_path: str) -> DokkenConfig:
     _load_and_merge_config(Path(module_path) / ".dokken.toml", config_data)
 
     # Construct ExclusionConfig and CustomPrompts from the merged dictionary
-    # Type ignore is needed because config_data is a dict with unknown structure
-    exclusion_config = ExclusionConfig(**config_data["exclusions"])  # type: ignore
-    custom_prompts = CustomPrompts(**config_data["custom_prompts"])  # type: ignore
+    try:
+        exclusion_config = ExclusionConfig(**config_data["exclusions"])  # type: ignore
+    except ValidationError as e:
+        raise ValueError(f"Invalid exclusions configuration: {e}") from e
+
+    try:
+        custom_prompts = CustomPrompts(**config_data["custom_prompts"])  # type: ignore
+    except ValidationError as e:
+        raise ValueError(f"Invalid custom prompts configuration: {e}") from e
+
     return DokkenConfig(exclusions=exclusion_config, custom_prompts=custom_prompts)
 
 

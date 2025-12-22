@@ -321,3 +321,24 @@ module_readme = "Focus on patterns."
     # Check custom prompts
     assert config.custom_prompts.global_prompt == "Be concise."
     assert config.custom_prompts.module_readme == "Focus on patterns."
+
+
+def test_custom_prompts_max_length_validation(tmp_path: Path) -> None:
+    """Test CustomPrompts rejects prompts exceeding max length."""
+    import pytest
+
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    # Create a prompt that exceeds 5000 characters
+    very_long_prompt = "x" * 5001
+
+    config_content = f"""
+[custom_prompts]
+global_prompt = "{very_long_prompt}"
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    # Should raise ValueError with helpful message
+    with pytest.raises(ValueError, match="Invalid custom prompts configuration"):
+        load_config(module_path=str(module_dir))
