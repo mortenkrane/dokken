@@ -107,10 +107,16 @@ See [docs/style-guide.md](docs/style-guide.md) for comprehensive architecture, c
 
 ```bash
 # Run tests
-pytest src/tests/ --cov=src
+make test
 
-# Code quality
-ruff format && ruff check --fix && uvx ty check
+# Code quality (auto-fix formatting and linting)
+make fix
+
+# Run all checks (format, lint, typecheck, mdformat, test)
+make check
+
+# View all available commands
+make help
 ```
 
 ## Contributing

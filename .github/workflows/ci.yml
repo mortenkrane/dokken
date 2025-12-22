@@ -35,7 +35,7 @@ jobs:
         run: uv sync
 
       - name: Run tests
-        run: uv run pytest src/tests/ --cov=src --cov-report=term-missing
+        run: make test
 
   checks:
     runs-on: ubuntu-latest
@@ -44,13 +44,13 @@ jobs:
       matrix:
         check:
           - name: Format
-            run: uv run ruff format --check
+            run: make format-check
           - name: Lint
-            run: uv run ruff check
+            run: make lint
           - name: Type
-            run: uvx ty check
+            run: make typecheck
           - name: Markdown Format
-            run: uvx mdformat --check *.md docs/ src/
+            run: make mdformat-check
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6

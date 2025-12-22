@@ -3,7 +3,7 @@
 set -e
 
 echo "🧪 Running full test suite with coverage..."
-uv run pytest src/tests/ --cov=src --cov-report=term-missing
+make test
 
 echo "✅ All tests passed!"
 exit 0

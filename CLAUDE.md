@@ -13,12 +13,14 @@ Dokken is an AI-powered documentation generation and drift detection tool. Comma
 
 ## Code Quality Commands
 
+**All code quality commands use Makefile targets for consistency.**
+
 **Automated checks via pre-commit hooks:**
 
-Pre-commit hooks are configured to automatically run checks on changed files:
+Pre-commit hooks are configured to automatically run checks:
 
-- On commit: `ruff format`, `ruff check --fix`, `mdformat`, and `ty check`
-- On push: full test suite with coverage
+- On commit: `make format`, `make lint-fix`, `make mdformat`, and `make typecheck`
+- On push: `make test` (full test suite with coverage)
 
 To install hooks (already done if you ran `uv sync`):
 
@@ -33,34 +35,38 @@ To run hooks manually on all files:
 uv run pre-commit run --all-files
 ```
 
-**Manual commands (if needed):**
+**Manual commands:**
 
 ```bash
-# Format and lint
-ruff format
-ruff check --fix
+# Run all checks (used in CI)
+make check
 
-# Type checking
-uvx ty check
+# Auto-fix formatting and linting
+make fix
 
-# Format markdown
-uvx mdformat *.md docs/ src/
+# Individual commands
+make format       # Format code with ruff
+make lint         # Check linting
+make lint-fix     # Auto-fix linting
+make typecheck    # Type checking with ty
+make mdformat     # Format markdown
+make test         # Run tests with coverage
 
-# Run tests with coverage
-pytest src/tests/ --cov=src --cov-report=term-missing
+# View all available targets
+make help
 ```
 
 **Claude Code hooks (automated for AI sessions):**
 
 Claude Code hooks are configured in `.claude/settings.json` to automatically run quality checks:
 
-- **After file changes** (PostToolUse): Runs `ruff format`, `ruff check --fix`, `mdformat`, and `ty check` on changed files only
-- **At session end** (SessionEnd): Runs full test suite with coverage
+- **After file changes** (PostToolUse): Runs `make fix` and `make typecheck`
+- **At session end** (SessionEnd): Runs `make test` (full test suite with coverage)
 
 Hook scripts are in `.claude/hooks/`:
 
-- `format-and-lint.sh` - Code quality checks on changed files
-- `run-tests.sh` - Full test suite
+- `format-and-lint.sh` - Code quality checks using `make fix` and `make typecheck`
+- `run-tests.sh` - Full test suite using `make test`
 
 These hooks run automatically when Claude Code edits files. No setup required!
 

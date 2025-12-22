@@ -169,11 +169,11 @@ main.py (CLI)
 
 - Follow PEP 8 guidelines
 - Use Ruff for code formatting and linting
-  - Run `ruff format` to format code
-  - Run `ruff check` to check for linting issues
-  - Run `ruff check --fix` to automatically fix linting issues
+  - Run `make format` to format code
+  - Run `make lint` to check for linting issues
+  - Run `make lint-fix` to automatically fix linting issues
 - Use type hints consistently throughout the codebase
-  - Run `uvx ty check` for type checking
+  - Run `make typecheck` for type checking
 - Use absolute imports
 - Keep imports at the top of the file, unless we need to break circular imports
 - Use double quotes for strings
@@ -283,10 +283,15 @@ git commit -m "docs: add PDF export guide"
 Before committing to `main`, ensure:
 
 1. ✅ Commit message follows conventional format
-1. ✅ Tests pass (`pytest src/tests/ --cov=src`)
-1. ✅ Code is formatted (`ruff format`)
-1. ✅ Linting passes (`ruff check`)
-1. ✅ Type checking passes (`uvx ty check`)
+1. ✅ All checks pass (`make check`)
+
+Or run individual checks:
+
+1. ✅ Tests pass (`make test`)
+1. ✅ Code is formatted (`make format`)
+1. ✅ Linting passes (`make lint`)
+1. ✅ Type checking passes (`make typecheck`)
+1. ✅ Markdown is formatted (`make mdformat`)
 
 **See [docs/releasing-to-pypi.md](releasing-to-pypi.md) for detailed release workflow documentation.**
 
@@ -416,7 +421,10 @@ def test_entire_workflow_end_to_end() -> None:
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests with coverage (recommended)
+make test
+
+# Run all tests directly (for more options)
 pytest src/tests/
 
 # Run with verbose output
@@ -427,9 +435,6 @@ pytest src/tests/test_git.py
 
 # Run specific test
 pytest src/tests/test_git.py::test_setup_git_checks_out_main
-
-# Run with coverage
-pytest src/tests/ --cov=src --cov-report=term-missing
 
 # Generate HTML coverage report
 pytest src/tests/ --cov=src --cov-report=html
