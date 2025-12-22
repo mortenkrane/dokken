@@ -3,7 +3,7 @@
 import tomllib
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from src.utils import find_repo_root
 
@@ -21,10 +21,36 @@ class ExclusionConfig(BaseModel):
     )
 
 
+class CustomPrompts(BaseModel):
+    """Custom prompts for documentation generation."""
+
+    global_prompt: str | None = Field(
+        default=None,
+        description="Global custom prompt applied to all doc types",
+        max_length=5000,
+    )
+    module_readme: str | None = Field(
+        default=None,
+        description="Custom prompt for module README documentation",
+        max_length=5000,
+    )
+    project_readme: str | None = Field(
+        default=None,
+        description="Custom prompt for project README documentation",
+        max_length=5000,
+    )
+    style_guide: str | None = Field(
+        default=None,
+        description="Custom prompt for style guide documentation",
+        max_length=5000,
+    )
+
+
 class DokkenConfig(BaseModel):
     """Root configuration for Dokken."""
 
     exclusions: ExclusionConfig = Field(default_factory=ExclusionConfig)
+    custom_prompts: CustomPrompts = Field(default_factory=CustomPrompts)
 
 
 def load_config(*, module_path: str) -> DokkenConfig:
@@ -41,7 +67,15 @@ def load_config(*, module_path: str) -> DokkenConfig:
     Returns:
         DokkenConfig with merged configuration from all sources.
     """
-    config_data = {"exclusions": {"files": [], "symbols": []}}
+    config_data = {
+        "exclusions": {"files": [], "symbols": []},
+        "custom_prompts": {
+            "global_prompt": None,
+            "module_readme": None,
+            "project_readme": None,
+            "style_guide": None,
+        },
+    }
 
     # Load global config from repo root if it exists
     repo_root = find_repo_root(module_path)
@@ -51,9 +85,18 @@ def load_config(*, module_path: str) -> DokkenConfig:
     # Load module-specific config if it exists (extends global)
     _load_and_merge_config(Path(module_path) / ".dokken.toml", config_data)
 
-    # Construct ExclusionConfig from the merged dictionary
-    exclusion_config = ExclusionConfig(**config_data["exclusions"])
-    return DokkenConfig(exclusions=exclusion_config)
+    # Construct ExclusionConfig and CustomPrompts from the merged dictionary
+    try:
+        exclusion_config = ExclusionConfig(**config_data["exclusions"])  # type: ignore
+    except ValidationError as e:
+        raise ValueError(f"Invalid exclusions configuration: {e}") from e
+
+    try:
+        custom_prompts = CustomPrompts(**config_data["custom_prompts"])  # type: ignore
+    except ValidationError as e:
+        raise ValueError(f"Invalid custom prompts configuration: {e}") from e
+
+    return DokkenConfig(exclusions=exclusion_config, custom_prompts=custom_prompts)
 
 
 def _load_and_merge_config(config_path: Path, base_config: dict) -> None:

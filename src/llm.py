@@ -1,6 +1,7 @@
 """LLM client initialization and operations."""
 
 import os
+from dataclasses import dataclass
 
 from llama_index.core.llms import LLM
 from llama_index.core.program import LLMTextCompletionProgram
@@ -9,6 +10,8 @@ from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 from pydantic import BaseModel
 
+from src.config import CustomPrompts
+from src.doc_types import DocType
 from src.prompts import DRIFT_CHECK_PROMPT
 from src.records import (
     DocumentationDriftCheck,
@@ -16,6 +19,16 @@ from src.records import (
 
 # Temperature setting for deterministic, reproducible documentation output
 TEMPERATURE = 0.0
+
+
+@dataclass
+class GenerationConfig:
+    """Configuration for documentation generation."""
+
+    custom_prompts: CustomPrompts | None = None
+    doc_type: DocType | None = None
+    human_intent: BaseModel | None = None
+    drift_rationale: str | None = None
 
 
 def initialize_llm() -> LLM:
@@ -103,6 +116,62 @@ def _build_human_intent_section(
     return "\n--- HUMAN-PROVIDED CONTEXT ---\n" + "\n".join(intent_lines) + "\n"
 
 
+def _get_doc_type_prompt(
+    custom_prompts: CustomPrompts, doc_type: DocType
+) -> str | None:
+    """Get the doc-type-specific custom prompt."""
+    mapping = {
+        DocType.MODULE_README: custom_prompts.module_readme,
+        DocType.PROJECT_README: custom_prompts.project_readme,
+        DocType.STYLE_GUIDE: custom_prompts.style_guide,
+    }
+    return mapping.get(doc_type)
+
+
+def _build_custom_prompt_section(
+    custom_prompts: CustomPrompts | None,
+    doc_type: DocType | None,
+) -> str:
+    """
+    Builds a formatted string from custom prompts configuration.
+
+    Args:
+        custom_prompts: The custom prompts configuration from .dokken.toml.
+        doc_type: The documentation type being generated.
+
+    Returns:
+        Formatted string with custom prompt instructions, or empty string if none.
+    """
+    if custom_prompts is None:
+        return ""
+
+    prompt_parts = []
+
+    # Add global custom prompt if present
+    if custom_prompts.global_prompt:
+        prompt_parts.append(custom_prompts.global_prompt)
+
+    # Add doc-type-specific custom prompt if present
+    if doc_type is not None:
+        doc_type_prompt = _get_doc_type_prompt(custom_prompts, doc_type)
+        if doc_type_prompt:
+            prompt_parts.append(doc_type_prompt)
+
+    if not prompt_parts:
+        return ""
+
+    # Add explicit instructions for the LLM to prioritize user preferences
+    header = (
+        "\n--- USER PREFERENCES (IMPORTANT) ---\n"
+        "The following are custom instructions from the user. These preferences "
+        "should be given HIGHEST PRIORITY and followed closely when generating "
+        "documentation. If there are conflicts between these preferences and "
+        "standard documentation guidelines, prefer the user's preferences.\n\n"
+    )
+
+    return header + "\n\n".join(prompt_parts) + "\n"
+
+
 def _build_drift_context_section(
     drift_rationale: str,
 ) -> str:
@@ -138,8 +207,7 @@ def generate_doc(
     *,
     llm: LLM,
     context: str,
-    human_intent: BaseModel | None = None,
-    drift_rationale: str | None = None,
+    config: GenerationConfig | None = None,
     output_model: type[BaseModel],
     prompt_template: str,
 ) -> BaseModel:
@@ -149,27 +217,38 @@ def generate_doc(
     Args:
         llm: The LLM client instance.
         context: The code context to generate documentation from.
-        human_intent: Optional human-provided intent and context.
-        drift_rationale: Optional drift detection rationale explaining what
-            needs to be fixed.
+        config: Generation configuration (custom prompts, intent, drift info).
+               If None, uses default empty configuration.
         output_model: Pydantic model class for structured output.
         prompt_template: Prompt template string to use.
 
     Returns:
         An instance of output_model with structured documentation data.
     """
+    # Use default config if none provided
+    if config is None:
+        config = GenerationConfig()
+
     # Build human intent section if provided
     human_intent_section = (
-        _build_human_intent_section(human_intent) if human_intent else ""
+        _build_human_intent_section(config.human_intent) if config.human_intent else ""
+    )
+
+    # Build custom prompt section if provided
+    custom_prompt_section = _build_custom_prompt_section(
+        config.custom_prompts, config.doc_type
     )
 
     # Build drift context section if provided
     drift_context_section = (
-        _build_drift_context_section(drift_rationale) if drift_rationale else ""
+        _build_drift_context_section(config.drift_rationale)
+        if config.drift_rationale
+        else ""
     )
 
-    # Combine context sections
+    # Combine all sections for the prompt
     combined_context = context + drift_context_section
+    combined_intent_section = human_intent_section + custom_prompt_section
 
     # Use LLMTextCompletionProgram for structured Pydantic output
     generate_program = LLMTextCompletionProgram.from_defaults(
@@ -180,5 +259,5 @@ def generate_doc(
 
     # Run the generation
     return generate_program(
-        context=combined_context, human_intent_section=human_intent_section
+        context=combined_context, human_intent_section=combined_intent_section
     )

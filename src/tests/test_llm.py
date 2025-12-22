@@ -6,8 +6,12 @@ from typing import Any
 import pytest
 from pytest_mock import MockerFixture
 
+from src.config import CustomPrompts
+from src.doc_types import DocType
 from src.llm import (
     TEMPERATURE,
+    GenerationConfig,
+    _build_custom_prompt_section,
     _build_drift_context_section,
     _build_human_intent_section,
     check_drift,
@@ -297,6 +301,119 @@ def test_build_drift_context_section_multiline_rationale() -> None:
     assert "Updated authentication flow" in result
 
 
+# --- Tests for _build_custom_prompt_section() ---
+
+
+def test_build_custom_prompt_section_none() -> None:
+    """Test _build_custom_prompt_section returns empty string when None."""
+    result = _build_custom_prompt_section(custom_prompts=None, doc_type=None)
+
+    assert result == ""
+
+
+def test_build_custom_prompt_section_empty_prompts() -> None:
+    """Test _build_custom_prompt_section returns empty string when all prompts None."""
+    custom_prompts = CustomPrompts()
+
+    result = _build_custom_prompt_section(
+        custom_prompts=custom_prompts, doc_type=DocType.MODULE_README
+    )
+
+    assert result == ""
+
+
+def test_build_custom_prompt_section_global_only() -> None:
+    """Test _build_custom_prompt_section with only global prompt."""
+    custom_prompts = CustomPrompts(global_prompt="Use British spelling.")
+
+    result = _build_custom_prompt_section(
+        custom_prompts=custom_prompts, doc_type=DocType.MODULE_README
+    )
+
+    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "Use British spelling." in result
+
+
+def test_build_custom_prompt_section_doc_type_specific() -> None:
+    """Test _build_custom_prompt_section with doc-type-specific prompt."""
+    custom_prompts = CustomPrompts(
+        module_readme="Focus on implementation details.",
+        project_readme="Keep it concise.",
+    )
+
+    result = _build_custom_prompt_section(
+        custom_prompts=custom_prompts, doc_type=DocType.MODULE_README
+    )
+
+    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "Focus on implementation details." in result
+    assert "Keep it concise." not in result  # Different doc type
+
+
+def test_build_custom_prompt_section_project_readme() -> None:
+    """Test _build_custom_prompt_section with project README doc type."""
+    custom_prompts = CustomPrompts(
+        module_readme="Focus on implementation.",
+        project_readme="Include quick-start guide.",
+    )
+
+    result = _build_custom_prompt_section(
+        custom_prompts=custom_prompts, doc_type=DocType.PROJECT_README
+    )
+
+    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "Include quick-start guide." in result
+    assert "Focus on implementation." not in result  # Different doc type
+
+
+def test_build_custom_prompt_section_style_guide() -> None:
+    """Test _build_custom_prompt_section with style guide doc type."""
+    custom_prompts = CustomPrompts(
+        style_guide="Reference existing code patterns.",
+        module_readme="Focus on implementation.",
+    )
+
+    result = _build_custom_prompt_section(
+        custom_prompts=custom_prompts, doc_type=DocType.STYLE_GUIDE
+    )
+
+    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "Reference existing code patterns." in result
+    assert "Focus on implementation." not in result  # Different doc type
+
+
+def test_build_custom_prompt_section_global_and_specific() -> None:
+    """Test _build_custom_prompt_section combines global and doc-type-specific."""
+    custom_prompts = CustomPrompts(
+        global_prompt="Use clear, simple language.",
+        module_readme="Focus on architecture.",
+    )
+
+    result = _build_custom_prompt_section(
+        custom_prompts=custom_prompts, doc_type=DocType.MODULE_README
+    )
+
+    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "Use clear, simple language." in result
+    assert "Focus on architecture." in result
+    # Check they're separated by double newline
+    assert "Use clear, simple language.\n\nFocus on architecture." in result
+
+
+def test_build_custom_prompt_section_no_doc_type() -> None:
+    """Test _build_custom_prompt_section with None doc_type uses only global."""
+    custom_prompts = CustomPrompts(
+        global_prompt="Be concise.",
+        module_readme="Focus on implementation.",
+    )
+
+    result = _build_custom_prompt_section(custom_prompts=custom_prompts, doc_type=None)
+
+    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "Be concise." in result
+    assert "Focus on implementation." not in result  # No doc type specified
+
+
 def test_generate_doc_creates_program(
     mocker: MockerFixture,
     mock_llm_client: Any,
@@ -458,10 +575,12 @@ def test_generate_doc_with_human_intent(
         system_context="Part of auth system",
     )
 
+    config = GenerationConfig(human_intent=human_intent)
+
     result = generate_doc(
         llm=mock_llm_client,
         context="test context",
-        human_intent=human_intent,
+        config=config,
         output_model=ModuleDocumentation,
         prompt_template=MODULE_GENERATION_PROMPT,
     )
@@ -501,10 +620,12 @@ def test_generate_doc_with_partial_human_intent(
         problems_solved="Handles authentication", core_responsibilities="User login"
     )
 
+    config = GenerationConfig(human_intent=human_intent)
+
     result = generate_doc(
         llm=mock_llm_client,
         context="test context",
-        human_intent=human_intent,
+        config=config,
         output_model=ModuleDocumentation,
         prompt_template=MODULE_GENERATION_PROMPT,
     )
