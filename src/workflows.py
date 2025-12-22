@@ -167,6 +167,7 @@ def check_documentation_drift(
                 code_context=code_context,
                 output_path=ctx.output_path,
                 doc_config=ctx.doc_config,
+                drift_rationale=drift_check.rationale,
             )
             return
 
@@ -176,7 +177,12 @@ def check_documentation_drift(
 
 
 def fix_documentation_drift(
-    *, llm_client: LLM, code_context: str, output_path: str, doc_config: DocConfig
+    *,
+    llm_client: LLM,
+    code_context: str,
+    output_path: str,
+    doc_config: DocConfig,
+    drift_rationale: str,
 ) -> None:
     """
     Fix documentation drift by generating and writing updated documentation.
@@ -186,6 +192,7 @@ def fix_documentation_drift(
         code_context: The code context to analyze.
         output_path: Path to the documentation file to update.
         doc_config: DocConfig instance for the documentation type.
+        drift_rationale: Explanation of what drift was detected.
     """
     console.print("[cyan]Fixing drift by generating updated documentation...\n")
 
@@ -199,6 +206,7 @@ def fix_documentation_drift(
             llm=llm_client,
             context=code_context,
             human_intent=human_intent,
+            drift_rationale=drift_rationale,
             output_model=doc_config.model,
             prompt_template=doc_config.prompt,
         )
@@ -305,6 +313,7 @@ def generate_documentation(
             llm=llm_client,
             context=code_context,
             human_intent=human_intent,
+            drift_rationale=drift_check.rationale if drift_check.drift_detected else None,
             output_model=ctx.doc_config.model,
             prompt_template=ctx.doc_config.prompt,
         )
