@@ -506,6 +506,7 @@ def test_check_multiple_modules_drift_no_modules_configured(
 
     # Mock load_config to return empty modules list
     from src.config import DokkenConfig
+
     mocker.patch("src.workflows.load_config", return_value=DokkenConfig(modules=[]))
 
     with pytest.raises(SystemExit) as exc_info:
@@ -538,6 +539,7 @@ def test_check_multiple_modules_drift_all_modules_pass(
 
     # Mock config with two modules
     from src.config import DokkenConfig
+
     mocker.patch(
         "src.workflows.load_config",
         return_value=DokkenConfig(modules=["src/module1", "src/module2"]),
@@ -577,6 +579,7 @@ def test_check_multiple_modules_drift_some_modules_fail(
 
     # Mock config with two modules
     from src.config import DokkenConfig
+
     mocker.patch(
         "src.workflows.load_config",
         return_value=DokkenConfig(modules=["src/module1", "src/module2"]),
@@ -624,6 +627,7 @@ def test_check_multiple_modules_drift_skips_nonexistent_modules(
 
     # Mock config with two modules (one nonexistent)
     from src.config import DokkenConfig
+
     mocker.patch(
         "src.workflows.load_config",
         return_value=DokkenConfig(modules=["src/module1", "src/nonexistent"]),
@@ -656,6 +660,7 @@ def test_check_multiple_modules_drift_with_fix(
 
     # Mock config with one module
     from src.config import DokkenConfig
+
     mocker.patch(
         "src.workflows.load_config",
         return_value=DokkenConfig(modules=["src/module1"]),

@@ -103,6 +103,7 @@ dokken check src/auth
 **Output:**
 
 The `--all` flag will:
+
 - Process each module sequentially
 - Clearly report which modules have drift and which don't
 - Exit with code 1 if any module has drift (perfect for CI/CD)
