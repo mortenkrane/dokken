@@ -109,13 +109,12 @@ def _get_doc_type_prompt(
     custom_prompts: CustomPrompts, doc_type: DocType
 ) -> str | None:
     """Get the doc-type-specific custom prompt."""
-    if doc_type == DocType.MODULE_README:
-        return custom_prompts.module_readme
-    if doc_type == DocType.PROJECT_README:
-        return custom_prompts.project_readme
-    if doc_type == DocType.STYLE_GUIDE:
-        return custom_prompts.style_guide
-    return None
+    mapping = {
+        DocType.MODULE_README: custom_prompts.module_readme,
+        DocType.PROJECT_README: custom_prompts.project_readme,
+        DocType.STYLE_GUIDE: custom_prompts.style_guide,
+    }
+    return mapping.get(doc_type)
 
 
 def _build_custom_prompt_section(

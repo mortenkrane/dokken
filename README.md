@@ -128,9 +128,9 @@ style_guide = "Reference specific files and functions as examples."
 **Available doc types:**
 
 - `global_prompt` - Applied to all documentation types
-- `module_readme` - Module-level documentation (`docs/module-readme.md`)
-- `project_readme` - Project README (`README.md`)
-- `style_guide` - Style guide documentation (`docs/style-guide.md`)
+- `module_readme` - Module-level documentation (`<module>/README.md`)
+- `project_readme` - Project README (repository root `README.md`)
+- `style_guide` - Style guide documentation (`<repo-root>/docs/style-guide.md`)
 
 **How it works:**
 
