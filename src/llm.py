@@ -117,8 +117,14 @@ def _build_drift_context_section(
     """
     return (
         "\n--- DETECTED DOCUMENTATION DRIFT ---\n"
-        f"{drift_rationale}\n"
-        "Please address these issues in the updated documentation.\n"
+        "Documentation drift occurs when code changes but documentation doesn't, "
+        "causing the docs to become outdated or inaccurate. An automated analysis "
+        "has detected the following specific drift issues between the current "
+        "documentation and the actual code:\n\n"
+        f"{drift_rationale}\n\n"
+        "IMPORTANT: Your task is to generate updated documentation that addresses "
+        "these specific drift issues. Make sure the new documentation accurately "
+        "reflects the current code state and resolves each of the concerns listed above.\n"
     )
 
 
