@@ -9,6 +9,7 @@ This file provides guidance to Claude Code when working with this repository.
 Dokken is an AI-powered documentation generation and drift detection tool. Commands:
 
 - `dokken check <module>` - Detects documentation drift
+- `dokken check --all` - Check all modules configured in `.dokken.toml`
 - `dokken generate <module>` - Generates/updates documentation
 
 ## Code Quality Commands
@@ -85,6 +86,9 @@ When working with this codebase, be aware of these key design decisions:
 - **Git Base Branch**: Configurable via `GIT_BASE_BRANCH = "main"` in `git.py`
 - **Alphabetically Sorted Decisions**: Formatters sort design decisions alphabetically to prevent diff noise
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists (saves LLM calls)
-- **Stabilized Drift Detection**: Uses criteria-based checklist (see `DRIFT_CHECK_PROMPT` in `src/prompts.py`) - the prompt explicitly defines what constitutes drift vs. minor changes
-- **Exclusion Rules**: Respects `.dokken.toml` config (see README.md for user config details, [docs/style-guide.md](docs/style-guide.md#implementation-notes) for implementation)
+- **Stabilized Drift Detection**: Uses criteria-based checklist (see `DRIFT_CHECK_PROMPT` in `src/prompts.py`)
+- **Search/Reference-Optimized Docs**: Documentation templates and LLM prompts optimized for grep/search (see `src/formatters.py` and `src/prompts.py` - includes formatting guidelines)
+- **Multi-Module Support**: Can check all modules via `dokken check --all` (configured in `.dokken.toml`)
+- **Custom Prompts**: Users can inject preferences via `.dokken.toml` `[custom_prompts]` section (appended as "USER PREFERENCES")
+- **Exclusion Rules**: Respects `.dokken.toml` config for files/symbols (see README.md for syntax)
 - **Testing**: Always use function-based tests (never class-based), mock all external dependencies, use fixtures from `conftest.py`
