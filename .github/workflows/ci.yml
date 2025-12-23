@@ -35,7 +35,7 @@ jobs:
         run: uv sync --all-groups
 
       - name: Run tests
-        run: uv run pytest src/tests/ --cov=src --cov-report=term-missing
+        run: uv run pytest tests/ --cov=src --cov-report=term-missing
 
   checks:
     runs-on: ubuntu-latest

@@ -49,20 +49,20 @@ uvx ty check
 uvx mdformat *.md docs/ src/
 
 # Run tests with coverage
-uv run pytest src/tests/ --cov=src --cov-report=term-missing
+uv run pytest tests/ --cov=src --cov-report=term-missing
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests with coverage
-uv run pytest src/tests/ --cov=src
+uv run pytest tests/ --cov=src
 
 # Run specific test file
-uv run pytest src/tests/test_module.py
+uv run pytest tests/test_module.py
 
 # Run with verbose output
-uv run pytest src/tests/ -v
+uv run pytest tests/ -v
 ```
 
 ## Pull Request Process

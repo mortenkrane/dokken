@@ -48,7 +48,7 @@ uvx ty check
 uvx mdformat *.md docs/ src/
 
 # Run tests with coverage
-uv run pytest src/tests/ --cov=src --cov-report=term-missing
+uv run pytest tests/ --cov=src --cov-report=term-missing
 ```
 
 **Claude Code hooks (automated for AI sessions):**

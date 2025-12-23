@@ -13,7 +13,7 @@ uv run ruff check --fix         # Lint and auto-fix
 uvx ty check                    # Type checking
 
 # Testing
-uv run pytest src/tests/ --cov=src --cov-report=term-missing
+uv run pytest tests/ --cov=src --cov-report=term-missing
 
 # Commits (must use Conventional Commits)
 git commit -m "feat: add new feature"
@@ -217,7 +217,7 @@ git commit -m "docs: add PDF guide"
 **Pre-Commit Checklist:**
 
 - ✅ Conventional commit format
-- ✅ `uv run pytest src/tests/ --cov=src`
+- ✅ `uv run pytest tests/ --cov=src`
 - ✅ `uv run ruff format && uv run ruff check`
 - ✅ `uvx ty check`
 
@@ -235,7 +235,7 @@ See [docs/releasing-to-pypi.md](releasing-to-pypi.md) for release workflow.
 **Test Structure:**
 
 ```
-src/tests/
+tests/
 ├── conftest.py         # Shared fixtures
 ├── test_*.py           # Mirror src/ structure
 ```
@@ -244,16 +244,16 @@ src/tests/
 
 ```bash
 # All tests with coverage
-uv run pytest src/tests/ --cov=src --cov-report=term-missing
+uv run pytest tests/ --cov=src --cov-report=term-missing
 
 # Specific test file
-uv run pytest src/tests/test_git.py
+uv run pytest tests/test_git.py
 
 # Specific test function
-uv run pytest src/tests/test_git.py::test_setup_git_checks_out_main
+uv run pytest tests/test_git.py::test_setup_git_checks_out_main
 
 # HTML coverage report
-uv run pytest src/tests/ --cov=src --cov-report=html
+uv run pytest tests/ --cov=src --cov-report=html
 # Then open htmlcov/index.html
 ```
 

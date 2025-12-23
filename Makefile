@@ -12,7 +12,7 @@ all: check ## Run all checks and tests (default CI workflow)
 check: format-check lint typecheck mdformat-check test ## Run all checks without modifying files
 
 test: ## Run tests with coverage
-	pytest src/tests/ --cov=src --cov-report=term-missing
+	pytest tests/ --cov=src --cov-report=term-missing
 
 format: ## Format code with ruff
 	ruff format
