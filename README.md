@@ -1,231 +1,289 @@
-# Dokken
+# Dokken - Documentation Drift Detection
 
-AI-powered documentation generation and drift detection tool that keeps your codebase documentation synchronized with source code changes.
+AI-powered documentation generation and drift detection. Detects when documentation is out of sync with code changes.
 
-## Features
-
-- **Drift Detection**: Automatically detect when documentation is out of sync with code
-- **Multi-Provider LLM Support**: Use Claude, OpenAI, or Google Gemini for documentation generation
-- **Cost-Optimized**: Uses fast, budget-friendly models (Haiku, GPT-4o-mini, Gemini Flash)
-- **Human-in-the-Loop**: Interactive questionnaire to capture intent that AI cannot infer from code alone
-- **CI/CD Ready**: Exit codes designed for pipeline integration
-
-## Installation
-
-**Prerequisites:** [mise](https://mise.jdx.dev) and an API key from Claude, OpenAI, or Google Gemini.
+## Quick Start
 
 ```bash
-# Clone and install
-git clone https://github.com/your-username/dokken.git
-cd dokken
-mise install         # Installs Python 3.13.7 and uv
-uv sync --all-groups # Install all dependencies (including dev)
-
-# Set up API key (choose one)
-export ANTHROPIC_API_KEY="sk-ant-..."  # Recommended
-export OPENAI_API_KEY="sk-..."
-export GOOGLE_API_KEY="AIza..."
-```
-
-## Usage
-
-```bash
-# Check for documentation drift (useful in CI/CD)
+# Check for drift
 dokken check src/module_name
 
 # Check all modules configured in .dokken.toml
 dokken check --all
 
-# Generate or update documentation
+# Generate/update documentation
 dokken generate src/module_name
 ```
 
-### Generate Documentation
+## Installation
 
-When you run `dokken generate`, it will:
+**Prerequisites:** [mise](https://mise.jdx.dev) and API key (Anthropic/OpenAI/Google)
 
-1. Analyze your code and detect drift
-1. **Prompt you with an interactive questionnaire** to capture human intent (see below)
-1. Generate updated documentation using both code analysis and human input
-1. Write to `README.md` in the module directory
+```bash
+git clone https://github.com/your-username/dokken.git
+cd dokken
+mise install         # Python 3.13.7 + uv
+uv sync --all-groups # Dependencies + dev tools
 
-#### Human Intent Capture
+# API key (choose one)
+export ANTHROPIC_API_KEY="sk-ant-..."  # Recommended
+export OPENAI_API_KEY="sk-..."
+export GOOGLE_API_KEY="AIza..."
+```
 
-When generating documentation, Dokken will ask you questions to capture context that AI cannot infer from code alone:
+## Commands
 
-- **What problems does this module solve?**
-- **What are the module's core responsibilities?**
-- **What is NOT this module's responsibility?**
-- **How does the module fit into the larger system?**
+### `dokken check <module>`
 
-**Tips:**
+Detect documentation drift. Exit code 1 if drift detected (CI/CD-friendly).
 
-- Press `ESC` on any question to skip it
-- Press `ESC` on the first question to skip the entire questionnaire
-- Press `Enter` twice to submit your answer (supports multiline input)
-- Leave answers blank if you don't have relevant information
+**Options:**
 
-Your responses help create more accurate, context-aware documentation that reflects the true intent behind your code.
+- `--all` - Check all modules configured in `.dokken.toml`
+- `--fix` - Auto-generate documentation for modules with drift (use with `--all`)
 
-### Multi-Module Drift Detection
+### `dokken generate <module>`
 
-For CI/CD integration, you can configure multiple modules to check in a single command using `.dokken.toml`:
+Generate or update documentation. Creates `README.md` in module directory.
 
-**Configuration:**
+**Process:**
+
+1. Analyze code and detect drift
+1. Interactive questionnaire (captures human intent)
+1. Generate documentation with LLM
+1. Write to module's `README.md`
+
+## Key Concepts
+
+**Drift**: Documentation out of sync with code. Detected when:
+
+- New/removed functions or classes
+- Changed function signatures
+- Modified exports
+- See `DRIFT_CHECK_PROMPT` in `src/prompts.py:23` for criteria
+
+**Module**: Python package or directory. Target for `dokken check/generate`.
+
+**Human Intent Questions**: Interactive questionnaire during generation:
+
+- What problems does this module solve?
+- What are the module's core responsibilities?
+- What is NOT this module's responsibility?
+- How does the module fit into the larger system?
+
+## Interactive Questionnaire
+
+**Keyboard shortcuts:**
+
+- `ESC` - Skip question or entire questionnaire (if first question)
+- `Enter` twice - Submit answer (supports multiline)
+- Leave blank - Skip if no relevant information
+
+## Configuration
+
+### API Keys (Environment Variables)
+
+```bash
+# Choose one provider
+export ANTHROPIC_API_KEY="sk-ant-..."  # Claude (Haiku) - Recommended
+export OPENAI_API_KEY="sk-..."         # OpenAI (GPT-4o-mini)
+export GOOGLE_API_KEY="AIza..."        # Google (Gemini Flash)
+```
+
+### Multi-Module Detection (`.dokken.toml`)
+
+Configure multiple modules to check in a single command:
 
 ```toml
-# List of modules to check (paths relative to repo root)
+# List of modules (paths relative to repo root)
 modules = [
     "src/auth",
     "src/api",
-    "src/database",
-    "src/utils"
+    "src/database"
 ]
-
-[exclusions]
-# Optional: exclude files or symbols from all modules
-files = ["__init__.py", "*_test.py"]
 ```
 
 **Usage:**
 
 ```bash
-# Check all configured modules
-dokken check --all
-
-# Check all modules and auto-fix drift
-dokken check --all --fix
-
-# Check a single module (still works)
-dokken check src/auth
+dokken check --all              # Check all configured modules
+dokken check --all --fix        # Check and auto-fix drift
+dokken check src/auth           # Check single module
 ```
 
-**Output:**
+**Exit behavior:**
 
-The `--all` flag will:
+- Exit code 1 if any module has drift (CI/CD-friendly)
+- Summary report at end showing all modules
 
-- Process each module sequentially
-- Clearly report which modules have drift and which don't
-- Exit with code 1 if any module has drift (perfect for CI/CD)
-- Provide a summary of results at the end
+### Exclusion Patterns (`.dokken.toml`)
 
-### Excluding Files and Symbols
+**File locations:**
 
-Create a `.dokken.toml` file to exclude files or symbols from documentation:
+- `/.dokken.toml` - Global exclusions and module list
+- `<module>/.dokken.toml` - Module-specific exclusions
 
-**Configuration locations:**
-
-- Repository root: `.dokken.toml` - Global exclusions and module list
-- Module directory: `<module>/.dokken.toml` - Module-specific exclusions
-
-**Example configuration:**
+**Syntax:**
 
 ```toml
 # Configure modules to check (repo root only)
 modules = ["src/auth", "src/api"]
 
 [exclusions]
-# Exclude entire files (supports glob patterns)
+# Exclude files (glob patterns supported)
 files = [
     "__init__.py",
     "*_test.py",
     "conftest.py"
 ]
 
-# Exclude specific symbols (functions/classes)
+# Exclude symbols (functions/classes with wildcard support)
 symbols = [
-    "_private_*",       # All private functions
-    "setup_*",          # All setup functions
-    "Temporary*"        # All temporary classes
+    "_private_*",    # Private functions
+    "setup_*",       # Setup functions
+    "Temporary*"     # Temporary classes
 ]
 ```
 
-**Common use cases:**
+**Common patterns:**
 
-- Hide test utilities and fixtures
-- Exclude internal implementation details (`_private_*`)
-- Skip boilerplate files like `__init__.py`
-- Filter experimental or temporary code
+- Test files: `"*_test.py"`, `"test_*.py"`
+- Private code: `"_private_*"`, `"_internal_*"`
+- Boilerplate: `"__init__.py"`, `"conftest.py"`
+- Experimental: `"experimental_*"`, `"Temp*"`
 
-### Custom Prompts
+### Custom Prompts (`.dokken.toml`)
 
-Inject your own preferences and instructions into the documentation generation process using custom prompts in `.dokken.toml`:
+Inject preferences and instructions into documentation generation:
 
-**Configuration locations:**
+**Available prompt types:**
 
-- Repository root: `.dokken.toml` - Global custom prompts
-- Module directory: `<module>/.dokken.toml` - Module-specific custom prompts
+- `global_prompt` - Applied to all documentation types
+- `module_readme` - Module-level docs (`<module>/README.md`)
+- `project_readme` - Project README (`README.md`)
+- `style_guide` - Style guide (`docs/style-guide.md`)
 
-**Example configuration:**
+**Example:**
 
 ```toml
 [custom_prompts]
-# Global prompt applies to all documentation types
 global_prompt = """
-Use British spelling throughout.
+Use British spelling.
 Prefer active voice and present tense.
-Keep sentences concise and direct.
+Keep sentences concise.
 """
 
-# Doc-type-specific prompts
 module_readme = "Focus on architectural patterns and design decisions."
-project_readme = "Include a quick-start guide and highlight key features."
-style_guide = "Reference specific files and functions as examples."
+project_readme = "Include quick-start guide and highlight key features."
+style_guide = "Reference specific files as examples."
 ```
-
-**Available doc types:**
-
-- `global_prompt` - Applied to all documentation types
-- `module_readme` - Module-level documentation (`<module>/README.md`)
-- `project_readme` - Project README (repository root `README.md`)
-- `style_guide` - Style guide documentation (`<repo-root>/docs/style-guide.md`)
 
 **How it works:**
 
-Custom prompts are appended to the LLM generation prompt under a "USER PREFERENCES" section. Both global and doc-type-specific prompts are included when applicable. Module-level configs extend (and can override) repository-level configs.
-
-**Example effect:**
-
-With `global_prompt = "Use British spelling throughout"`, generated documentation will use "colour" instead of "color", "organise" instead of "organize", "analyse" instead of "analyze", etc.
-
-With `module_readme = "Include a mermaid diagram showing component relationships"`, the generated module README will contain a visual diagram of how components interact.
+- Custom prompts appended to LLM generation under "USER PREFERENCES"
+- Module-level configs extend/override repository-level configs
+- Max 5,000 characters per prompt field
 
 **Common use cases:**
 
-- Enforce specific writing style or tone
-- Request inclusion of particular sections (diagrams, examples, etc.)
-- Emphasize certain aspects (security, performance, scalability)
-- Exclude topics you prefer not to document
-- Align documentation with company style guides
+- Enforce writing style/tone (British spelling, active voice)
+- Request specific sections (mermaid diagrams, examples)
+- Emphasize aspects (security, performance)
+- Align with company style guides
 
-**Limitations:**
+## CI/CD Integration
 
-- Maximum prompt length: 5,000 characters per prompt field
-- Custom prompts are guidance for the LLM, not strict rules
-- Very specific formatting requests may not always be followed precisely
-- Prompts work best when aligned with the doc type's purpose
+**Exit codes:**
+
+- `dokken check`: Exit 1 if drift detected, 0 if synchronized
+- Use in pipelines to enforce documentation hygiene
+
+**Example GitHub Actions:**
+
+```yaml
+# Single module
+- name: Check documentation drift
+  run: dokken check src/my_module
+
+# All configured modules
+- name: Check all modules for drift
+  run: dokken check --all
+```
+
+## Features
+
+- **Drift Detection**: Criteria-based detection (see `src/prompts.py`)
+- **Multi-Module Check**: Check all modules with `--all` flag
+- **Custom Prompts**: Inject preferences into generation (see Configuration)
+- **Multi-Provider LLM**: Claude (Haiku), OpenAI (GPT-4o-mini), Google (Gemini Flash)
+- **Cost-Optimized**: Fast, budget-friendly models
+- **Human-in-the-Loop**: Interactive questionnaire for context AI can't infer
+- **Deterministic**: Temperature=0.0 for reproducible output
 
 ## Development
 
-See [docs/style-guide.md](docs/style-guide.md) for comprehensive architecture, code style, testing guidelines, and git workflow.
-
-**Quick start:**
+**Dev setup:**
 
 ```bash
-# Install dev dependencies
-uv sync --all-groups
-
-# Run tests
-uv run pytest src/tests/ --cov=src
-
-# Code quality
-uv run ruff format && uv run ruff check --fix && uvx ty check
+uv sync --all-groups          # Install dependencies + dev tools
+uv run pytest src/tests/ --cov=src  # Run tests with coverage
+uv run ruff format            # Format code
+uv run ruff check --fix       # Lint and auto-fix
+uvx ty check                  # Type checking
 ```
 
-## Contributing
+**Full documentation:**
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on code style, testing, and the pull request process.
+- [docs/style-guide.md](docs/style-guide.md) - Architecture, code style, testing, git workflow
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
+
+## Troubleshooting
+
+**Q: `ModuleNotFoundError` when running dokken**
+A: Run `uv sync --all-groups` to install dependencies
+
+**Q: Drift detection too sensitive**
+A: Adjust criteria in `DRIFT_CHECK_PROMPT` (`src/prompts.py:23`)
+
+**Q: How to skip questionnaire?**
+A: Press `ESC` on first question
+
+**Q: Change base branch for drift detection?**
+A: Set `GIT_BASE_BRANCH` in `src/git.py`
+
+**Q: Exclude test files from documentation?**
+A: Add pattern to `.dokken.toml`:
+
+```toml
+[exclusions]
+files = ["*_test.py", "test_*.py"]
+```
+
+**Q: How to use custom prompts?**
+A: Add to `.dokken.toml`:
+
+```toml
+[custom_prompts]
+global_prompt = "Use British spelling throughout."
+```
+
+**Q: How to check multiple modules at once?**
+A: Configure modules in `.dokken.toml` and run `dokken check --all`
+
+## File Structure
+
+```
+src/
+  code_analyzer.py - Extract code structure (shallow, non-recursive)
+  config.py        - Load .dokken.toml configuration
+  drift_detector.py - Detect documentation drift
+  generator.py     - Generate documentation with LLM
+  git.py           - Git operations (base branch: "main")
+  llm.py           - LLM provider abstraction
+  prompts.py       - LLM prompt templates
+  questionnaire.py - Interactive human intent capture
+```
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
+MIT License - see [LICENSE](LICENSE)

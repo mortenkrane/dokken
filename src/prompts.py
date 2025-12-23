@@ -44,19 +44,38 @@ MODULE_GENERATION_PROMPT = """You are an expert technical writer creating
 developer-focused documentation. Your goal is to help developers quickly understand and
 work with this codebase.
 
+FORMATTING GUIDELINES:
+- Use scannable bullet lists instead of dense paragraphs where appropriate
+- Front-load keywords in each section (put important terms first)
+- Include specific file references (e.g., "see `module_name.py:45`")
+- Make content easy to grep/search (use consistent terminology)
+- Use **bold** for key terms and concepts
+
 Analyze the code context and generate comprehensive documentation that covers:
 
-1. **Purpose & Scope**: What this component does and its boundaries (2-3 paragraphs)
+1. **Main Entry Points**: The primary functions, classes, or CLI commands developers
+   use to interact with this component. Format as a bulleted or structured list.
+   For each entry point:
+   - Function/class name with file reference
+   - What it does (one line)
+   - When to use it
+   - Key parameters or usage notes
 
-2. **Architecture Overview**: How the component is structured - key modules, their
-   interactions, data flow patterns, and overall design
+2. **Purpose & Scope**: What this component does and its boundaries (2-3 paragraphs).
+   Start with a keyword-rich first sentence that defines the module's role.
 
-3. **Main Entry Points**: The primary functions, classes, or CLI commands developers
-   use to interact with this component. For each entry point, explain what it does and
-   when to use it
+3. **Architecture Overview**: How the component is structured. Use lists or subsections:
+   - Key modules/files and their responsibilities
+   - How components interact
+   - Data flow patterns
+   - Overall structure
 
-4. **Control Flow**: How requests or operations flow through the system from start to
-   finish. Trace the key execution paths, decision points, and data transformations
+4. **Control Flow**: How requests or operations flow through the system. Use numbered
+   steps or bullet points to trace execution paths. Include:
+   - Entry points and triggers
+   - Key decision points
+   - Data transformations
+   - Exit conditions
 
 5. **Control Flow Diagram** (optional): If the control flow has meaningful decision
    points or branching logic, create a Mermaid flowchart diagram to visualize it. Use
@@ -70,18 +89,19 @@ Analyze the code context and generate comprehensive documentation that covers:
    Example structure: Entry → Decision → Branch A/B → Processing → Converge → Exit
    Skip this if the flow is purely linear with no meaningful branches
 
-6. **Key Design Decisions**: The most important architectural choices and WHY they were
+6. **External Dependencies**: Third-party libraries, APIs, or systems used. Format as:
+   - **Dependency name**: What it's used for (with file references if specific)
+
+7. **Key Design Decisions**: The most important architectural choices and WHY they were
    made. Write this as flowing prose, not bullet points. Explain patterns, technologies,
    and approaches in a cohesive narrative that helps developers understand the rationale
-
-7. **External Dependencies**: Third-party libraries, APIs, or systems used and what
-   role they play
 
 Focus on information that helps developers:
 - Understand the system's architecture quickly
 - Know where to start when making changes
 - Trace how data and control flow through the code
 - Understand why certain design choices were made
+- Find specific code locations via file references
 
 Do NOT include:
 - Function signature details (those belong in docstrings)
@@ -98,34 +118,60 @@ PROJECT_README_GENERATION_PROMPT = """You are an expert technical writer creatin
 top-level README for a software project. Your goal is to introduce the project to new
 users and contributors clearly and concisely.
 
+FORMATTING GUIDELINES FOR SEARCH/REFERENCE OPTIMIZATION:
+- Use scannable bullet lists and code blocks (not dense paragraphs)
+- Front-load keywords in sections (important terms first)
+- Create clear hierarchies with headers and subheaders
+- Include concrete commands users can copy-paste
+- Use **bold** for key terms, `code formatting` for commands/files
+- Make content grep-friendly (use consistent, searchable terms)
+
 Analyze the code context and generate comprehensive project documentation that covers:
 
-1. **Project Purpose**: What problem does this project solve? Why does it exist? Write
-   2-3 paragraphs introducing the project to new users.
+1. **Usage Examples**: Basic usage patterns and commands. Start with the most common
+   use cases. Format as:
+   - Clear command examples with descriptions
+   - Copy-pastable code blocks
+   - Multiple use cases if relevant
+   Show users how to actually use the project before explaining installation.
 
-2. **Key Features**: Main capabilities of the project. Provide a bulleted list of 3-7
-   features that users should know about.
+2. **Installation**: How users install and set up the project. Structure clearly:
+   - Prerequisites (with version numbers if applicable)
+   - Installation steps (numbered, with actual commands)
+   - Configuration (environment variables, config files)
+   Use code blocks for commands users can copy directly.
 
-3. **Installation**: How users install and set up the project for usage. Include
-   prerequisites, installation steps, and basic configuration.
+3. **Key Features**: Main capabilities. Provide a bulleted list of 3-7 features.
+   Each bullet should:
+   - Start with the feature name in bold
+   - Describe what it does (one line)
 
-4. **Development Setup**: How contributors set up the project for development. Include
-   installing dependencies, running tests, and any dev tools.
+4. **Project Purpose**: What problem does this project solve? Write 2-3 paragraphs
+   with a keyword-rich first sentence that immediately identifies what this is.
 
-5. **Usage Examples**: Basic usage patterns and commands. Show the most common use cases
-   with concrete examples that users can copy and run.
+5. **Project Structure**: High-level directory organization. Format as a tree or
+   structured list:
+   ```
+   src/
+     module_name/ - What this module does
+     other_module/ - What this does
+   ```
+   Include one-line descriptions for each major directory.
 
-6. **Project Structure**: High-level overview of directory organization. Help users
-   understand where to find different components without overwhelming detail.
+6. **Development**: How contributors set up for development. Structure with subheaders:
+   - **Dev Setup**: Installation commands
+   - **Running Tests**: Test commands with examples
+   - **Code Quality**: Linting, formatting commands
+   - **Documentation**: Links to style guides or contributing docs
 
-7. **Contributing** (optional): How to contribute to the project. Include PR process,
-   coding standards, or note if there's a separate CONTRIBUTING.md.
+7. **Contributing** (optional): How to contribute. Keep brief or link to
+   CONTRIBUTING.md.
 
 Focus on:
-- Clear, welcoming introduction for new users
-- Practical setup instructions for both usage and development
-- Concrete examples users can actually run
-- High-level understanding of project layout
+- Commands and examples users can immediately run
+- Clear, hierarchical structure for easy navigation
+- Scannable format (both human and AI readers)
+- Practical, actionable information
 
 Do NOT include:
 - Deep architectural details (those go in module READMEs)
@@ -143,38 +189,61 @@ STYLE_GUIDE_GENERATION_PROMPT = """You are an expert technical writer analyzing 
 patterns to extract coding conventions. Your goal is to document the *actual* patterns
 used in this codebase, not generic best practices.
 
+FORMATTING GUIDELINES:
+- Use clear subsections with descriptive headers
+- Provide concrete code examples (not just descriptions)
+- Include file references for patterns (e.g., "see `module.py`")
+- Use bullet lists for conventions and patterns
+- Make content scannable and reference-friendly
+
 Analyze the code context and extract the following:
 
-1. **Languages**: Programming languages used in this project. Provide a list.
+1. **Languages & Tools**: Programming languages used in this project. List with
+   versions if detectable.
 
-2. **Code Style Patterns**: Formatting, naming conventions, and code structure
-   patterns consistently used across the codebase. Include specific examples from
-   the code.
+2. **Code Style**: Formatting, naming conventions, and code structure patterns.
+   Structure with subsections:
+   - **Naming Conventions**: How variables, functions, classes are named (with examples)
+   - **Formatting**: Indentation, line length, import ordering (reference actual code)
+   - **Code Structure**: Common patterns for organizing functions and classes
 
-3. **Architectural Patterns**: Design patterns, abstractions, and architectural
-   approaches used in the codebase. Explain dependency injection, data flow,
-   separation of concerns, and other patterns. Reference specific modules or
-   functions.
+3. **Testing Conventions**: Test structure and practices. Break down into:
+   - **Test Organization**: Where tests live, file naming patterns
+   - **Test Structure**: How tests are written (function-based vs class-based)
+   - **Mocking & Fixtures**: Common patterns with examples
+   - **Running Tests**: Commands to execute tests
+   Include file references to example tests.
 
-4. **Testing Conventions**: Test structure, mocking patterns, fixtures, and testing
-   practices. Explain how tests are organized, what patterns to follow, and provide
-   examples.
+4. **Architecture & Patterns**: Design patterns and architectural approaches.
+   Organize by pattern type:
+   - **Dependency Injection**: How dependencies are passed
+   - **Data Flow**: How data moves through the system
+   - **Separation of Concerns**: Module responsibilities
+   Reference specific modules that demonstrate each pattern.
 
-5. **Git Workflow**: Branching strategy, commit message format, PR process, and version
-   control practices. Look for commit conventions (Conventional Commits, etc.).
+5. **Module Organization**: How code is organized. Provide:
+   - Directory structure (tree format if possible)
+   - Module responsibilities (what each directory/file does)
+   - File naming conventions
 
-6. **Module Organization**: How code is organized into modules, packages, and files.
-   Explain the directory structure and module responsibilities.
+6. **Git Workflow**: Version control practices. Include:
+   - **Commit Format**: Message conventions (e.g., Conventional Commits)
+   - **Branching**: Strategy for branches
+   - **PR Process**: How pull requests work
+   Provide examples of good commit messages.
 
-7. **Dependencies Management**: How dependencies are declared, managed, and
-   versioned. Include package management tools and practices (requirements.txt,
-   pyproject.toml, etc.).
+7. **Dependencies**: How dependencies are managed. Include:
+   - **Tools**: Package managers used (pip, poetry, uv, etc.)
+   - **Declaration**: Where dependencies are listed (file names)
+   - **Versioning**: How versions are specified
+   - **Update Process**: How dependencies are updated
 
 Focus on:
 - Patterns that appear consistently across multiple files
 - Specific examples from the codebase (file paths, function names)
 - Conventions that new contributors should follow
 - Differences from standard practices (if any)
+- Clear, actionable guidelines with references
 
 Do NOT include:
 - Generic best practices not evidenced in the code

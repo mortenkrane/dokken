@@ -232,15 +232,15 @@ def test_format_module_documentation_section_order() -> None:
     markdown = format_module_documentation(doc_data=doc_data)
 
     # Find section positions
+    entry_pos = markdown.find("## Main Entry Points")
     purpose_pos = markdown.find("## Purpose & Scope")
     arch_pos = markdown.find("## Architecture Overview")
-    entry_pos = markdown.find("## Main Entry Points")
     flow_pos = markdown.find("## Control Flow")
     deps_pos = markdown.find("## External Dependencies")
     decisions_pos = markdown.find("## Key Design Decisions")
 
-    # Verify correct order
-    assert purpose_pos < arch_pos < entry_pos < flow_pos < deps_pos < decisions_pos
+    # Verify order: entry points first for quick reference
+    assert entry_pos < purpose_pos < arch_pos < flow_pos < deps_pos < decisions_pos
 
 
 @pytest.mark.parametrize(
@@ -290,7 +290,7 @@ def test_format_project_documentation_basic_structure() -> None:
     assert "## Purpose" in markdown
     assert "## Key Features" in markdown
     assert "## Installation" in markdown
-    assert "## Development Setup" in markdown
+    assert "## Development" in markdown
     assert "## Usage" in markdown
     assert "## Project Structure" in markdown
     assert "## Contributing" in markdown
@@ -354,21 +354,23 @@ def test_format_project_documentation_section_order() -> None:
 
     markdown = format_project_documentation(doc_data=doc_data)
 
-    purpose_pos = markdown.find("## Purpose")
-    features_pos = markdown.find("## Key Features")
-    install_pos = markdown.find("## Installation")
-    dev_pos = markdown.find("## Development Setup")
+    # Section order: Usage first (quick start), then Installation, Features,
+    # Purpose, Structure, Development, Contributing
     usage_pos = markdown.find("## Usage")
+    install_pos = markdown.find("## Installation")
+    features_pos = markdown.find("## Key Features")
+    purpose_pos = markdown.find("## Purpose")
     structure_pos = markdown.find("## Project Structure")
+    dev_pos = markdown.find("## Development")
     contrib_pos = markdown.find("## Contributing")
 
     assert (
-        purpose_pos
-        < features_pos
+        usage_pos
         < install_pos
-        < dev_pos
-        < usage_pos
+        < features_pos
+        < purpose_pos
         < structure_pos
+        < dev_pos
         < contrib_pos
     )
 
@@ -409,14 +411,14 @@ def test_format_style_guide_basic_structure() -> None:
 
     markdown = format_style_guide(doc_data=doc_data)
 
-    assert markdown.startswith("# Test Project Style Guide\n")
-    assert "## Languages" in markdown
-    assert "## Code Style Patterns" in markdown
-    assert "## Architectural Patterns" in markdown
+    assert markdown.startswith("# Test Project - Style Guide\n")
+    assert "## Languages & Tools" in markdown
+    assert "## Code Style" in markdown
+    assert "## Architecture & Patterns" in markdown
     assert "## Testing Conventions" in markdown
     assert "## Git Workflow" in markdown
     assert "## Module Organization" in markdown
-    assert "## Dependencies Management" in markdown
+    assert "## Dependencies" in markdown
 
 
 def test_format_style_guide_includes_all_fields() -> None:
@@ -434,7 +436,7 @@ def test_format_style_guide_includes_all_fields() -> None:
 
     markdown = format_style_guide(doc_data=doc_data)
 
-    assert "# My Project Style Guide\n" in markdown
+    assert "# My Project - Style Guide\n" in markdown
     assert "Python, JavaScript, Go" in markdown
     assert "Use black for formatting" in markdown
     assert "MVC pattern" in markdown
@@ -477,7 +479,7 @@ def test_format_style_guide_single_language() -> None:
 
     markdown = format_style_guide(doc_data=doc_data)
 
-    assert "## Languages\n\nPython\n\n" in markdown
+    assert "## Languages & Tools\n\nPython\n\n" in markdown
 
 
 def test_format_style_guide_section_order() -> None:
@@ -495,15 +497,17 @@ def test_format_style_guide_section_order() -> None:
 
     markdown = format_style_guide(doc_data=doc_data)
 
-    lang_pos = markdown.find("## Languages")
-    style_pos = markdown.find("## Code Style Patterns")
-    arch_pos = markdown.find("## Architectural Patterns")
+    # Section order: Languages & Tools, Code Style, Testing, Architecture,
+    # Module Org, Git, Dependencies
+    lang_pos = markdown.find("## Languages & Tools")
+    style_pos = markdown.find("## Code Style")
     test_pos = markdown.find("## Testing Conventions")
-    git_pos = markdown.find("## Git Workflow")
+    arch_pos = markdown.find("## Architecture & Patterns")
     mod_pos = markdown.find("## Module Organization")
-    deps_pos = markdown.find("## Dependencies Management")
+    git_pos = markdown.find("## Git Workflow")
+    deps_pos = markdown.find("## Dependencies")
 
-    assert lang_pos < style_pos < arch_pos < test_pos < git_pos < mod_pos < deps_pos
+    assert lang_pos < style_pos < test_pos < arch_pos < mod_pos < git_pos < deps_pos
 
 
 def test_format_style_guide_deterministic() -> None:
