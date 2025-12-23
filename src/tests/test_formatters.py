@@ -354,7 +354,8 @@ def test_format_project_documentation_section_order() -> None:
 
     markdown = format_project_documentation(doc_data=doc_data)
 
-    # Section order: Usage first (quick start), then Installation, Features, Purpose, Structure, Development, Contributing
+    # Section order: Usage first (quick start), then Installation, Features,
+    # Purpose, Structure, Development, Contributing
     usage_pos = markdown.find("## Usage")
     install_pos = markdown.find("## Installation")
     features_pos = markdown.find("## Key Features")
@@ -496,7 +497,8 @@ def test_format_style_guide_section_order() -> None:
 
     markdown = format_style_guide(doc_data=doc_data)
 
-    # Section order: Languages & Tools, Code Style, Testing, Architecture, Module Org, Git, Dependencies
+    # Section order: Languages & Tools, Code Style, Testing, Architecture,
+    # Module Org, Git, Dependencies
     lang_pos = markdown.find("## Languages & Tools")
     style_pos = markdown.find("## Code Style")
     test_pos = markdown.find("## Testing Conventions")

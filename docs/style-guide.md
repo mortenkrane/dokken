@@ -5,6 +5,7 @@ Clean separation of concerns architecture. Each module has a single, well-define
 ## Quick Reference
 
 **Common commands:**
+
 ```bash
 # Code quality
 uv run ruff format              # Format code
@@ -21,6 +22,7 @@ git commit -m "docs: update documentation"
 ```
 
 **Key patterns:**
+
 - Function-based tests (never class-based)
 - Dependency injection (pass dependencies as parameters)
 - Mock all external dependencies (LLM, git, file I/O)
@@ -46,47 +48,56 @@ src/
 ## Module Responsibilities
 
 **`main.py` - CLI Entry Points**
+
 - Click-based CLI interface only
 - Delegates to `workflows.py` (no business logic here)
 - Rich console for user-facing output
 
 **`workflows.py` - Orchestration**
+
 - High-level business logic
 - Coordinates: analyzer → LLM → formatter → human-in-the-loop
 - Importable without CLI for scripting
 
 **`code_analyzer.py` - Code Extraction**
+
 - Pure functions, no LLM calls
 - Configurable depth traversal (`depth` parameter)
 - Respects `.dokken.toml` exclusions
 
 **`llm.py` - LLM Operations**
+
 - LLM initialization and interaction
 - Uses prompts from `prompts.py`
 - Returns structured Pydantic objects (from `records.py`)
 
 **`prompts.py` - Prompt Templates**
+
 - All LLM prompts as module-level constants
 - Easy iteration without touching logic
 - Git diffs show prompt changes clearly
 - Example: `DRIFT_CHECK_PROMPT`, `MODULE_GENERATION_PROMPT`
 
 **`formatters.py` - Output Formatting**
+
 - Pure data transformation (no I/O)
 - Currently: Markdown formatting
 - See `src/formatters.py` for templates
 
 **`config.py` - Configuration**
+
 - Loads `.dokken.toml` exclusion rules
 - Repo-level and module-level configs
 - Module config overrides repo config
 
 **`human_in_the_loop.py` - Questionnaires**
+
 - Interactive questionary system
 - Captures human intent AI can't infer
 - Graceful skip handling (ESC on first question)
 
 **`records.py` - Data Models**
+
 - Pydantic models for type-safe validation
 - Used by LLM for structured output
 
@@ -102,21 +113,25 @@ main.py (CLI) → workflows.py (Orchestration) → code_analyzer.py, llm.py, for
 ## Code Style
 
 **Formatting & Linting:**
+
 - `uv run ruff format` - Format code (PEP 8)
 - `uv run ruff check --fix` - Lint and auto-fix
 - `uvx ty check` - Type checking
 
 **Conventions:**
+
 - Type hints everywhere
 - Absolute imports
 - Double quotes for strings
 - Imports at top (unless breaking circular imports)
 
 **Function/File Size:**
+
 - Keep functions simple (if Ruff says "too complex", refactor)
 - Consider splitting files at 300-500 lines
 
 **Common Patterns:**
+
 - Dependency injection (pass dependencies as parameters)
 - Pure functions (no side effects in business logic)
 - Structured output (Pydantic models for LLM responses)
@@ -124,21 +139,25 @@ main.py (CLI) → workflows.py (Orchestration) → code_analyzer.py, llm.py, for
 ## How to Add Features
 
 **Add new prompt:**
+
 1. Add constant to `prompts.py`
-2. Use it in `llm.py`
+1. Use it in `llm.py`
 
 **Add new LLM operation:**
+
 1. Add prompt to `prompts.py`
-2. Add function to `llm.py`
-3. Use it in `workflows.py`
+1. Add function to `llm.py`
+1. Use it in `workflows.py`
 
 **Add new output format:**
+
 1. Add formatter to `formatters.py`
-2. Call from `workflows.py`
+1. Call from `workflows.py`
 
 **Add new CLI command:**
+
 1. Add `@cli.command()` to `main.py`
-2. Add workflow to `workflows.py` (if needed)
+1. Add workflow to `workflows.py` (if needed)
 
 ## Git Workflow
 
@@ -147,6 +166,7 @@ main.py (CLI) → workflows.py (Orchestration) → code_analyzer.py, llm.py, for
 Uses [release-please](https://github.com/googleapis/release-please) for automated versioning and PyPI publishing.
 
 **Format:**
+
 ```
 <type>: <description>
 
@@ -156,20 +176,21 @@ Uses [release-please](https://github.com/googleapis/release-please) for automate
 
 **Commit Types:**
 
-| Type        | Version Bump          | Changelog | Example                                      |
+| Type | Version Bump | Changelog | Example |
 | ----------- | --------------------- | --------- | -------------------------------------------- |
-| `feat:`     | Minor (0.1.0 → 0.2.0) | ✅        | `feat: add PDF export`                       |
-| `fix:`      | Patch (0.1.0 → 0.1.1) | ✅        | `fix: correct drift detection logic`         |
-| `docs:`     | None                  | ✅        | `docs: update API documentation`             |
-| `refactor:` | None                  | ✅        | `refactor: simplify code analyzer`           |
-| `perf:`     | None                  | ✅        | `perf: optimize LLM token usage`             |
-| `test:`     | None                  | ❌        | `test: add coverage for formatters`          |
-| `chore:`    | None                  | ❌        | `chore: update dependencies`                 |
-| `ci:`       | None                  | ❌        | `ci: add GitHub Actions workflow`            |
-| `build:`    | None                  | ❌        | `build: configure pyproject.toml`            |
-| `style:`    | None                  | ❌        | `style: format code with ruff`               |
+| `feat:` | Minor (0.1.0 → 0.2.0) | ✅ | `feat: add PDF export` |
+| `fix:` | Patch (0.1.0 → 0.1.1) | ✅ | `fix: correct drift detection logic` |
+| `docs:` | None | ✅ | `docs: update API documentation` |
+| `refactor:` | None | ✅ | `refactor: simplify code analyzer` |
+| `perf:` | None | ✅ | `perf: optimize LLM token usage` |
+| `test:` | None | ❌ | `test: add coverage for formatters` |
+| `chore:` | None | ❌ | `chore: update dependencies` |
+| `ci:` | None | ❌ | `ci: add GitHub Actions workflow` |
+| `build:` | None | ❌ | `build: configure pyproject.toml` |
+| `style:` | None | ❌ | `style: format code with ruff` |
 
 **Breaking Changes (triggers major version 0.1.0 → 1.0.0):**
+
 - Add `!` after type: `feat!: remove deprecated API`
 - Or use footer: `BREAKING CHANGE: API now returns JSON`
 
@@ -194,6 +215,7 @@ git commit -m "docs: add PDF guide"
 ```
 
 **Pre-Commit Checklist:**
+
 - ✅ Conventional commit format
 - ✅ `uv run pytest src/tests/ --cov=src`
 - ✅ `uv run ruff format && uv run ruff check`
@@ -206,10 +228,12 @@ See [docs/releasing-to-pypi.md](releasing-to-pypi.md) for release workflow.
 **Target: 99% coverage minimum** (enforced in `pyproject.toml`)
 
 **Framework:**
+
 - pytest + pytest-cov (coverage) + pytest-mock (mocking)
 - Click's CliRunner for CLI testing
 
 **Test Structure:**
+
 ```
 src/tests/
 ├── conftest.py         # Shared fixtures
@@ -236,6 +260,7 @@ uv run pytest src/tests/ --cov=src --cov-report=html
 ### Core Testing Principles
 
 **1. Function-Based Tests (NEVER class-based)**
+
 ```python
 # ✅ Good
 def test_generate_markdown_includes_title(sample_doc: ComponentDocumentation) -> None:
@@ -248,6 +273,7 @@ class TestGenerateMarkdown:
 ```
 
 **2. Mock All External Dependencies**
+
 - LLM API calls
 - Git subprocess calls
 - File I/O operations
@@ -264,6 +290,7 @@ def test_check_drift(mocker: MockerFixture, mock_llm_client: Gemini) -> None:
 ```
 
 **3. Use Parametrization**
+
 ```python
 @pytest.mark.parametrize("input_value,expected", [
     ("value1", "result1"),
@@ -274,6 +301,7 @@ def test_function(input_value: str, expected: str) -> None:
 ```
 
 **4. Shared Fixtures in conftest.py**
+
 ```python
 # conftest.py
 @pytest.fixture
@@ -286,6 +314,7 @@ def test_something(sample_doc: ComponentDocumentation) -> None:
 ```
 
 **5. Test Units in Isolation**
+
 - One function per test
 - Mock dependencies at module boundaries
 - Avoid end-to-end tests in unit tests
@@ -293,6 +322,7 @@ def test_something(sample_doc: ComponentDocumentation) -> None:
 ### Best Practices
 
 **Descriptive test names:**
+
 ```python
 # ✅ Good
 def test_generate_markdown_sorts_decisions_alphabetically() -> None: ...
@@ -302,6 +332,7 @@ def test_markdown() -> None: ...
 ```
 
 **Test both happy and sad paths:**
+
 ```python
 def test_success(mocker: MockerFixture) -> None:
     mocker.patch.dict(os.environ, {"API_KEY": "test"})
@@ -315,6 +346,7 @@ def test_missing_key(mocker: MockerFixture) -> None:
 ```
 
 **Use tmp_path for file operations:**
+
 ```python
 def test_writes_file(tmp_path: Path) -> None:
     output = tmp_path / "output.txt"
@@ -323,6 +355,7 @@ def test_writes_file(tmp_path: Path) -> None:
 ```
 
 **When to write tests:**
+
 - ✅ All new functions/classes
 - ✅ Bug fixes (test first, then fix)
 - ✅ Edge cases and error handling
@@ -331,15 +364,19 @@ def test_writes_file(tmp_path: Path) -> None:
 ## Key Design Decisions
 
 **Configurable Depth Analysis:**
+
 - `code_analyzer.py` supports depth parameter (0=root only, 1=root+1 level, -1=infinite)
 
 **Alphabetically Sorted Decisions:**
+
 - Formatters sort design decisions alphabetically to prevent diff noise
 
 **Drift-Based Generation:**
+
 - Only generates docs when drift detected or no doc exists (saves LLM calls)
 - Criteria in `DRIFT_CHECK_PROMPT` (`src/prompts.py:6`)
 
 **Human-in-the-Loop:**
+
 - Interactive questionnaire captures intent AI can't infer from code
 - See `human_in_the_loop.py`

@@ -164,7 +164,8 @@ Analyze the code context and generate comprehensive project documentation that c
    - **Code Quality**: Linting, formatting commands
    - **Documentation**: Links to style guides or contributing docs
 
-7. **Contributing** (optional): How to contribute. Keep brief or link to CONTRIBUTING.md.
+7. **Contributing** (optional): How to contribute. Keep brief or link to
+   CONTRIBUTING.md.
 
 Focus on:
 - Commands and examples users can immediately run
