@@ -226,7 +226,7 @@ style_guide = "Reference specific files as examples."
 
 ```bash
 uv sync --all-groups          # Install dependencies + dev tools
-uv run pytest src/tests/ --cov=src  # Run tests with coverage
+uv run pytest tests/ --cov=src  # Run tests with coverage
 uv run ruff format            # Format code
 uv run ruff check --fix       # Lint and auto-fix
 uvx ty check                  # Type checking

@@ -217,7 +217,7 @@ From `release-please-config.json`:
 # 1. Develop feature on branch
 git checkout -b add-pdf-export
 # ... make changes ...
-pytest src/tests/ --cov=src
+pytest tests/ --cov=src
 ruff format && ruff check
 
 # 2. Commit with conventional commit

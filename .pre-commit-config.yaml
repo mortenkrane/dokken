@@ -34,7 +34,7 @@ repos:
 
       - id: pytest
         name: pytest
-        entry: uv run pytest src/tests/ --cov=src --cov-report=term-missing
+        entry: uv run pytest tests/ --cov=src --cov-report=term-missing
         language: system
         pass_filenames: false
         stages: [pre-push]
