@@ -35,7 +35,8 @@ def test_check_documentation_drift_invalid_directory(
 def test_check_documentation_drift_no_git_for_project_readme(
     mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
-    """Test check_documentation_drift raises ValueError when using PROJECT_README without git."""
+    """Test check_documentation_drift raises ValueError when using PROJECT_README
+    without git."""
     # PROJECT_README requires git root
     with pytest.raises(ValueError, match="not in a git repository"):
         check_documentation_drift(
