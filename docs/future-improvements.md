@@ -516,7 +516,6 @@ ______________________________________________________________________
 
 | Improvement | Effort | Impact | Priority |
 |-------------|--------|--------|----------|
-| Add Integration Tests | Medium | High | **HIGH** |
 | Reduce Mocking | High | High | **HIGH** |
 | Cache Drift Detection | Medium | High | **HIGH** |
 | Make DocConfig Generic | Medium | High | **HIGH** |
