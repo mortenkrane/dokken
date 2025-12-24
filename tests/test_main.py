@@ -362,3 +362,36 @@ def test_generate_command_depth_flag_in_help(runner: CliRunner) -> None:
     assert result.exit_code == 0
     assert "--depth" in result.output
     assert "Directory depth" in result.output
+
+
+def test_check_command_all_flag_with_module_path(
+    runner: CliRunner, temp_module_dir: Path
+) -> None:
+    """Test check command rejects --all with module path."""
+    result = runner.invoke(cli, ["check", str(temp_module_dir), "--all"])
+
+    assert result.exit_code == 1
+    assert "Cannot use --all with a module path" in result.output
+
+
+def test_check_command_all_flag_without_module_path(
+    runner: CliRunner, mocker: MockerFixture
+) -> None:
+    """Test check command with --all flag and no module path."""
+    mock_check_multiple = mocker.patch("src.main.check_multiple_modules_drift")
+    mocker.patch("src.main.console")
+
+    result = runner.invoke(cli, ["check", "--all"])
+
+    assert result.exit_code == 0
+    mock_check_multiple.assert_called_once_with(
+        fix=False, depth=None, doc_type=DocType.MODULE_README
+    )
+
+
+def test_check_command_without_module_path_or_all_flag(runner: CliRunner) -> None:
+    """Test check command requires either module path or --all flag."""
+    result = runner.invoke(cli, ["check"])
+
+    assert result.exit_code == 1
+    assert "Must specify either a module path or --all flag" in result.output

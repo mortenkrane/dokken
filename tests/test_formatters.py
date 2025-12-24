@@ -546,3 +546,22 @@ def test_format_style_guide_multiline_content() -> None:
 
     assert "Line 1\nLine 2\nLine 3" in markdown
     assert "Arch line 1\nArch line 2" in markdown
+
+
+def test_format_module_documentation_with_control_flow_diagram() -> None:
+    """Test format_module_documentation includes control flow diagram when present."""
+    doc_data = ModuleDocumentation(
+        component_name="Test Component",
+        purpose_and_scope="Test purpose",
+        architecture_overview="Test architecture",
+        main_entry_points="Test entry points",
+        control_flow="Test control flow",
+        control_flow_diagram="```mermaid\ngraph TD;\n    A-->B;\n```",
+        key_design_decisions="Test decisions",
+    )
+
+    markdown = format_module_documentation(doc_data=doc_data)
+
+    assert "```mermaid" in markdown
+    assert "graph TD;" in markdown
+    assert "A-->B;" in markdown

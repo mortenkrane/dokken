@@ -493,3 +493,20 @@ def test_get_module_context_with_depth(tmp_path: Path, mocker: MockerFixture) ->
     context = get_module_context(module_path=str(module_dir), depth=-1)
     assert "root content" in context
     assert "nested content" in context
+
+
+def test_get_module_context_oserror_on_module_path(mocker: MockerFixture) -> None:
+    """Test get_module_context handles OSError when accessing module path."""
+    mock_console = mocker.patch("src.code_analyzer.console")
+    # Mock load_config to raise OSError (simulating permission denied on module path)
+    mocker.patch("src.code_analyzer.load_config", side_effect=OSError("Permission denied"))
+
+    context = get_module_context(module_path="/some/path")
+
+    # Should return empty string
+    assert context == ""
+    # Should log the error
+    assert any(
+        "Error accessing module path" in str(call)
+        for call in mock_console.print.call_args_list
+    )

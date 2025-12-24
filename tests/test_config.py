@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from src.config import CustomPrompts, DokkenConfig, ExclusionConfig, load_config
 
 
@@ -427,3 +429,20 @@ modules = ["src/auth", "src/database"]
     # Check no duplicates
     assert config.modules.count("src/auth") == 1
     assert set(config.modules) == {"src/auth", "src/api", "src/database"}
+
+
+def test_load_config_invalid_exclusions_validation(tmp_path: Path) -> None:
+    """Test load_config raises ValueError for invalid exclusions configuration."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    # Create config with invalid exclusions (wrong type - should be list)
+    config_content = """
+[exclusions]
+files = "not_a_list"
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    # Should raise ValueError with helpful message
+    with pytest.raises(ValueError, match="Invalid exclusions configuration"):
+        load_config(module_path=str(module_dir))
