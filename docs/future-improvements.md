@@ -81,44 +81,6 @@ ______________________________________________________________________
 
 ## Testing
 
-### 1. Add Integration Tests
-
-**Current State:** 188 unit tests, 0 integration tests
-
-**Recommendation:** Add end-to-end tests that exercise the full workflow
-
-**Example:**
-
-```python
-def test_full_documentation_generation_workflow(tmp_path):
-    """Test complete workflow from code analysis to file writing."""
-    # Setup: Create a real Python module
-    module_dir = create_sample_module(tmp_path)
-
-    # Execute: Run actual generation (not mocked)
-    result = generate_documentation(
-        target_module_path=str(module_dir),
-        doc_type=DocType.MODULE_README,
-    )
-
-    # Verify: Check README was created with expected structure
-    readme = module_dir / "README.md"
-    assert readme.exists()
-    assert "## Purpose & Scope" in readme.read_text()
-```
-
-**Benefits:**
-
-- Catch integration issues
-- Verify real-world behavior
-- Increase confidence in releases
-
-**Effort:** Medium (requires test infrastructure setup)
-
-**Impact:** High (significantly improves test coverage)
-
-______________________________________________________________________
-
 ### 2. Reduce Mocking, Increase Behavior Testing
 
 **Current State:** Heavy use of mocking makes tests brittle
