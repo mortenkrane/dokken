@@ -1,7 +1,9 @@
 """LLM client initialization and operations."""
 
+import hashlib
 import os
 from dataclasses import dataclass
+from functools import lru_cache
 
 from llama_index.core.llms import LLM
 from llama_index.core.program import LLMTextCompletionProgram
@@ -19,6 +21,9 @@ from src.records import (
 
 # Temperature setting for deterministic, reproducible documentation output
 TEMPERATURE = 0.0
+
+# Cache size for drift detection results (configurable)
+DRIFT_CACHE_SIZE = 100
 
 
 @dataclass
@@ -69,9 +74,86 @@ def initialize_llm() -> LLM:
     )
 
 
+def _hash_content(content: str) -> str:
+    """
+    Computes a SHA256 hash of the given content string.
+
+    Used for cache key generation in drift detection to avoid redundant LLM calls
+    when checking the same content multiple times.
+
+    Args:
+        content: The string content to hash.
+
+    Returns:
+        A hexadecimal string representation of the SHA256 hash.
+    """
+    return hashlib.sha256(content.encode()).hexdigest()
+
+
+# Manual cache for drift detection results
+# Using a dict instead of @lru_cache because we need to work with non-hashable LLM objects
+_drift_cache: dict[str, DocumentationDriftCheck] = {}
+
+
+def _get_cache_key(context: str, current_doc: str, llm: LLM) -> str:
+    """
+    Generates a cache key for drift detection based on content hashes and LLM model.
+
+    Args:
+        context: The code context string.
+        current_doc: The current documentation string.
+        llm: The LLM client instance.
+
+    Returns:
+        A cache key string combining content hashes and model identifier.
+    """
+    context_hash = _hash_content(context)
+    doc_hash = _hash_content(current_doc)
+    # Extract model identifier from LLM instance
+    # LLM instances have a 'model' attribute that identifies the specific model
+    llm_model = getattr(llm, "model", "unknown")
+    return f"{context_hash}:{doc_hash}:{llm_model}"
+
+
+def clear_drift_cache() -> None:
+    """
+    Clears the drift detection cache.
+
+    This is useful for testing or when you want to force fresh LLM calls
+    regardless of cache state.
+    """
+    _drift_cache.clear()
+
+
+def get_drift_cache_info() -> dict[str, int]:
+    """
+    Returns information about the drift detection cache.
+
+    Returns:
+        A dictionary with cache statistics (current size and max size).
+    """
+    return {"size": len(_drift_cache), "maxsize": DRIFT_CACHE_SIZE}
+
+
 def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDriftCheck:
     """
     Analyzes the current documentation against the code changes to detect drift.
+
+    This function implements caching to reduce redundant LLM API calls. When the same
+    code context and documentation are checked multiple times, the cached result is
+    returned instead of making a new LLM call.
+
+    Caching Behavior:
+        - Cache key is based on SHA256 hashes of context and current_doc, plus LLM model
+        - Cache size is limited to DRIFT_CACHE_SIZE entries (default: 100)
+        - When cache is full, oldest entries are evicted (FIFO)
+        - Cache persists for the lifetime of the Python process
+        - Cache can be cleared manually via clear_drift_cache()
+
+    Performance Impact:
+        - Cache hits avoid LLM API calls entirely (near-instant response)
+        - Particularly beneficial in CI/CD where the same files are checked repeatedly
+        - Reduces API costs for unchanged code/docs
 
     Args:
         llm: The LLM client instance.
@@ -81,6 +163,14 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     Returns:
         A DocumentationDriftCheck object with drift detection results.
     """
+    # Generate cache key
+    cache_key = _get_cache_key(context, current_doc, llm)
+
+    # Check cache first
+    if cache_key in _drift_cache:
+        return _drift_cache[cache_key]
+
+    # Cache miss - perform LLM call
     # Use LLMTextCompletionProgram for structured Pydantic output
     check_program = LLMTextCompletionProgram.from_defaults(
         output_cls=DocumentationDriftCheck,
@@ -89,7 +179,18 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     )
 
     # Run the check
-    return check_program(context=context, current_doc=current_doc)
+    result = check_program(context=context, current_doc=current_doc)
+
+    # Store in cache (with size limit)
+    if len(_drift_cache) >= DRIFT_CACHE_SIZE:
+        # Remove oldest entry (FIFO eviction)
+        # In Python 3.7+, dicts maintain insertion order
+        oldest_key = next(iter(_drift_cache))
+        del _drift_cache[oldest_key]
+
+    _drift_cache[cache_key] = result
+
+    return result
 
 
 def _build_human_intent_section(
