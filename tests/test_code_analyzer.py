@@ -499,7 +499,9 @@ def test_get_module_context_oserror_on_module_path(mocker: MockerFixture) -> Non
     """Test get_module_context handles OSError when accessing module path."""
     mock_console = mocker.patch("src.code_analyzer.console")
     # Mock load_config to raise OSError (simulating permission denied on module path)
-    mocker.patch("src.code_analyzer.load_config", side_effect=OSError("Permission denied"))
+    mocker.patch(
+        "src.code_analyzer.load_config", side_effect=OSError("Permission denied")
+    )
 
     context = get_module_context(module_path="/some/path")
 
