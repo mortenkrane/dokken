@@ -173,7 +173,10 @@ def test_integration_generate_documentation(
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
-    mock_program.side_effect = [payment_service_drift_check, payment_service_generated_doc]
+    mock_program.side_effect = [
+        payment_service_drift_check,
+        payment_service_generated_doc,
+    ]
     mock_program_class.from_defaults.return_value = mock_program
 
     # Mock console and human intent
