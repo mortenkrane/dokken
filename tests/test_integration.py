@@ -6,30 +6,19 @@ All other modules (code analyzer, config, formatters, etc.) are kept intact.
 
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
 from src.main import cli
 from src.records import DocumentationDriftCheck, ModuleDocumentation
 
+# --- Test Data Constants ---
 
-def test_integration_generate_documentation(
-    tmp_path: Path, mocker: MockerFixture
-) -> None:
-    """
-    Integration test for doc generation command.
+# Payment service example code
+PAYMENT_SERVICE_INIT = '"""Payment service module."""\n'
 
-    Tests the full flow of 'dokken generate' with a realistic module structure.
-    Only the LLM is mocked; all other components (code analyzer, formatters, etc.)
-    are used as-is.
-    """
-    # Create a realistic module structure
-    module_dir = tmp_path / "payment_service"
-    module_dir.mkdir()
-
-    # Create sample Python files
-    (module_dir / "__init__.py").write_text('"""Payment service module."""\n')
-    (module_dir / "processor.py").write_text('''"""Payment processor."""
+PAYMENT_PROCESSOR_CODE = '''"""Payment processor."""
 
 
 def process_payment(amount: float, currency: str) -> dict:
@@ -48,25 +37,71 @@ def process_payment(amount: float, currency: str) -> dict:
 def validate_payment(amount: float) -> bool:
     """Validate payment amount."""
     return amount > 0
-''')
+'''
 
-    # Mock the LLM initialization and program
-    mock_llm_client = mocker.MagicMock()
-    mocker.patch("src.workflows.initialize_llm", return_value=mock_llm_client)
-    mocker.patch("src.llm.initialize_llm", return_value=mock_llm_client)
+# Auth service example code
+AUTH_SERVICE_INIT = '"""Authentication service."""\n'
 
-    # Mock the LLM program to return realistic structured output
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
+AUTH_SERVICE_CODE = '''"""Authentication handlers."""
 
-    # Setup mock to return drift detection (drift detected since no doc exists)
-    # followed by generated documentation
-    drift_check = DocumentationDriftCheck(
+
+def authenticate_user(username: str, password: str) -> bool:
+    """Authenticate a user with username and password.
+
+    Args:
+        username: User's username
+        password: User's password
+
+    Returns:
+        True if authentication successful, False otherwise
+    """
+    # Simplified auth logic for testing
+    return len(username) > 0 and len(password) >= 8
+
+
+def generate_token(user_id: int) -> str:
+    """Generate an authentication token.
+
+    Args:
+        user_id: ID of the authenticated user
+
+    Returns:
+        JWT token string
+    """
+    return f"token_{user_id}"
+'''
+
+# Existing documentation with drift
+AUTH_SERVICE_OUTDATED_README = """# Authentication Service
+
+This service handles user authentication.
+
+## Main Functions
+
+- `authenticate_user()` - Authenticates users
+- `create_session()` - Creates user sessions (OUTDATED - this function was removed)
+
+## Dependencies
+
+- JWT library
+"""
+
+# --- Test Fixtures ---
+
+
+@pytest.fixture
+def payment_service_drift_check() -> DocumentationDriftCheck:
+    """Drift check result for payment service (no existing docs)."""
+    return DocumentationDriftCheck(
         drift_detected=True,
         rationale="No existing documentation provided.",
     )
 
-    generated_doc = ModuleDocumentation(
+
+@pytest.fixture
+def payment_service_generated_doc() -> ModuleDocumentation:
+    """Generated documentation for payment service."""
+    return ModuleDocumentation(
         component_name="Payment Service",
         purpose_and_scope=(
             "This module handles payment processing operations including "
@@ -95,15 +130,55 @@ def validate_payment(amount: float) -> bool:
         external_dependencies="None",
     )
 
-    # Configure mock to return different values on successive calls
-    mock_program.side_effect = [drift_check, generated_doc]
+
+@pytest.fixture
+def auth_service_drift_check() -> DocumentationDriftCheck:
+    """Drift check result for auth service (outdated docs)."""
+    return DocumentationDriftCheck(
+        drift_detected=True,
+        rationale=(
+            "Documentation references removed function 'create_session()'. "
+            "New function 'generate_token()' is not documented. "
+            "Missing details about password validation requirements."
+        ),
+    )
+
+
+# --- Integration Tests ---
+
+
+def test_integration_generate_documentation(
+    tmp_path: Path,
+    mocker: MockerFixture,
+    payment_service_drift_check: DocumentationDriftCheck,
+    payment_service_generated_doc: ModuleDocumentation,
+) -> None:
+    """
+    Integration test for doc generation command.
+
+    Tests the full flow of 'dokken generate' with a realistic module structure.
+    Only the LLM is mocked; all other components (code analyzer, formatters, etc.)
+    are used as-is.
+    """
+    # Create a realistic module structure
+    module_dir = tmp_path / "payment_service"
+    module_dir.mkdir()
+    (module_dir / "__init__.py").write_text(PAYMENT_SERVICE_INIT)
+    (module_dir / "processor.py").write_text(PAYMENT_PROCESSOR_CODE)
+
+    # Mock the LLM initialization and program
+    mock_llm_client = mocker.MagicMock()
+    mocker.patch("src.workflows.initialize_llm", return_value=mock_llm_client)
+    mocker.patch("src.llm.initialize_llm", return_value=mock_llm_client)
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.side_effect = [payment_service_drift_check, payment_service_generated_doc]
     mock_program_class.from_defaults.return_value = mock_program
 
-    # Mock console to suppress output during tests
+    # Mock console and human intent
     mocker.patch("src.main.console")
     mocker.patch("src.workflows.console")
-
-    # Mock human intent capture (return None to skip)
     mocker.patch("src.workflows.ask_human_intent", return_value=None)
 
     # Run the generate command
@@ -113,11 +188,10 @@ def validate_payment(amount: float) -> bool:
     # Assert command succeeded
     assert result.exit_code == 0, f"Command failed with: {result.output}"
 
-    # Assert README.md was created
+    # Assert README.md was created with expected content
     readme_path = module_dir / "README.md"
     assert readme_path.exists(), "README.md was not created"
 
-    # Assert README contains expected content from the generated documentation
     readme_content = readme_path.read_text()
     assert "Payment Service" in readme_content
     assert "payment processing operations" in readme_content
@@ -130,7 +204,9 @@ def validate_payment(amount: float) -> bool:
 
 
 def test_integration_check_documentation_drift(
-    tmp_path: Path, mocker: MockerFixture
+    tmp_path: Path,
+    mocker: MockerFixture,
+    auth_service_drift_check: DocumentationDriftCheck,
 ) -> None:
     """
     Integration test for drift detection command.
@@ -142,76 +218,24 @@ def test_integration_check_documentation_drift(
     # Create a realistic module structure
     module_dir = tmp_path / "auth_service"
     module_dir.mkdir()
+    (module_dir / "__init__.py").write_text(AUTH_SERVICE_INIT)
+    (module_dir / "auth.py").write_text(AUTH_SERVICE_CODE)
 
-    # Create sample Python files
-    (module_dir / "__init__.py").write_text('"""Authentication service."""\n')
-    (module_dir / "auth.py").write_text('''"""Authentication handlers."""
-
-
-def authenticate_user(username: str, password: str) -> bool:
-    """Authenticate a user with username and password.
-
-    Args:
-        username: User's username
-        password: User's password
-
-    Returns:
-        True if authentication successful, False otherwise
-    """
-    # Simplified auth logic for testing
-    return len(username) > 0 and len(password) >= 8
-
-
-def generate_token(user_id: int) -> str:
-    """Generate an authentication token.
-
-    Args:
-        user_id: ID of the authenticated user
-
-    Returns:
-        JWT token string
-    """
-    return f"token_{user_id}"
-''')
-
-    # Create existing README (with some drift)
+    # Create existing README with drift
     readme_path = module_dir / "README.md"
-    readme_path.write_text("""# Authentication Service
-
-This service handles user authentication.
-
-## Main Functions
-
-- `authenticate_user()` - Authenticates users
-- `create_session()` - Creates user sessions (OUTDATED - this function was removed)
-
-## Dependencies
-
-- JWT library
-""")
+    readme_path.write_text(AUTH_SERVICE_OUTDATED_README)
 
     # Mock the LLM initialization and program
     mock_llm_client = mocker.MagicMock()
     mocker.patch("src.workflows.initialize_llm", return_value=mock_llm_client)
     mocker.patch("src.llm.initialize_llm", return_value=mock_llm_client)
 
-    # Mock the LLM program to detect drift
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
-
-    drift_check = DocumentationDriftCheck(
-        drift_detected=True,
-        rationale=(
-            "Documentation references removed function 'create_session()'. "
-            "New function 'generate_token()' is not documented. "
-            "Missing details about password validation requirements."
-        ),
-    )
-
-    mock_program.return_value = drift_check
+    mock_program.return_value = auth_service_drift_check
     mock_program_class.from_defaults.return_value = mock_program
 
-    # Mock console to suppress output during tests
+    # Mock console
     mocker.patch("src.main.console")
     mocker.patch("src.workflows.console")
 
