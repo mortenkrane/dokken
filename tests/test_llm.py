@@ -20,6 +20,13 @@ from src.llm import (
 )
 from src.prompts import MODULE_GENERATION_PROMPT
 from src.records import DocumentationDriftCheck, ModuleDocumentation, ModuleIntent
+from src.utils import (
+    DRIFT_CACHE_SIZE,
+    _generate_cache_key,
+    _hash_content,
+    clear_drift_cache,
+    get_drift_cache_info,
+)
 
 # --- Tests for initialize_llm() ---
 
@@ -217,8 +224,6 @@ def test_check_drift_returns_drift_check_object(
 
 def test_hash_content() -> None:
     """Test _hash_content generates consistent SHA256 hashes."""
-    from src.llm import _hash_content
-
     content = "Sample content"
     hash1 = _hash_content(content)
     hash2 = _hash_content(content)
@@ -314,8 +319,6 @@ def test_clear_drift_cache_removes_all_entries(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test clear_drift_cache removes all cached entries."""
-    from src.llm import clear_drift_cache, get_drift_cache_info
-
     clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -350,8 +353,6 @@ def test_get_drift_cache_info_returns_correct_stats(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test get_drift_cache_info returns accurate cache statistics."""
-    from src.llm import DRIFT_CACHE_SIZE, clear_drift_cache, get_drift_cache_info
-
     clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -381,7 +382,6 @@ def test_check_drift_cache_evicts_oldest_when_full(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test cache evicts oldest entry when maxsize is reached."""
-    from src.llm import get_drift_cache_info
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -389,7 +389,7 @@ def test_check_drift_cache_evicts_oldest_when_full(
     mock_program_class.from_defaults.return_value = mock_program
 
     # Temporarily reduce cache size for testing using mocker.patch
-    mocker.patch("src.llm.DRIFT_CACHE_SIZE", 2)
+    mocker.patch("src.utils.DRIFT_CACHE_SIZE", 2)
 
     # Fill cache to limit
     check_drift(llm=mock_llm_client, context="ctx1", current_doc="doc1")
@@ -421,20 +421,18 @@ def test_check_drift_cache_evicts_oldest_when_full(
 def test_get_cache_key_includes_llm_model(
     mock_llm_client: Any,
 ) -> None:
-    """Test _get_cache_key includes LLM model in the cache key."""
-    from src.llm import _get_cache_key
-
+    """Test _generate_cache_key includes LLM model in the cache key."""
     # Mock LLM with model attribute
     mock_llm_client.model = "claude-3-5-haiku-20241022"
 
-    key1 = _get_cache_key("context", "doc", mock_llm_client)
+    key1 = _generate_cache_key("context", "doc", mock_llm_client)
 
     # Key should include model identifier
     assert "claude-3-5-haiku-20241022" in key1
 
     # Different model should produce different key
     mock_llm_client.model = "gpt-4o-mini"
-    key2 = _get_cache_key("context", "doc", mock_llm_client)
+    key2 = _generate_cache_key("context", "doc", mock_llm_client)
 
     assert key1 != key2
     assert "gpt-4o-mini" in key2
