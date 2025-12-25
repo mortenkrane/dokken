@@ -13,9 +13,8 @@ from pydantic import BaseModel
 from src.config import CustomPrompts
 from src.doc_types import DocType
 from src.prompts import DRIFT_CHECK_PROMPT
-from src.records import (
-    DocumentationDriftCheck,
-)
+from src.records import DocumentationDriftCheck
+from src.utils import _generate_cache_key, content_based_cache
 
 # Temperature setting for deterministic, reproducible documentation output
 TEMPERATURE = 0.0
@@ -69,9 +68,18 @@ def initialize_llm() -> LLM:
     )
 
 
+@content_based_cache(cache_key_fn=_generate_cache_key)
 def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDriftCheck:
     """
     Analyzes the current documentation against the code changes to detect drift.
+
+    This function uses content-based caching to reduce redundant LLM API calls.
+    When the same code context and documentation are checked multiple times,
+    the cached result is returned instead of making a new LLM call.
+
+    Caching is handled transparently by the @content_based_cache decorator.
+    Cache utilities (clear_drift_cache, get_drift_cache_info) are available
+    in src.utils for manual cache management.
 
     Args:
         llm: The LLM client instance.
@@ -88,7 +96,7 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
         prompt_template_str=DRIFT_CHECK_PROMPT,
     )
 
-    # Run the check
+    # Run the drift check
     return check_program(context=context, current_doc=current_doc)
 
 

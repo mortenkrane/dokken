@@ -20,6 +20,7 @@ from src.llm import (
 )
 from src.prompts import MODULE_GENERATION_PROMPT
 from src.records import DocumentationDriftCheck, ModuleDocumentation, ModuleIntent
+from src.utils import get_drift_cache_info
 
 # --- Tests for initialize_llm() ---
 
@@ -149,6 +150,7 @@ def test_check_drift_creates_program(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift creates LLMTextCompletionProgram with correct parameters."""
+
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
@@ -176,6 +178,7 @@ def test_check_drift_uses_drift_check_prompt(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift uses DRIFT_CHECK_PROMPT template."""
+
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
@@ -198,6 +201,7 @@ def test_check_drift_returns_drift_check_object(
     sample_drift_check_with_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift returns DocumentationDriftCheck object."""
+
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_with_drift
@@ -207,6 +211,124 @@ def test_check_drift_returns_drift_check_object(
 
     assert result == sample_drift_check_with_drift
     assert result.drift_detected is True
+
+
+# --- Tests for check_drift with caching ---
+
+
+def test_check_drift_cache_hit(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+) -> None:
+    """Test check_drift returns cached result on cache hit."""
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_drift_check_no_drift
+    mock_program_class.from_defaults.return_value = mock_program
+
+    context = "Sample context"
+    doc = "Sample doc"
+
+    # First call should trigger LLM
+    result1 = check_drift(llm=mock_llm_client, context=context, current_doc=doc)
+    assert result1 == sample_drift_check_no_drift
+    assert mock_program_class.from_defaults.call_count == 1
+
+    # Second call with same inputs should use cache
+    result2 = check_drift(llm=mock_llm_client, context=context, current_doc=doc)
+    assert result2 == sample_drift_check_no_drift
+    # LLM should not be called again
+    assert mock_program_class.from_defaults.call_count == 1
+
+    # Verify both results are identical
+    assert result1.drift_detected == result2.drift_detected
+    assert result1.rationale == result2.rationale
+
+
+def test_check_drift_cache_miss_on_different_context(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+) -> None:
+    """Test check_drift triggers new LLM call when context changes."""
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_drift_check_no_drift
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # First call
+    check_drift(llm=mock_llm_client, context="context1", current_doc="doc")
+    assert mock_program_class.from_defaults.call_count == 1
+
+    # Different context should trigger new LLM call
+    check_drift(llm=mock_llm_client, context="context2", current_doc="doc")
+    assert mock_program_class.from_defaults.call_count == 2
+
+
+def test_check_drift_cache_miss_on_different_doc(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+) -> None:
+    """Test check_drift triggers new LLM call when documentation changes."""
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_drift_check_no_drift
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # First call
+    check_drift(llm=mock_llm_client, context="context", current_doc="doc1")
+    assert mock_program_class.from_defaults.call_count == 1
+
+    # Different doc should trigger new LLM call
+    check_drift(llm=mock_llm_client, context="context", current_doc="doc2")
+    assert mock_program_class.from_defaults.call_count == 2
+
+
+def test_check_drift_cache_evicts_oldest_when_full(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+) -> None:
+    """Test cache evicts oldest entry when maxsize is reached."""
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_drift_check_no_drift
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Temporarily reduce cache size for testing using mocker.patch
+    mocker.patch("src.utils.DRIFT_CACHE_SIZE", 2)
+
+    # Fill cache to limit
+    check_drift(llm=mock_llm_client, context="ctx1", current_doc="doc1")
+    check_drift(llm=mock_llm_client, context="ctx2", current_doc="doc2")
+
+    cache_info = get_drift_cache_info()
+    assert cache_info["size"] == 2
+
+    # Add one more entry - should evict oldest
+    check_drift(llm=mock_llm_client, context="ctx3", current_doc="doc3")
+
+    cache_info = get_drift_cache_info()
+    assert cache_info["size"] == 2  # Still at max size
+
+    # First entry should be evicted, so accessing it should trigger new LLM call
+    # Reset call count
+    mock_program_class.from_defaults.reset_mock()
+
+    # Access first entry again (should be evicted)
+    check_drift(llm=mock_llm_client, context="ctx1", current_doc="doc1")
+    assert mock_program_class.from_defaults.call_count == 1  # New call
+
+    # Access third entry (should still be cached)
+    mock_program_class.from_defaults.reset_mock()
+    check_drift(llm=mock_llm_client, context="ctx3", current_doc="doc3")
+    assert mock_program_class.from_defaults.call_count == 0  # Cached
 
 
 # --- Tests for _build_human_intent_section() ---
@@ -511,6 +633,7 @@ def test_check_drift_handles_various_inputs(
     current_doc: str,
 ) -> None:
     """Test check_drift handles various context and documentation inputs."""
+
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift

@@ -7,6 +7,13 @@ import pytest
 from pytest_mock import MockerFixture
 
 from src.records import DocumentationDriftCheck, ModuleDocumentation
+from src.utils import clear_drift_cache
+
+
+@pytest.fixture(autouse=True)
+def clear_drift_cache_before_each_test() -> None:
+    """Clear drift detection cache before each test to ensure isolation."""
+    clear_drift_cache()
 
 
 @pytest.fixture
