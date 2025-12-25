@@ -22,21 +22,39 @@ from src.records import (
 
 
 @dataclass
-class DocConfig:
-    """Configuration for documentation generation (NOT path resolution)."""
+class DocConfig[IntentT: BaseModel, ModelT: BaseModel]:
+    """Configuration for documentation generation (NOT path resolution).
 
-    model: type[BaseModel]  # Pydantic model for structured output
+    This class uses generics to provide type safety across different doc types.
+    Each doc type (MODULE_README, PROJECT_README, STYLE_GUIDE) has its own
+    intent and output models, and this generic class ensures they stay paired.
+
+    Note: Type inference creates union types (e.g., ModuleIntent | ProjectIntent)
+    rather than specific types. This is by design - the registry holds multiple
+    doc types, so accessing it returns a union of all possible variants.
+    """
+
+    model: type[ModelT]  # Pydantic model for structured output
     prompt: str  # Prompt template
     formatter: Callable[..., str]  # Formatter function (keyword-only args)
-    intent_model: type[BaseModel]  # Intent model for human-in-the-loop
+    intent_model: type[IntentT]  # Intent model for human-in-the-loop
     intent_questions: list[dict[str, str]]  # Questions for intent capture
     default_depth: int  # Default code analysis depth
     analyze_entire_repo: bool  # Whether to analyze entire repo vs module
 
 
+# Type alias representing all possible DocConfig variants in the registry.
+# Used for type hints when accessing DOC_CONFIGS - inferred as a union type
+# since the registry contains multiple different doc type configurations.
+AnyDocConfig = (
+    DocConfig[ModuleIntent, ModuleDocumentation]
+    | DocConfig[ProjectIntent, ProjectDocumentation]
+    | DocConfig[StyleGuideIntent, StyleGuideDocumentation]
+)
+
 # Registry mapping doc types to their configurations
-DOC_CONFIGS: dict[DocType, DocConfig] = {
-    DocType.MODULE_README: DocConfig(
+DOC_CONFIGS: dict[DocType, AnyDocConfig] = {
+    DocType.MODULE_README: DocConfig[ModuleIntent, ModuleDocumentation](
         model=ModuleDocumentation,
         prompt=prompts.MODULE_GENERATION_PROMPT,
         formatter=formatters.format_module_documentation,
@@ -62,7 +80,7 @@ DOC_CONFIGS: dict[DocType, DocConfig] = {
         default_depth=0,
         analyze_entire_repo=False,
     ),
-    DocType.PROJECT_README: DocConfig(
+    DocType.PROJECT_README: DocConfig[ProjectIntent, ProjectDocumentation](
         model=ProjectDocumentation,
         prompt=prompts.PROJECT_README_GENERATION_PROMPT,
         formatter=formatters.format_project_documentation,
@@ -88,7 +106,7 @@ DOC_CONFIGS: dict[DocType, DocConfig] = {
         default_depth=1,
         analyze_entire_repo=True,
     ),
-    DocType.STYLE_GUIDE: DocConfig(
+    DocType.STYLE_GUIDE: DocConfig[StyleGuideIntent, StyleGuideDocumentation](
         model=StyleGuideDocumentation,
         prompt=prompts.STYLE_GUIDE_GENERATION_PROMPT,
         formatter=formatters.format_style_guide,

@@ -11,7 +11,7 @@ from rich.console import Console
 
 from src.code_analyzer import get_module_context
 from src.config import load_config
-from src.doc_configs import DOC_CONFIGS, DocConfig
+from src.doc_configs import DOC_CONFIGS, AnyDocConfig
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.human_in_the_loop import ask_human_intent
@@ -28,7 +28,7 @@ NO_DOC_MARKER = "No existing documentation provided."
 class DocumentationContext:
     """Context information for documentation generation or drift checking."""
 
-    doc_config: DocConfig
+    doc_config: AnyDocConfig
     output_path: str
     analysis_path: str
     analysis_depth: int
@@ -185,7 +185,7 @@ def fix_documentation_drift(
     llm_client: LLM,
     code_context: str,
     output_path: str,
-    doc_config: DocConfig,
+    doc_config: AnyDocConfig,
     drift_rationale: str,
     doc_type: DocType,
     module_path: str,
