@@ -381,7 +381,7 @@ def test_check_drift_cache_evicts_oldest_when_full(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test cache evicts oldest entry when maxsize is reached."""
-    from src.llm import clear_drift_cache, get_drift_cache_info
+    from src.llm import get_drift_cache_info
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
