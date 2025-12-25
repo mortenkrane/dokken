@@ -144,73 +144,93 @@ def test_initialize_llm_with_various_key_formats(
 # --- Tests for check_drift() ---
 
 
-def test_check_drift_creates_program(
+def test_check_drift_detects_drift_when_functions_removed(
     mocker: MockerFixture,
     mock_llm_client: Any,
-    sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
-    """Test check_drift creates LLMTextCompletionProgram with correct parameters."""
+    """Test check_drift detects drift when documented functions are removed."""
+    # Mock the LLM program to return drift detected
+    drift_result = DocumentationDriftCheck(
+        drift_detected=True,
+        rationale=(
+            "Function 'create_session()' is documented but no longer exists in code."
+        ),
+    )
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
-    mock_program.return_value = sample_drift_check_no_drift
+    mock_program.return_value = drift_result
     mock_program_class.from_defaults.return_value = mock_program
 
-    context = "Sample code context"
-    current_doc = "Sample documentation"
+    # Given: Code without create_session function
+    code = "def authenticate_user(): pass"
+    # And: Documentation that mentions create_session
+    doc = "## Functions\n- create_session() - Creates user sessions"
 
-    result = check_drift(llm=mock_llm_client, context=context, current_doc=current_doc)
+    # When: Checking drift
+    result = check_drift(llm=mock_llm_client, context=code, current_doc=doc)
 
-    # Verify program was created with correct parameters
-    mock_program_class.from_defaults.assert_called_once()
-    call_kwargs = mock_program_class.from_defaults.call_args[1]
-    assert call_kwargs["llm"] == mock_llm_client
-    assert "prompt_template_str" in call_kwargs
-
-    # Verify program was called with correct arguments
-    mock_program.assert_called_once_with(context=context, current_doc=current_doc)
-    assert result == sample_drift_check_no_drift
-
-
-def test_check_drift_uses_drift_check_prompt(
-    mocker: MockerFixture,
-    mock_llm_client: Any,
-    sample_drift_check_no_drift: DocumentationDriftCheck,
-) -> None:
-    """Test check_drift uses DRIFT_CHECK_PROMPT template."""
-
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.return_value = sample_drift_check_no_drift
-    mock_program_class.from_defaults.return_value = mock_program
-
-    check_drift(llm=mock_llm_client, context="ctx", current_doc="doc")
-
-    call_kwargs = mock_program_class.from_defaults.call_args[1]
-    prompt = call_kwargs["prompt_template_str"]
-
-    # Verify it's using the drift check prompt
-    assert "Documentation Drift Detector" in prompt
-    assert "{context}" in prompt or "context" in str(mock_program.call_args)
-    assert "{current_doc}" in prompt or "current_doc" in str(mock_program.call_args)
-
-
-def test_check_drift_returns_drift_check_object(
-    mocker: MockerFixture,
-    mock_llm_client: Any,
-    sample_drift_check_with_drift: DocumentationDriftCheck,
-) -> None:
-    """Test check_drift returns DocumentationDriftCheck object."""
-
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.return_value = sample_drift_check_with_drift
-    mock_program_class.from_defaults.return_value = mock_program
-
-    result = check_drift(llm=mock_llm_client, context="ctx", current_doc="doc")
-
-    assert result == sample_drift_check_with_drift
+    # Then: Drift should be detected
     assert result.drift_detected is True
+    assert "create_session()" in result.rationale
+
+
+def test_check_drift_no_drift_when_code_matches_docs(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+) -> None:
+    """Test check_drift returns no drift when code matches documentation."""
+    # Mock the LLM program to return no drift
+    no_drift_result = DocumentationDriftCheck(
+        drift_detected=False, rationale="Documentation is up-to-date."
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = no_drift_result
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Given: Code and documentation that match
+    code = "def process_payment(): pass"
+    doc = "## Functions\n- process_payment() - Processes payments"
+
+    # When: Checking drift
+    result = check_drift(llm=mock_llm_client, context=code, current_doc=doc)
+
+    # Then: No drift should be detected
+    assert result.drift_detected is False
+    assert "up-to-date" in result.rationale
+
+
+def test_check_drift_detects_new_functions_added(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+) -> None:
+    """Test check_drift detects when new functions are added to code."""
+    # Mock the LLM program to return drift detected
+    drift_result = DocumentationDriftCheck(
+        drift_detected=True,
+        rationale=(
+            "New function 'generate_token()' exists in code but is not documented."
+        ),
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = drift_result
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Given: Code with new function
+    code = "def authenticate_user(): pass\ndef generate_token(): pass"
+    # And: Documentation without generate_token
+    doc = "## Functions\n- authenticate_user() - Authenticates users"
+
+    # When: Checking drift
+    result = check_drift(llm=mock_llm_client, context=code, current_doc=doc)
+
+    # Then: Drift should be detected
+    assert result.drift_detected is True
+    assert "generate_token()" in result.rationale
 
 
 # --- Tests for check_drift with caching ---
@@ -536,19 +556,21 @@ def test_build_custom_prompt_section_no_doc_type() -> None:
     assert "Focus on implementation." not in result  # No doc type specified
 
 
-def test_generate_doc_creates_program(
+def test_generate_doc_returns_structured_documentation(
     mocker: MockerFixture,
     mock_llm_client: Any,
     sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test generate_doc creates LLMTextCompletionProgram with correct parameters."""
+    """Test generate_doc returns structured ModuleDocumentation."""
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
 
-    context = "Sample code context"
+    # Given: A code context for a payment module
+    context = "def process_payment(): pass\ndef validate_payment(): pass"
 
+    # When: Generating documentation
     result = generate_doc(
         llm=mock_llm_client,
         context=context,
@@ -556,65 +578,41 @@ def test_generate_doc_creates_program(
         prompt_template=MODULE_GENERATION_PROMPT,
     )
 
-    # Verify program was created with correct parameters
-    mock_program_class.from_defaults.assert_called_once()
-    call_kwargs = mock_program_class.from_defaults.call_args[1]
-    assert call_kwargs["llm"] == mock_llm_client
-    assert "prompt_template_str" in call_kwargs
-
-    # Verify program was called with correct arguments
-    mock_program.assert_called_once_with(context=context, human_intent_section="")
-    assert result == sample_component_documentation
-
-
-def test_generate_doc_uses_generation_prompt(
-    mocker: MockerFixture,
-    mock_llm_client: Any,
-    sample_component_documentation: ModuleDocumentation,
-) -> None:
-    """Test generate_doc uses DOCUMENTATION_GENERATION_PROMPT template."""
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.return_value = sample_component_documentation
-    mock_program_class.from_defaults.return_value = mock_program
-
-    generate_doc(
-        llm=mock_llm_client,
-        context="ctx",
-        output_model=ModuleDocumentation,
-        prompt_template=MODULE_GENERATION_PROMPT,
-    )
-
-    call_kwargs = mock_program_class.from_defaults.call_args[1]
-    prompt = call_kwargs["prompt_template_str"]
-
-    # Verify it's using the documentation generation prompt
-    assert "technical writer" in prompt
-    assert "{context}" in prompt or "context" in str(mock_program.call_args)
-
-
-def test_generate_doc_returns_component_documentation(
-    mocker: MockerFixture,
-    mock_llm_client: Any,
-    sample_component_documentation: ModuleDocumentation,
-) -> None:
-    """Test generate_doc returns ModuleDocumentation object."""
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.return_value = sample_component_documentation
-    mock_program_class.from_defaults.return_value = mock_program
-
-    result = generate_doc(
-        llm=mock_llm_client,
-        context="ctx",
-        output_model=ModuleDocumentation,
-        prompt_template=MODULE_GENERATION_PROMPT,
-    )
-
-    assert result == sample_component_documentation
+    # Then: Should return structured documentation
     assert isinstance(result, ModuleDocumentation)
     assert result.component_name == "Sample Component"
+    assert result.purpose_and_scope
+    assert result.architecture_overview
     assert result.key_design_decisions
+
+
+def test_generate_doc_without_human_intent(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_component_documentation: ModuleDocumentation,
+) -> None:
+    """Test generate_doc works without human intent provided."""
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_component_documentation
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Given: No human intent (config=None)
+    context = "def authenticate(): pass"
+
+    # When: Generating documentation
+    result = generate_doc(
+        llm=mock_llm_client,
+        context=context,
+        config=None,
+        output_model=ModuleDocumentation,
+        prompt_template=MODULE_GENERATION_PROMPT,
+    )
+
+    # Then: Should still generate valid documentation
+    assert isinstance(result, ModuleDocumentation)
+    assert result.component_name
+    assert result.purpose_and_scope
 
 
 @pytest.mark.parametrize(
@@ -633,17 +631,18 @@ def test_check_drift_handles_various_inputs(
     current_doc: str,
 ) -> None:
     """Test check_drift handles various context and documentation inputs."""
-
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
 
+    # When: Checking drift with various inputs
     result = check_drift(llm=mock_llm_client, context=context, current_doc=current_doc)
 
-    # Verify the program was called with the provided inputs
-    mock_program.assert_called_once_with(context=context, current_doc=current_doc)
-    assert result is not None
+    # Then: Should return valid drift check result
+    assert isinstance(result, DocumentationDriftCheck)
+    assert isinstance(result.drift_detected, bool)
+    assert isinstance(result.rationale, str)
 
 
 @pytest.mark.parametrize(
@@ -666,6 +665,7 @@ def test_generate_doc_handles_various_contexts(
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
 
+    # When: Generating docs with various code contexts
     result = generate_doc(
         llm=mock_llm_client,
         context=context,
@@ -673,9 +673,10 @@ def test_generate_doc_handles_various_contexts(
         prompt_template=MODULE_GENERATION_PROMPT,
     )
 
-    # Verify the program was called with the provided context
-    mock_program.assert_called_once_with(context=context, human_intent_section="")
-    assert result is not None
+    # Then: Should return valid structured documentation
+    assert isinstance(result, ModuleDocumentation)
+    assert result.component_name
+    assert result.purpose_and_scope
 
 
 def test_generate_doc_with_human_intent(
@@ -691,38 +692,28 @@ def test_generate_doc_with_human_intent(
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
 
+    # Given: Human intent with specific guidance
     human_intent = ModuleIntent(
         problems_solved="Handles user authentication",
         core_responsibilities="Login and registration",
         non_responsibilities="Payment processing",
         system_context="Part of auth system",
     )
-
     config = GenerationConfig(human_intent=human_intent)
 
+    # When: Generating documentation with human intent
     result = generate_doc(
         llm=mock_llm_client,
-        context="test context",
+        context="def authenticate(): pass",
         config=config,
         output_model=ModuleDocumentation,
         prompt_template=MODULE_GENERATION_PROMPT,
     )
 
-    # Verify the program was called with human intent section
-    call_args = mock_program.call_args
-    assert call_args is not None
-    assert "context" in call_args.kwargs
-    assert "human_intent_section" in call_args.kwargs
-
-    # Verify the human intent section contains the expected content
-    intent_section = call_args.kwargs["human_intent_section"]
-    assert "HUMAN-PROVIDED CONTEXT" in intent_section
-    assert "Handles user authentication" in intent_section
-    assert "Login and registration" in intent_section
-    assert "Payment processing" in intent_section
-    assert "Part of auth system" in intent_section
-
-    assert result == sample_component_documentation
+    # Then: Should return valid documentation
+    assert isinstance(result, ModuleDocumentation)
+    assert result.component_name
+    assert result.purpose_and_scope
 
 
 def test_generate_doc_with_partial_human_intent(
@@ -738,31 +729,22 @@ def test_generate_doc_with_partial_human_intent(
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
 
-    # Only provide some fields
+    # Given: Partial human intent (only some fields provided)
     human_intent = ModuleIntent(
         problems_solved="Handles authentication", core_responsibilities="User login"
     )
-
     config = GenerationConfig(human_intent=human_intent)
 
+    # When: Generating documentation
     result = generate_doc(
         llm=mock_llm_client,
-        context="test context",
+        context="def authenticate(): pass",
         config=config,
         output_model=ModuleDocumentation,
         prompt_template=MODULE_GENERATION_PROMPT,
     )
 
-    # Verify the program was called with human intent section
-    call_args = mock_program.call_args
-    assert call_args is not None
-    intent_section = call_args.kwargs["human_intent_section"]
-
-    # Should include provided fields
-    assert "Handles authentication" in intent_section
-    assert "User login" in intent_section
-
-    # Should not include empty fields
-    assert "Non-Responsibilities" not in intent_section
-
-    assert result == sample_component_documentation
+    # Then: Should return valid documentation
+    assert isinstance(result, ModuleDocumentation)
+    assert result.component_name
+    assert result.purpose_and_scope

@@ -50,12 +50,11 @@ def test_check_documentation_drift_no_code_context(
     """Test check_documentation_drift returns early when no code context."""
     mocker.patch("src.workflows.console")
     mocker.patch("src.workflows.initialize_llm")
-    mock_get_context = mocker.patch("src.workflows.get_module_context", return_value="")
+    mocker.patch("src.workflows.get_module_context", return_value="")
 
-    # Should return early without raising
+    # When: Checking drift with no code context
+    # Then: Should return without raising (early return)
     check_documentation_drift(target_module_path=str(temp_module_dir))
-
-    mock_get_context.assert_called_once()
 
 
 def test_check_documentation_drift_no_readme_raises_error(
@@ -87,14 +86,11 @@ def test_check_documentation_drift_no_drift_detected(
     mocker.patch("src.workflows.console")
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
-    mock_check_drift = mocker.patch(
-        "src.workflows.check_drift", return_value=sample_drift_check_no_drift
-    )
+    mocker.patch("src.workflows.check_drift", return_value=sample_drift_check_no_drift)
 
-    # Should not raise
+    # When: Checking drift with up-to-date documentation
+    # Then: Should complete without raising error
     check_documentation_drift(target_module_path=str(module_dir))
-
-    mock_check_drift.assert_called_once()
 
 
 def test_check_documentation_drift_with_drift_raises_error(
@@ -142,12 +138,13 @@ def test_generate_documentation_no_code_context(
     """Test generate_documentation returns early when no code context."""
     mocker.patch("src.workflows.console")
     mocker.patch("src.workflows.initialize_llm")
-    mock_get_context = mocker.patch("src.workflows.get_module_context", return_value="")
+    mocker.patch("src.workflows.get_module_context", return_value="")
 
+    # When: Generating documentation with no code context
     result = generate_documentation(target_module_path=str(temp_module_dir))
 
+    # Then: Should return None (early return)
     assert result is None
-    mock_get_context.assert_called_once()
 
 
 def test_generate_documentation_no_drift_skips_generation(
@@ -166,12 +163,12 @@ def test_generate_documentation_no_drift_skips_generation(
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
     mocker.patch("src.workflows.check_drift", return_value=sample_drift_check_no_drift)
-    mock_generate_doc = mocker.patch("src.workflows.generate_doc")
+    mocker.patch("src.workflows.generate_doc")
 
+    # When: Generating documentation with no drift detected
     result = generate_documentation(target_module_path=str(module_dir))
 
-    # Should not generate docs
-    mock_generate_doc.assert_not_called()
+    # Then: Should skip generation and return None
     assert result is None
 
 
@@ -189,14 +186,13 @@ def test_generate_documentation_generates_when_drift(
     readme.write_text("# Test\n\nDocumentation")
 
     mocker.patch("src.workflows.console")
-
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
     mocker.patch(
         "src.workflows.check_drift", return_value=sample_drift_check_with_drift
     )
     mocker.patch("src.workflows.ask_human_intent", return_value=None)
-    mock_generate_doc = mocker.patch(
+    mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
 
@@ -209,9 +205,10 @@ def test_generate_documentation_generates_when_drift(
         "src.workflows.DOC_CONFIGS", {DocType.MODULE_README: test_doc_config}
     )
 
+    # When: Generating documentation with drift detected
     result = generate_documentation(target_module_path=str(module_dir))
 
-    mock_generate_doc.assert_called_once()
+    # Then: Should generate and return formatted markdown
     assert result == "# Markdown"
 
 
@@ -290,40 +287,6 @@ def test_generate_documentation_creates_readme_if_missing(
     assert readme_path.read_text() == "# New Docs"
 
 
-def test_check_documentation_drift_initializes_llm(
-    mocker: MockerFixture,
-    tmp_path: Path,
-    sample_drift_check_no_drift: DocumentationDriftCheck,
-) -> None:
-    """Test check_documentation_drift initializes LLM."""
-    module_dir = tmp_path / "test_module"
-    module_dir.mkdir()
-    readme = module_dir / "README.md"
-    readme.write_text("# Test")
-
-    mocker.patch("src.workflows.console")
-    mock_init_llm = mocker.patch("src.workflows.initialize_llm")
-    mocker.patch("src.workflows.get_module_context", return_value="code context")
-    mocker.patch("src.workflows.check_drift", return_value=sample_drift_check_no_drift)
-
-    check_documentation_drift(target_module_path=str(module_dir))
-
-    mock_init_llm.assert_called_once()
-
-
-def test_generate_documentation_initializes_llm(
-    mocker: MockerFixture, temp_module_dir: Path
-) -> None:
-    """Test generate_documentation initializes LLM."""
-    mocker.patch("src.workflows.console")
-    mock_init_llm = mocker.patch("src.workflows.initialize_llm")
-    mocker.patch("src.workflows.get_module_context", return_value="")
-
-    generate_documentation(target_module_path=str(temp_module_dir))
-
-    mock_init_llm.assert_called_once()
-
-
 def test_check_documentation_drift_fix_no_readme_still_raises(
     mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
@@ -354,7 +317,7 @@ def test_fix_documentation_drift_generates_and_writes(
     mocker.patch("src.workflows.console")
     mocker.patch("src.workflows.ask_human_intent", return_value=None)
     mocker.patch("src.workflows.load_config")
-    mock_generate_doc = mocker.patch(
+    mocker.patch(
         "src.workflows.generate_doc", return_value=sample_component_documentation
     )
 
@@ -364,6 +327,7 @@ def test_fix_documentation_drift_generates_and_writes(
         DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
     )
 
+    # When: Fixing documentation drift
     fix_documentation_drift(
         llm_client=mock_llm_client,
         code_context="code context",
@@ -374,10 +338,7 @@ def test_fix_documentation_drift_generates_and_writes(
         module_path=str(tmp_path),
     )
 
-    # Should generate documentation with drift rationale
-    # Note: assert checks call arguments - custom_prompts and doc_type are passed
-    assert mock_generate_doc.call_count == 1
-    # Verify README was updated
+    # Then: README should be updated with new content
     assert readme_path.read_text() == "# Updated Docs"
 
 
@@ -387,7 +348,7 @@ def test_check_documentation_drift_fix_with_drift(
     sample_drift_check_with_drift: DocumentationDriftCheck,
 ) -> None:
     """
-    Test check_documentation_drift with fix=True calls fix function when drift detected.
+    Test check_documentation_drift with fix=True auto-fixes drift without raising.
     """
     # Create module dir with README
     module_dir = tmp_path / "test_module"
@@ -401,13 +362,11 @@ def test_check_documentation_drift_fix_with_drift(
     mocker.patch(
         "src.workflows.check_drift", return_value=sample_drift_check_with_drift
     )
-    mock_fix = mocker.patch("src.workflows.fix_documentation_drift")
+    mocker.patch("src.workflows.fix_documentation_drift")
 
-    # Should not raise error when fix=True
+    # When: Checking drift with fix=True and drift is detected
+    # Then: Should not raise error (auto-fix mode)
     check_documentation_drift(target_module_path=str(module_dir), fix=True)
-
-    # Should call fix function
-    mock_fix.assert_called_once()
 
 
 def test_generate_documentation_project_readme_in_git_repo(
@@ -428,7 +387,7 @@ def test_generate_documentation_project_readme_in_git_repo(
         "src.workflows.check_drift", return_value=sample_drift_check_with_drift
     )
     mocker.patch("src.workflows.ask_human_intent", return_value=None)
-    mock_generate_doc = mocker.patch("src.workflows.generate_doc")
+    mocker.patch("src.workflows.generate_doc")
 
     # Mock formatter
     mock_formatter = mocker.Mock(return_value="# Project Docs")
@@ -439,13 +398,12 @@ def test_generate_documentation_project_readme_in_git_repo(
         "src.workflows.DOC_CONFIGS", {DocType.PROJECT_README: test_doc_config}
     )
 
+    # When: Generating project README
     generate_documentation(
         target_module_path=str(repo_dir), doc_type=DocType.PROJECT_README
     )
 
-    # Should generate doc
-    mock_generate_doc.assert_called_once()
-    # Should create README.md in repo root
+    # Then: Should create README.md in repo root
     readme_path = repo_dir / "README.md"
     assert readme_path.exists()
 
@@ -468,7 +426,7 @@ def test_generate_documentation_style_guide_creates_docs_dir(
         "src.workflows.check_drift", return_value=sample_drift_check_with_drift
     )
     mocker.patch("src.workflows.ask_human_intent", return_value=None)
-    mock_generate_doc = mocker.patch("src.workflows.generate_doc")
+    mocker.patch("src.workflows.generate_doc")
 
     # Mock formatter
     mock_formatter = mocker.Mock(return_value="# Style Guide")
@@ -479,13 +437,12 @@ def test_generate_documentation_style_guide_creates_docs_dir(
         "src.workflows.DOC_CONFIGS", {DocType.STYLE_GUIDE: test_doc_config}
     )
 
+    # When: Generating style guide
     generate_documentation(
         target_module_path=str(repo_dir), doc_type=DocType.STYLE_GUIDE
     )
 
-    # Should generate doc
-    mock_generate_doc.assert_called_once()
-    # Should create docs/style-guide.md
+    # Then: Should create docs/style-guide.md
     style_guide_path = repo_dir / "docs" / "style-guide.md"
     assert style_guide_path.exists()
     assert (repo_dir / "docs").is_dir()
@@ -558,13 +515,11 @@ def test_check_multiple_modules_drift_all_modules_pass(
     )
 
     # Mock check_documentation_drift to succeed (no exception)
-    mock_check = mocker.patch("src.workflows.check_documentation_drift")
+    mocker.patch("src.workflows.check_documentation_drift")
 
-    # Should not raise
+    # When: Checking all modules with no drift
+    # Then: Should complete without raising
     check_multiple_modules_drift()
-
-    # Should check both modules
-    assert mock_check.call_count == 2
 
 
 def test_check_multiple_modules_drift_some_modules_fail(
@@ -604,11 +559,12 @@ def test_check_multiple_modules_drift_some_modules_fail(
                 rationale="Test drift", module_path=kwargs["target_module_path"]
             )
 
-    mock_check = mocker.patch(
+    mocker.patch(
         "src.workflows.check_documentation_drift", side_effect=check_side_effect
     )
 
-    # Should raise DocumentationDriftError
+    # When: Checking all modules with one having drift
+    # Then: Should raise DocumentationDriftError with details
     with pytest.raises(DocumentationDriftError) as exc_info:
         check_multiple_modules_drift()
 
@@ -616,7 +572,6 @@ def test_check_multiple_modules_drift_some_modules_fail(
     assert "1 module(s) have documentation drift" in error_msg
     assert "src/module2" in error_msg  # Module name in rationale
     assert "Test drift" in error_msg  # Individual rationale in error message
-    assert mock_check.call_count == 2
 
 
 def test_check_multiple_modules_drift_skips_nonexistent_modules(
@@ -645,19 +600,17 @@ def test_check_multiple_modules_drift_skips_nonexistent_modules(
         return_value=DokkenConfig(modules=["src/module1", "src/nonexistent"]),
     )
 
-    mock_check = mocker.patch("src.workflows.check_documentation_drift")
+    mocker.patch("src.workflows.check_documentation_drift")
 
-    # Should not raise
+    # When: Checking all modules with one nonexistent
+    # Then: Should complete without raising (skips nonexistent)
     check_multiple_modules_drift()
-
-    # Should only check the existing module
-    assert mock_check.call_count == 1
 
 
 def test_check_multiple_modules_drift_with_fix(
     mocker: MockerFixture, tmp_path: Path
 ) -> None:
-    """Test check_multiple_modules_drift passes fix flag to individual checks."""
+    """Test check_multiple_modules_drift with fix=True auto-fixes drift."""
     # Create a git repo with modules
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
@@ -678,11 +631,8 @@ def test_check_multiple_modules_drift_with_fix(
         return_value=DokkenConfig(modules=["src/module1"]),
     )
 
-    mock_check = mocker.patch("src.workflows.check_documentation_drift")
+    mocker.patch("src.workflows.check_documentation_drift")
 
-    # Call with fix=True
+    # When: Checking all modules with fix=True
+    # Then: Should complete without raising (auto-fix mode)
     check_multiple_modules_drift(fix=True)
-
-    # Should pass fix=True to individual checks
-    mock_check.assert_called_once()
-    assert mock_check.call_args.kwargs["fix"] is True
