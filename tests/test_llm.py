@@ -149,10 +149,6 @@ def test_check_drift_creates_program(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift creates LLMTextCompletionProgram with correct parameters."""
-    from src.llm import clear_drift_cache
-
-    # Clear cache to avoid interference from other tests
-    clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -181,10 +177,6 @@ def test_check_drift_uses_drift_check_prompt(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift uses DRIFT_CHECK_PROMPT template."""
-    from src.llm import clear_drift_cache
-
-    # Clear cache to avoid interference from other tests
-    clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -208,10 +200,6 @@ def test_check_drift_returns_drift_check_object(
     sample_drift_check_with_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift returns DocumentationDriftCheck object."""
-    from src.llm import clear_drift_cache
-
-    # Clear cache to avoid interference from other tests
-    clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -253,10 +241,6 @@ def test_check_drift_cache_hit(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift returns cached result on cache hit."""
-    from src.llm import clear_drift_cache
-
-    # Clear cache before test
-    clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -288,9 +272,6 @@ def test_check_drift_cache_miss_on_different_context(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift triggers new LLM call when context changes."""
-    from src.llm import clear_drift_cache
-
-    clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -312,9 +293,6 @@ def test_check_drift_cache_miss_on_different_doc(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift triggers new LLM call when documentation changes."""
-    from src.llm import clear_drift_cache
-
-    clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -372,7 +350,7 @@ def test_get_drift_cache_info_returns_correct_stats(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test get_drift_cache_info returns accurate cache statistics."""
-    from src.llm import clear_drift_cache, get_drift_cache_info, DRIFT_CACHE_SIZE
+    from src.llm import DRIFT_CACHE_SIZE, clear_drift_cache, get_drift_cache_info
 
     clear_drift_cache()
 
@@ -404,8 +382,6 @@ def test_check_drift_cache_evicts_oldest_when_full(
 ) -> None:
     """Test cache evicts oldest entry when maxsize is reached."""
     from src.llm import clear_drift_cache, get_drift_cache_info
-
-    clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -775,10 +751,6 @@ def test_check_drift_handles_various_inputs(
     current_doc: str,
 ) -> None:
     """Test check_drift handles various context and documentation inputs."""
-    from src.llm import clear_drift_cache
-
-    # Clear cache to avoid interference from other tests
-    clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()

@@ -2,8 +2,8 @@
 
 import hashlib
 import os
+import threading
 from dataclasses import dataclass
-from functools import lru_cache
 
 from llama_index.core.llms import LLM
 from llama_index.core.program import LLMTextCompletionProgram
@@ -91,8 +91,10 @@ def _hash_content(content: str) -> str:
 
 
 # Manual cache for drift detection results
-# Using a dict instead of @lru_cache because we need to work with non-hashable LLM objects
+# Using a dict instead of @lru_cache because we need to work with
+# non-hashable LLM objects
 _drift_cache: dict[str, DocumentationDriftCheck] = {}
+_cache_lock = threading.Lock()
 
 
 def _get_cache_key(context: str, current_doc: str, llm: LLM) -> str:
@@ -122,7 +124,8 @@ def clear_drift_cache() -> None:
     This is useful for testing or when you want to force fresh LLM calls
     regardless of cache state.
     """
-    _drift_cache.clear()
+    with _cache_lock:
+        _drift_cache.clear()
 
 
 def get_drift_cache_info() -> dict[str, int]:
@@ -132,7 +135,8 @@ def get_drift_cache_info() -> dict[str, int]:
     Returns:
         A dictionary with cache statistics (current size and max size).
     """
-    return {"size": len(_drift_cache), "maxsize": DRIFT_CACHE_SIZE}
+    with _cache_lock:
+        return {"size": len(_drift_cache), "maxsize": DRIFT_CACHE_SIZE}
 
 
 def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDriftCheck:
@@ -166,11 +170,12 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     # Generate cache key
     cache_key = _get_cache_key(context, current_doc, llm)
 
-    # Check cache first
-    if cache_key in _drift_cache:
-        return _drift_cache[cache_key]
+    # Check cache first (with lock)
+    with _cache_lock:
+        if cache_key in _drift_cache:
+            return _drift_cache[cache_key]
 
-    # Cache miss - perform LLM call
+    # Cache miss - perform LLM call OUTSIDE lock to avoid blocking
     # Use LLMTextCompletionProgram for structured Pydantic output
     check_program = LLMTextCompletionProgram.from_defaults(
         output_cls=DocumentationDriftCheck,
@@ -181,14 +186,15 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     # Run the check
     result = check_program(context=context, current_doc=current_doc)
 
-    # Store in cache (with size limit)
-    if len(_drift_cache) >= DRIFT_CACHE_SIZE:
-        # Remove oldest entry (FIFO eviction)
-        # In Python 3.7+, dicts maintain insertion order
-        oldest_key = next(iter(_drift_cache))
-        del _drift_cache[oldest_key]
+    # Store in cache (with lock and size limit)
+    with _cache_lock:
+        if len(_drift_cache) >= DRIFT_CACHE_SIZE:
+            # Remove oldest entry (FIFO eviction)
+            # In Python 3.7+, dicts maintain insertion order
+            oldest_key = next(iter(_drift_cache))
+            del _drift_cache[oldest_key]
 
-    _drift_cache[cache_key] = result
+        _drift_cache[cache_key] = result
 
     return result
 

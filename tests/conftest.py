@@ -9,6 +9,14 @@ from pytest_mock import MockerFixture
 from src.records import DocumentationDriftCheck, ModuleDocumentation
 
 
+@pytest.fixture(autouse=True)
+def clear_drift_cache_before_each_test() -> None:
+    """Clear drift detection cache before each test to ensure isolation."""
+    from src.llm import clear_drift_cache
+
+    clear_drift_cache()
+
+
 @pytest.fixture
 def sample_drift_check_no_drift() -> DocumentationDriftCheck:
     """Sample DocumentationDriftCheck with no drift."""
