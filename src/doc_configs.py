@@ -6,7 +6,6 @@ keeping generation config separate from path resolution logic.
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -21,14 +20,19 @@ from src.records import (
     StyleGuideIntent,
 )
 
-# Type variables for generic DocConfig
-IntentT = TypeVar("IntentT", bound=BaseModel)
-ModelT = TypeVar("ModelT", bound=BaseModel)
-
 
 @dataclass
-class DocConfig(Generic[IntentT, ModelT]):
-    """Configuration for documentation generation (NOT path resolution)."""
+class DocConfig[IntentT: BaseModel, ModelT: BaseModel]:
+    """Configuration for documentation generation (NOT path resolution).
+
+    This class uses generics to provide type safety across different doc types.
+    Each doc type (MODULE_README, PROJECT_README, STYLE_GUIDE) has its own
+    intent and output models, and this generic class ensures they stay paired.
+
+    Note: Type inference creates union types (e.g., ModuleIntent | ProjectIntent)
+    rather than specific types. This is by design - the registry holds multiple
+    doc types, so accessing it returns a union of all possible variants.
+    """
 
     model: type[ModelT]  # Pydantic model for structured output
     prompt: str  # Prompt template
@@ -39,7 +43,9 @@ class DocConfig(Generic[IntentT, ModelT]):
     analyze_entire_repo: bool  # Whether to analyze entire repo vs module
 
 
-# Type alias for all possible DocConfig variants
+# Type alias representing all possible DocConfig variants in the registry.
+# Used for type hints when accessing DOC_CONFIGS - inferred as a union type
+# since the registry contains multiple different doc type configurations.
 AnyDocConfig = (
     DocConfig[ModuleIntent, ModuleDocumentation]
     | DocConfig[ProjectIntent, ProjectDocumentation]
