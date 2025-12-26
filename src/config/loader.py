@@ -2,37 +2,14 @@
 
 import tomllib
 from pathlib import Path
-from typing import Any, TypedDict, cast
+from typing import Any, cast
 
 from pydantic import ValidationError
 
 from src.config.merger import merge_config
 from src.config.models import CustomPrompts, DokkenConfig, ExclusionConfig
+from src.config.types import ConfigDataDict
 from src.file_utils import find_repo_root
-
-
-class ExclusionsDict(TypedDict, total=False):
-    """Structure of the exclusions section in .dokken.toml."""
-
-    files: list[str]
-    symbols: list[str]
-
-
-class CustomPromptsDict(TypedDict, total=False):
-    """Structure of the custom_prompts section in .dokken.toml."""
-
-    global_prompt: str | None
-    module_readme: str | None
-    project_readme: str | None
-    style_guide: str | None
-
-
-class ConfigDataDict(TypedDict, total=False):
-    """Structure of .dokken.toml file."""
-
-    exclusions: ExclusionsDict
-    custom_prompts: CustomPromptsDict
-    modules: list[str]
 
 
 def load_config(*, module_path: str) -> DokkenConfig:
@@ -97,5 +74,6 @@ def _load_and_merge_config(config_path: Path, base_config: ConfigDataDict) -> No
     if config_path.exists():
         with open(config_path, "rb") as f:
             config_data = tomllib.load(f)
-            # TypedDict is compatible with dict[str, Any] at runtime, cast for type checker
+            # TypedDict is compatible with dict[str, Any] at runtime
+            # Cast for type checker compatibility
             merge_config(cast(dict[str, Any], base_config), config_data)
