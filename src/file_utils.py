@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 
+from src.constants import ERROR_CANNOT_CREATE_DIR, ERROR_NOT_IN_GIT_REPO
 from src.doc_types import DocType
 
 
@@ -51,7 +52,7 @@ def resolve_output_path(*, doc_type: DocType, module_path: str) -> str:
     repo_root = find_repo_root(module_path)
     if not repo_root:
         raise ValueError(
-            f"Cannot generate {doc_type.value}: not in a git repository. "
+            f"Cannot generate {doc_type.value}: {ERROR_NOT_IN_GIT_REPO}. "
             f"Initialize git or use MODULE_README type."
         )
 
@@ -79,4 +80,6 @@ def ensure_output_directory(output_path: str) -> None:
         try:
             os.makedirs(parent_dir, exist_ok=True)
         except PermissionError as e:
-            raise PermissionError(f"Cannot create {parent_dir}: {e}") from e
+            raise PermissionError(
+                ERROR_CANNOT_CREATE_DIR.format(parent_dir=parent_dir, error=e)
+            ) from e

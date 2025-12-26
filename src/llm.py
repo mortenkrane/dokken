@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from src.cache import _generate_cache_key, content_based_cache
 from src.config import CustomPrompts
+from src.constants import ERROR_NO_API_KEY
 from src.doc_types import DocType
 from src.prompt_builder import build_generation_prompt
 from src.prompts import DRIFT_CHECK_PROMPT
@@ -61,12 +62,7 @@ def initialize_llm() -> LLM:
         # Using Gemini-2.5-Flash for speed, cost, and context balance
         return GoogleGenAI(model="gemini-2.5-flash", temperature=TEMPERATURE)
 
-    raise ValueError(
-        "No API key found. Please set one of the following environment variables:\n"
-        "  - ANTHROPIC_API_KEY (for Claude)\n"
-        "  - OPENAI_API_KEY (for OpenAI)\n"
-        "  - GOOGLE_API_KEY (for Google Gemini)"
-    )
+    raise ValueError(ERROR_NO_API_KEY)
 
 
 @content_based_cache(cache_key_fn=_generate_cache_key)
