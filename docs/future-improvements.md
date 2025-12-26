@@ -2,6 +2,10 @@
 
 This document outlines potential improvements to the Dokken codebase identified during comprehensive code reviews.
 
+## Recently Completed
+
+- **Extract Prompt Building from `llm.py`** (2025-12-26): Separated prompt assembly logic into `src/prompt_builder.py` module for better separation of concerns. Tests split into `tests/test_prompt_builder.py`.
+
 ## Table of Contents
 
 - [Critical Issues](#critical-issues)
@@ -70,9 +74,20 @@ def get_drift_cache_info() -> dict[str, int]: ...
 
 ______________________________________________________________________
 
-### 2. Extract Prompt Building from `llm.py`
+### 2. Extract Prompt Building from `llm.py` ✅ COMPLETED (2025-12-26)
 
-**Current State:** `src/llm.py` mixes LLM operations with prompt assembly logic:
+**Status:** Implemented in commit on branch `claude/implement-priority-issue-2-yPsh5`
+
+**What Was Done:**
+
+- Created new `src/prompt_builder.py` module with all prompt assembly functions
+- Extracted `build_human_intent_section`, `get_doc_type_prompt`, `build_custom_prompt_section`, and `build_drift_context_section` functions
+- Added new high-level `build_generation_prompt` function to orchestrate prompt assembly
+- Refactored `llm.py` to use the new prompt_builder module
+- Split tests into dedicated `tests/test_prompt_builder.py` file
+- All 252 tests passing with 99% coverage
+
+**Original State:** `src/llm.py` mixed LLM operations with prompt assembly logic:
 
 - Lines 103-125: `_build_human_intent_section` - prompt assembly
 - Lines 127-136: `_get_doc_type_prompt` - prompt mapping
@@ -895,24 +910,24 @@ ______________________________________________________________________
 | Improvement | Effort | Impact | Priority | Category | Status |
 |-------------|--------|--------|----------|----------|--------|
 | ~~Split utils.py~~ | Medium | High | **HIGH** | Architecture | ✅ DONE |
-| Extract prompt building | Low | High | **HIGH** | Architecture | |
-| Refactor check_multiple_modules_drift | Low | High | **HIGH** | Code Quality | |
-| Fix dead mock_console fixture | Trivial | Low | **HIGH** | Testing | |
-| Reduce workflow duplication | Low | Medium | **MEDIUM** | Code Quality | |
-| Add test fixtures | Low | Medium | **MEDIUM** | Testing | |
-| Add Pydantic model tests | Low | Medium | **MEDIUM** | Testing | |
-| Use TypedDict for config | Low | Medium | **MEDIUM** | Type Safety | |
-| Move DocumentationContext | Trivial | Low | **LOW** | Architecture | |
-| Centralize error messages | Low | Low | **LOW** | Code Quality | |
-| Replace NO_DOC_MARKER | Low | Low | **LOW** | Code Quality | |
-| Improve fixture type hints | Low | Low | **LOW** | Type Safety | |
-| Standardize mocking patterns | Low | Low | **LOW** | Testing | |
-| Question thread safety | Low | Low | **LOW** | Performance | |
-| Simplify generic types | Low | Low | **LOW** | Type Safety | |
-| Add property-based tests | Medium | Medium | **OPTIONAL** | Testing | |
-| Parallelize file reading | Medium | Medium | **OPTIONAL** | Performance | |
-| Add runtime type validation | Low | Low | **OPTIONAL** | Type Safety | |
-| Plugin architecture | High | Low | **FUTURE** | Architecture | |
+| ~~Extract prompt building~~ | Low | High | **HIGH** | Architecture | ✅ Completed 2025-12-26 |
+| Refactor check_multiple_modules_drift | Low | High | **HIGH** | Code Quality | Pending |
+| Fix dead mock_console fixture | Trivial | Low | **HIGH** | Testing | Pending |
+| Reduce workflow duplication | Low | Medium | **MEDIUM** | Code Quality | Pending |
+| Add test fixtures | Low | Medium | **MEDIUM** | Testing | Pending |
+| Add Pydantic model tests | Low | Medium | **MEDIUM** | Testing | Pending |
+| Use TypedDict for config | Low | Medium | **MEDIUM** | Type Safety | Pending |
+| Move DocumentationContext | Trivial | Low | **LOW** | Architecture | Pending |
+| Centralize error messages | Low | Low | **LOW** | Code Quality | Pending |
+| Replace NO_DOC_MARKER | Low | Low | **LOW** | Code Quality | Pending |
+| Improve fixture type hints | Low | Low | **LOW** | Type Safety | Pending |
+| Standardize mocking patterns | Low | Low | **LOW** | Testing | Pending |
+| Question thread safety | Low | Low | **LOW** | Performance | Pending |
+| Simplify generic types | Low | Low | **LOW** | Type Safety | Pending |
+| Add property-based tests | Medium | Medium | **OPTIONAL** | Testing | Pending |
+| Parallelize file reading | Medium | Medium | **OPTIONAL** | Performance | Pending |
+| Add runtime type validation | Low | Low | **OPTIONAL** | Type Safety | Pending |
+| Plugin architecture | High | Low | **FUTURE** | Architecture | Pending |
 
 ______________________________________________________________________
 

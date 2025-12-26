@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from src.cache import _generate_cache_key, content_based_cache
 from src.config import CustomPrompts
 from src.doc_types import DocType
+from src.prompt_builder import build_generation_prompt
 from src.prompts import DRIFT_CHECK_PROMPT
 from src.records import DocumentationDriftCheck
 
@@ -100,117 +101,6 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     return check_program(context=context, current_doc=current_doc)
 
 
-def _build_human_intent_section(
-    human_intent: BaseModel,
-) -> str:
-    """
-    Builds a formatted string from human intent data.
-
-    Args:
-        human_intent: The intent model containing user responses.
-
-    Returns:
-        Formatted string with human-provided context, or empty string if no data.
-    """
-    intent_lines = [
-        f"{key.replace('_', ' ').title()}: {value}"
-        for key, value in human_intent.model_dump().items()
-        if value is not None
-    ]
-
-    if not intent_lines:
-        return ""
-
-    return "\n--- HUMAN-PROVIDED CONTEXT ---\n" + "\n".join(intent_lines) + "\n"
-
-
-def _get_doc_type_prompt(
-    custom_prompts: CustomPrompts, doc_type: DocType
-) -> str | None:
-    """Get the doc-type-specific custom prompt."""
-    mapping = {
-        DocType.MODULE_README: custom_prompts.module_readme,
-        DocType.PROJECT_README: custom_prompts.project_readme,
-        DocType.STYLE_GUIDE: custom_prompts.style_guide,
-    }
-    return mapping.get(doc_type)
-
-
-def _build_custom_prompt_section(
-    custom_prompts: CustomPrompts | None,
-    doc_type: DocType | None,
-) -> str:
-    """
-    Builds a formatted string from custom prompts configuration.
-
-    Args:
-        custom_prompts: The custom prompts configuration from .dokken.toml.
-        doc_type: The documentation type being generated.
-
-    Returns:
-        Formatted string with custom prompt instructions, or empty string if none.
-    """
-    if custom_prompts is None:
-        return ""
-
-    prompt_parts = []
-
-    # Add global custom prompt if present
-    if custom_prompts.global_prompt:
-        prompt_parts.append(custom_prompts.global_prompt)
-
-    # Add doc-type-specific custom prompt if present
-    if doc_type is not None:
-        doc_type_prompt = _get_doc_type_prompt(custom_prompts, doc_type)
-        if doc_type_prompt:
-            prompt_parts.append(doc_type_prompt)
-
-    if not prompt_parts:
-        return ""
-
-    # Add explicit instructions for the LLM to prioritize user preferences
-    header = (
-        "\n--- USER PREFERENCES (IMPORTANT) ---\n"
-        "The following are custom instructions from the user. These preferences "
-        "should be given HIGHEST PRIORITY and followed closely when generating "
-        "documentation. If there are conflicts between these preferences and "
-        "standard documentation guidelines, prefer the user's preferences.\n\n"
-    )
-
-    return header + "\n\n".join(prompt_parts) + "\n"
-
-
-def _build_drift_context_section(
-    drift_rationale: str,
-) -> str:
-    """
-    Builds a formatted string from drift detection rationale.
-
-    The returned string includes educational context explaining what documentation
-    drift is and explicit instructions for the LLM to address the detected issues.
-    This verbose approach improves generation quality by ensuring the LLM
-    understands both the concept of drift and the specific problems to fix.
-
-    Args:
-        drift_rationale: The rationale explaining what drift was detected.
-
-    Returns:
-        Formatted string with drift detection context, ready to append to code context.
-    """
-    return (
-        "\n--- DETECTED DOCUMENTATION DRIFT ---\n"
-        "Documentation drift occurs when code changes but documentation doesn't, "
-        "causing the docs to become outdated or inaccurate. An automated analysis "
-        "has detected the following specific drift issues between the current "
-        "documentation and the actual code:\n\n"
-        f"{drift_rationale}\n\n"
-        "IMPORTANT: Your task is to generate updated documentation that "
-        "addresses these specific drift issues. Make sure the new documentation "
-        "accurately reflects the current code state and resolves each of the "
-        "concerns listed above.\n"
-    )
-
-
 def generate_doc(
     *,
     llm: LLM,
@@ -237,26 +127,14 @@ def generate_doc(
     if config is None:
         config = GenerationConfig()
 
-    # Build human intent section if provided
-    human_intent_section = (
-        _build_human_intent_section(config.human_intent) if config.human_intent else ""
+    # Build complete prompt from components
+    combined_context, combined_intent_section = build_generation_prompt(
+        context=context,
+        custom_prompts=config.custom_prompts,
+        doc_type=config.doc_type,
+        human_intent=config.human_intent,
+        drift_rationale=config.drift_rationale,
     )
-
-    # Build custom prompt section if provided
-    custom_prompt_section = _build_custom_prompt_section(
-        config.custom_prompts, config.doc_type
-    )
-
-    # Build drift context section if provided
-    drift_context_section = (
-        _build_drift_context_section(config.drift_rationale)
-        if config.drift_rationale
-        else ""
-    )
-
-    # Combine all sections for the prompt
-    combined_context = context + drift_context_section
-    combined_intent_section = human_intent_section + custom_prompt_section
 
     # Use LLMTextCompletionProgram for structured Pydantic output
     generate_program = LLMTextCompletionProgram.from_defaults(
