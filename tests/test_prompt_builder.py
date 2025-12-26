@@ -1,6 +1,5 @@
 """Tests for src/prompt_builder.py"""
 
-
 from src.config import CustomPrompts
 from src.doc_types import DocType
 from src.prompt_builder import (
