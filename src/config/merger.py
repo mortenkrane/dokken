@@ -1,7 +1,9 @@
 """Configuration merging logic for Dokken."""
 
+from typing import Any
 
-def merge_config(base: dict, override: dict) -> None:
+
+def merge_config(base: dict[str, Any], override: dict[str, Any]) -> None:
     """
     Merge override config into base config (in-place).
 
