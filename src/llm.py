@@ -66,7 +66,9 @@ def initialize_llm() -> LLM:
 
 
 @content_based_cache(cache_key_fn=_generate_cache_key)
-def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDriftCheck:
+def check_drift(
+    *, llm: LLM, context: str, current_doc: str | None
+) -> DocumentationDriftCheck:
     """
     Analyzes the current documentation against the code changes to detect drift.
 
@@ -81,11 +83,15 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     Args:
         llm: The LLM client instance.
         context: The code context and diff.
-        current_doc: The current documentation content.
+        current_doc: The current documentation content, or None if no
+            documentation exists.
 
     Returns:
         A DocumentationDriftCheck object with drift detection results.
     """
+    # Convert None to a message for the prompt
+    doc_for_prompt = current_doc or "No existing documentation provided."
+
     # Use LLMTextCompletionProgram for structured Pydantic output
     check_program = LLMTextCompletionProgram.from_defaults(
         output_cls=DocumentationDriftCheck,
@@ -94,7 +100,7 @@ def check_drift(*, llm: LLM, context: str, current_doc: str) -> DocumentationDri
     )
 
     # Run the drift check
-    return check_program(context=context, current_doc=current_doc)
+    return check_program(context=context, current_doc=doc_for_prompt)
 
 
 def generate_doc(

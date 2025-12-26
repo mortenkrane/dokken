@@ -15,7 +15,6 @@ from src.constants import (
     ERROR_NO_MODULES_CONFIGURED,
     ERROR_NOT_IN_GIT_REPO,
     ERROR_NOT_IN_GIT_REPO_MULTI_MODULE,
-    NO_DOC_MARKER,
 )
 from src.doc_configs import DOC_CONFIGS, AnyDocConfig
 from src.doc_types import DocType
@@ -470,12 +469,13 @@ def generate_documentation(
         return None
 
     # Check for existing documentation
+    current_doc_content: str | None
     if os.path.exists(ctx.output_path):
         with open(ctx.output_path) as f:
             current_doc_content = f.read()
         console.print("[green]✓[/green] Found existing documentation")
     else:
-        current_doc_content = NO_DOC_MARKER
+        current_doc_content = None
         console.print("[yellow]⚠[/yellow] No existing documentation found")
 
     # 2. Step 1: Check for Documentation Drift
@@ -490,7 +490,7 @@ def generate_documentation(
     console.print(f"[bold]Drift Detected:[/bold] {drift_check.drift_detected}")
     console.print(f"[bold]Rationale:[/bold] {drift_check.rationale}\n")
 
-    if not drift_check.drift_detected and NO_DOC_MARKER not in current_doc_content:
+    if not drift_check.drift_detected and current_doc_content is not None:
         console.print(
             "[green]✓[/green] Documentation is considered up-to-date. No new file "
             "generated."

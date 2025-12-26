@@ -1,8 +1,5 @@
 """Shared constants and error messages for Dokken."""
 
-# Special markers
-NO_DOC_MARKER = "No existing documentation provided."
-
 # Error messages
 ERROR_NOT_IN_GIT_REPO = "not in a git repository"
 ERROR_NOT_IN_GIT_REPO_MULTI_MODULE = (

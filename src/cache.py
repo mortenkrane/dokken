@@ -18,28 +18,32 @@ _drift_cache: dict[str, Any] = {}
 _cache_lock = threading.Lock()
 
 
-def _hash_content(content: str) -> str:
+def _hash_content(content: str | None) -> str:
     """
     Computes a SHA256 hash of the given content string.
 
     Used for cache key generation to create deterministic fingerprints of content.
 
     Args:
-        content: The string content to hash.
+        content: The string content to hash, or None for empty content.
 
     Returns:
         A hexadecimal string representation of the SHA256 hash.
     """
+    if content is None:
+        # Use empty string for None to create a consistent hash
+        content = ""
     return hashlib.sha256(content.encode()).hexdigest()
 
 
-def _generate_cache_key(context: str, current_doc: str, llm: LLM) -> str:
+def _generate_cache_key(context: str, current_doc: str | None, llm: LLM) -> str:
     """
     Generates a cache key based on content hashes and LLM model.
 
     Args:
         context: The code context string.
-        current_doc: The current documentation string.
+        current_doc: The current documentation string, or None if no
+            documentation exists.
         llm: The LLM client instance.
 
     Returns:
