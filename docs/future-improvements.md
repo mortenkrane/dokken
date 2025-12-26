@@ -12,7 +12,7 @@ This document outlines potential improvements to the Dokken codebase identified 
 - [Performance](#performance)
 - [Priority Matrix](#priority-matrix)
 
----
+______________________________________________________________________
 
 ## Critical Issues
 
@@ -54,7 +54,7 @@ def get_drift_cache_info() -> dict[str, int]: ...
 
 **Impact:** High (improves architecture and maintainability)
 
----
+______________________________________________________________________
 
 ### 2. Extract Prompt Building from `llm.py`
 
@@ -101,7 +101,7 @@ def build_generation_prompt(
 
 **Impact:** High (improves module cohesion)
 
----
+______________________________________________________________________
 
 ### 3. Fix Dead `mock_console` Fixture in `conftest.py`
 
@@ -135,7 +135,7 @@ def mock_console(mocker: MockerFixture) -> Any:
 
 **Impact:** Low (cleanup)
 
----
+______________________________________________________________________
 
 ## Code Quality
 
@@ -182,7 +182,7 @@ def _initialize_documentation_workflow(
 
 **Impact:** Medium (maintainability)
 
----
+______________________________________________________________________
 
 ### 2. Refactor `check_multiple_modules_drift` Complexity
 
@@ -279,7 +279,7 @@ def check_multiple_modules_drift(...) -> None:
 
 **Impact:** High (code readability)
 
----
+______________________________________________________________________
 
 ### 3. Centralize Error Messages
 
@@ -321,7 +321,7 @@ DRIFT_CACHE_SIZE = 100
 
 **Impact:** Low (minor quality improvement)
 
----
+______________________________________________________________________
 
 ### 4. Replace `NO_DOC_MARKER` String Constant
 
@@ -348,7 +348,7 @@ prompt_doc_section = current_doc or "No existing documentation provided."
 
 **Impact:** Low (code clarity)
 
----
+______________________________________________________________________
 
 ## Testing
 
@@ -409,7 +409,7 @@ def git_repo_with_module(git_repo: Path) -> tuple[Path, Path]:
 
 **Impact:** Medium (test maintainability)
 
----
+______________________________________________________________________
 
 ### 2. Add Tests for Pydantic Model Validation
 
@@ -454,7 +454,7 @@ def test_module_documentation_rejects_empty_strings(invalid_value: str | None) -
 
 **Impact:** Medium (test coverage completeness)
 
----
+______________________________________________________________________
 
 ### 3. Add Property-Based Tests
 
@@ -486,7 +486,7 @@ def test_drift_check_always_returns_valid_result(code: str, doc: str) -> None:
 
 **Impact:** Medium (catches edge cases)
 
----
+______________________________________________________________________
 
 ### 4. Standardize Mocking Patterns
 
@@ -498,7 +498,7 @@ def test_drift_check_always_returns_valid_result(code: str, doc: str) -> None:
 
 **Recommendation:** Document preferred patterns in `tests/README.md`:
 
-```markdown
+````markdown
 # Testing Conventions
 
 ## Mocking Guidelines
@@ -506,20 +506,23 @@ def test_drift_check_always_returns_valid_result(code: str, doc: str) -> None:
 1. **LLM Operations**: Always mock at the function level
    ```python
    mocker.patch("src.workflows.generate_doc", return_value=expected)
-   ```
+````
 
 2. **Console Output**: Use fixtures from conftest.py
+
    ```python
    def test_something(mock_workflows_console): ...
    ```
 
-3. **File I/O**: Use tmp_path fixture, avoid mocking when possible
+1. **File I/O**: Use tmp_path fixture, avoid mocking when possible
+
    ```python
    def test_writes_file(tmp_path: Path): ...
    ```
 
-4. **External APIs**: Mock at the API client level, not individual methods
-```
+1. **External APIs**: Mock at the API client level, not individual methods
+
+````
 
 **Benefits:**
 
@@ -551,7 +554,7 @@ class DocumentationContext:
     output_path: str
     analysis_path: str
     analysis_depth: int
-```
+````
 
 **Benefits:**
 
@@ -563,7 +566,7 @@ class DocumentationContext:
 
 **Impact:** Low (minor organization improvement)
 
----
+______________________________________________________________________
 
 ### 2. Consider Plugin Architecture for Formatters
 
@@ -602,7 +605,7 @@ class ModuleFormatter:
 
 **Impact:** Low (nice-to-have feature)
 
----
+______________________________________________________________________
 
 ## Type Safety
 
@@ -645,7 +648,7 @@ def _parse_config(config_data: ConfigData) -> DokkenConfig:
 
 **Impact:** Medium (type safety)
 
----
+______________________________________________________________________
 
 ### 2. Improve Test Fixture Type Hints
 
@@ -683,7 +686,7 @@ def mock_llm_client(mocker: MockerFixture) -> MockLLM:
 
 **Impact:** Low (developer experience)
 
----
+______________________________________________________________________
 
 ### 3. Add Runtime Type Validation for Critical Functions
 
@@ -714,7 +717,7 @@ def resolve_output_path(
 
 **Impact:** Low (safety net for edge cases)
 
----
+______________________________________________________________________
 
 ## Performance
 
@@ -727,8 +730,8 @@ def resolve_output_path(
 **Recommendation:** Either:
 
 1. **Remove thread safety** if CLI is always single-threaded (simpler code)
-2. **Keep thread safety** if planning async/parallel processing (document why)
-3. **Use `functools.lru_cache`** if generic caching not needed
+1. **Keep thread safety** if planning async/parallel processing (document why)
+1. **Use `functools.lru_cache`** if generic caching not needed
 
 **Option 1: Simplify (if single-threaded)**
 
@@ -778,7 +781,7 @@ def check_drift(llm_model: str, context_hash: str, doc_hash: str):
 
 **Impact:** Low (code simplification)
 
----
+______________________________________________________________________
 
 ### 2. Parallelize File Reading
 
@@ -817,7 +820,7 @@ def _read_and_filter_file(file_path: str) -> str:
 
 **Impact:** Medium (performance for large codebases)
 
----
+______________________________________________________________________
 
 ### 3. Simplify Generic Types in `doc_configs.py`
 
@@ -871,7 +874,7 @@ AnyDocConfig = DocConfig  # Just one type now
 
 **Note:** Only simplify if generics don't provide real type safety benefits in practice.
 
----
+______________________________________________________________________
 
 ## Priority Matrix
 
@@ -897,7 +900,7 @@ AnyDocConfig = DocConfig  # Just one type now
 | Add runtime type validation | Low | Low | **OPTIONAL** | Type Safety |
 | Plugin architecture | High | Low | **FUTURE** | Architecture |
 
----
+______________________________________________________________________
 
 ## Codebase Strengths
 
@@ -911,19 +914,19 @@ The following patterns are working well and should be maintained:
 ✅ **Excellent test coverage** (99%+ across most modules)
 ✅ **Comprehensive documentation** (README, style guide, CLAUDE.md)
 
----
+______________________________________________________________________
 
 ## Contributing
 
 These improvements are suggestions based on comprehensive code reviews. Before implementing:
 
 1. **Discuss with maintainers** - Ensure alignment with project goals
-2. **Create issues** - Track each improvement separately
-3. **Start small** - Begin with high-priority, low-effort items
-4. **Test thoroughly** - All changes should maintain 100% test pass rate
-5. **Follow style guide** - Adhere to conventions in `docs/style-guide.md`
+1. **Create issues** - Track each improvement separately
+1. **Start small** - Begin with high-priority, low-effort items
+1. **Test thoroughly** - All changes should maintain 100% test pass rate
+1. **Follow style guide** - Adhere to conventions in `docs/style-guide.md`
 
----
+______________________________________________________________________
 
 **Last Updated:** 2025-12-25
 **Review By:** Claude Code (Comprehensive Architecture & Code Quality Review)
