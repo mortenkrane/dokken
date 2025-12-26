@@ -438,6 +438,34 @@ def test_check_drift_handles_various_inputs(
     assert isinstance(result.rationale, str)
 
 
+def test_check_drift_handles_none_documentation(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_with_drift: DocumentationDriftCheck,
+) -> None:
+    """Test check_drift handles None for current_doc (no documentation)."""
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_drift_check_with_drift
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Given: Some code context and no existing documentation
+    context = "def new_feature(): pass"
+
+    # When: Checking drift with None for current_doc
+    result = check_drift(llm=mock_llm_client, context=context, current_doc=None)
+
+    # Then: Should return valid drift check result
+    assert isinstance(result, DocumentationDriftCheck)
+    assert isinstance(result.drift_detected, bool)
+    assert isinstance(result.rationale, str)
+
+    # And: The program should have been called with the default message
+    mock_program.assert_called_once()
+    call_kwargs = mock_program.call_args[1]
+    assert call_kwargs["current_doc"] == "No existing documentation provided."
+
+
 @pytest.mark.parametrize(
     "context",
     [

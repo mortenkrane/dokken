@@ -4,6 +4,7 @@ This document outlines potential improvements to the Dokken codebase identified 
 
 ## Recently Completed
 
+- **Replace NO_DOC_MARKER with Optional Pattern** (2025-12-26): Replaced string marker pattern with Pythonic Optional pattern. Updated `check_drift()` in `src/llm.py` to accept `str | None` for `current_doc` parameter. Removed `NO_DOC_MARKER` constant from `src/constants.py`. Updated `src/workflows.py` to use `None` instead of marker string. Updated cache utilities in `src/cache.py` to handle None values. Added comprehensive test coverage in `tests/test_llm.py`. Results in more type-safe, Pythonic code with clearer intent.
 - **Centralize Error Messages** (2025-12-26): Created `src/constants.py` to centralize all error messages and constants. Eliminated duplicate error strings across `src/workflows.py`, `src/file_utils.py`, and `src/llm.py`. All modules now import from centralized constants for consistent error messaging and easier maintenance.
 - **Move DocumentationContext to records.py** (2025-12-26): Moved `DocumentationContext` dataclass from `src/workflows.py` to `src/records.py`, consolidating all data models in one location for better organization and separation of concerns.
 - **Use TypedDict for Config Type Safety** (2025-12-26): Added TypedDict definitions (`ExclusionsDict`, `CustomPromptsDict`, `ConfigDataDict`) to `src/config/loader.py`, eliminating all `type: ignore` comments and providing full type safety with better IDE autocomplete for config loading.
@@ -437,37 +438,51 @@ DRIFT_CACHE_SIZE = 100
 
 ______________________________________________________________________
 
-### 4. Replace `NO_DOC_MARKER` String Constant
+### 4. ✅ Replace `NO_DOC_MARKER` String Constant - COMPLETED
 
-**Status:** ⚠️ **PARTIALLY ADDRESSED** (2025-12-26)
+**Status:** ✅ **IMPLEMENTED** (2025-12-26)
 
-**Current State:**
+**Implementation Details:**
 
-- `NO_DOC_MARKER` constant moved to `src/constants.py` as part of "Centralize Error Messages" effort
-- Still uses string marker pattern instead of Optional pattern
+- Updated `check_drift()` in `src/llm.py` to accept `str | None` for `current_doc` parameter
+- Removed `NO_DOC_MARKER` constant from `src/constants.py` and all imports
+- Updated `src/workflows.py` to use `None` instead of marker string when no documentation exists
+- Updated cache utilities (`_hash_content()` and `_generate_cache_key()`) in `src/cache.py` to handle None values
+- Added type annotation `current_doc: str | None` in workflows for clarity
+- Added comprehensive test `test_check_drift_handles_none_documentation()` in `tests/test_llm.py`
+- All 291 tests passing with maintained coverage
 
-**Recommendation:** Use Optional pattern (simpler than sentinel):
+**Original State:** Used string marker pattern with `NO_DOC_MARKER = "No existing documentation provided."`
+
+**Solution Implemented:**
 
 ```python
-# Option 1: Just use None
-current_doc: str | None = None if not exists else read_file()
+# src/workflows.py
+current_doc_content: str | None
+if os.path.exists(ctx.output_path):
+    with open(ctx.output_path) as f:
+        current_doc_content = f.read()
+else:
+    current_doc_content = None
 
-# Then in prompt building:
-prompt_doc_section = current_doc or "No existing documentation provided."
+# src/llm.py
+def check_drift(*, llm: LLM, context: str, current_doc: str | None) -> DocumentationDriftCheck:
+    # Convert None to a message for the prompt
+    doc_for_prompt = current_doc or "No existing documentation provided."
+    ...
 ```
 
 **Benefits:**
 
-- More Pythonic
-- Type-safe
-- Clearer intent
-- One less magic string
+- More Pythonic and type-safe
+- Clearer intent (None explicitly means "no documentation")
+- Eliminated magic string constant
+- Better IDE support and type checking
+- Consistent with Python best practices
 
 **Effort:** Low
 
-**Impact:** Low (code clarity)
-
-**Note:** While the constant is now centralized, converting to Optional pattern would be a separate improvement for better type safety and Pythonic code.
+**Impact:** Low (code clarity and type safety improvement)
 
 ______________________________________________________________________
 
@@ -1091,7 +1106,7 @@ ______________________________________________________________________
 | ~~Use TypedDict for config~~ | Low | Medium | **MEDIUM** | Type Safety | ✅ DONE 2025-12-26 |
 | ~~Move DocumentationContext~~ | Trivial | Low | **LOW** | Architecture | ✅ DONE 2025-12-26 |
 | ~~Centralize error messages~~ | Low | Low | **LOW** | Code Quality | ✅ DONE 2025-12-26 |
-| Replace NO_DOC_MARKER | Low | Low | **LOW** | Code Quality | Partially Done |
+| ~~Replace NO_DOC_MARKER~~ | Low | Low | **LOW** | Code Quality | ✅ DONE 2025-12-26 |
 | Improve fixture type hints | Low | Low | **LOW** | Type Safety | Pending |
 | Standardize mocking patterns | Low | Low | **LOW** | Testing | Pending |
 | Question thread safety | Low | Low | **LOW** | Performance | Pending |
@@ -1131,5 +1146,5 @@ ______________________________________________________________________
 
 **Last Updated:** 2025-12-26
 **Review By:** Claude Code (Comprehensive Architecture & Code Quality Review)
-**Latest Implementation:** Centralize Error Messages (2025-12-26)
+**Latest Implementation:** Replace NO_DOC_MARKER with Optional Pattern (2025-12-26)
 ````
