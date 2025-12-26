@@ -50,7 +50,9 @@ def test_resolve_output_path_module_readme(tmp_path: Path) -> None:
     assert result == str(module_dir / "README.md")
 
 
-def test_resolve_output_path_project_readme(git_repo_with_module: tuple[Path, Path]) -> None:
+def test_resolve_output_path_project_readme(
+    git_repo_with_module: tuple[Path, Path],
+) -> None:
     """Test resolve_output_path for PROJECT_README."""
     repo_root, module_dir = git_repo_with_module
 
@@ -61,7 +63,9 @@ def test_resolve_output_path_project_readme(git_repo_with_module: tuple[Path, Pa
     assert result == str(repo_root / "README.md")
 
 
-def test_resolve_output_path_style_guide(git_repo_with_module: tuple[Path, Path]) -> None:
+def test_resolve_output_path_style_guide(
+    git_repo_with_module: tuple[Path, Path],
+) -> None:
     """Test resolve_output_path for STYLE_GUIDE."""
     repo_root, module_dir = git_repo_with_module
 
