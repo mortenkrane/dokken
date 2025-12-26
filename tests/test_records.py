@@ -62,8 +62,8 @@ def test_documentation_drift_check_missing_rationale() -> None:
 def test_documentation_drift_check_invalid_drift_detected_type() -> None:
     """Test that DocumentationDriftCheck validates drift_detected type."""
     with pytest.raises(ValidationError) as exc_info:
-        DocumentationDriftCheck(  # type: ignore[arg-type]
-            drift_detected=["not", "a", "bool"],  # Should be bool
+        DocumentationDriftCheck(
+            drift_detected=["not", "a", "bool"],  # type: ignore[arg-type]
             rationale="Test rationale",
         )
 
@@ -74,9 +74,9 @@ def test_documentation_drift_check_invalid_drift_detected_type() -> None:
 def test_documentation_drift_check_invalid_rationale_type() -> None:
     """Test that DocumentationDriftCheck validates rationale type."""
     with pytest.raises(ValidationError) as exc_info:
-        DocumentationDriftCheck(  # type: ignore[arg-type]
+        DocumentationDriftCheck(
             drift_detected=True,
-            rationale=123,  # Should be str
+            rationale=123,  # type: ignore[arg-type]
         )
 
     errors = exc_info.value.errors()
@@ -171,8 +171,8 @@ def test_module_documentation_all_required_fields(field_name: str) -> None:
 def test_module_documentation_invalid_type() -> None:
     """Test that ModuleDocumentation validates field types."""
     with pytest.raises(ValidationError) as exc_info:
-        ModuleDocumentation(  # type: ignore[arg-type]
-            component_name=123,  # Should be str
+        ModuleDocumentation(
+            component_name=123,  # type: ignore[arg-type]
             purpose_and_scope="Test",
             architecture_overview="Test",
             main_entry_points="Test",
@@ -273,9 +273,9 @@ def test_style_guide_documentation_multiple_languages() -> None:
 def test_style_guide_documentation_invalid_languages_type() -> None:
     """Test that StyleGuideDocumentation validates languages type."""
     with pytest.raises(ValidationError) as exc_info:
-        StyleGuideDocumentation(  # type: ignore[arg-type]
+        StyleGuideDocumentation(
             project_name="Test",
-            languages="Python",  # Should be list[str], not str
+            languages="Python",  # type: ignore[arg-type]
             code_style_patterns="Patterns",
             architectural_patterns="Patterns",
             testing_conventions="Conventions",
