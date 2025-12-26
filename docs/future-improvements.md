@@ -4,6 +4,7 @@ This document outlines potential improvements to the Dokken codebase identified 
 
 ## Recently Completed
 
+- **Move DocumentationContext to records.py** (2025-12-26): Moved `DocumentationContext` dataclass from `src/workflows.py` to `src/records.py`, consolidating all data models in one location for better organization and separation of concerns.
 - **Use TypedDict for Config Type Safety** (2025-12-26): Added TypedDict definitions (`ExclusionsDict`, `CustomPromptsDict`, `ConfigDataDict`) to `src/config/loader.py`, eliminating all `type: ignore` comments and providing full type safety with better IDE autocomplete for config loading.
 - **Add Tests for Pydantic Model Validation** (2025-12-26): Created comprehensive `tests/test_records.py` with 40+ test cases covering all Pydantic models, including validation tests for required fields, type validation, optional field behavior, and edge cases.
 - **Reduce Workflow Duplication** (2025-12-26): Extracted common initialization logic into `_initialize_documentation_workflow` helper function, eliminating duplication between `check_documentation_drift` and `generate_documentation` workflows.
@@ -649,29 +650,45 @@ ______________________________________________________________________
 
 ## Architecture
 
-### 1. Consider Moving `DocumentationContext` to `records.py`
+### 1. ✅ Move `DocumentationContext` to `records.py` - COMPLETED
 
-**Current State:** `DocumentationContext` dataclass defined in `workflows.py:27-35`
+**Status:** ✅ **IMPLEMENTED** (2025-12-26)
 
-**Recommendation:** Move to `src/records.py` with other data models:
+**Implementation Details:**
+
+- Moved `DocumentationContext` dataclass from `src/workflows.py:27-34` to `src/records.py`
+- Added `TYPE_CHECKING` import to avoid circular dependencies with `AnyDocConfig`
+- Updated `src/workflows.py` to import `DocumentationContext` from `src.records`
+- Removed unused `dataclass` import from `src/workflows.py`
+- All data models now consolidated in `src/records.py`
+
+**Original State:** `DocumentationContext` dataclass defined in `workflows.py:27-35`
+
+**Solution Implemented:**
 
 ```python
 # src/records.py
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.doc_configs import AnyDocConfig
+
 @dataclass
 class DocumentationContext:
     """Context information for documentation generation or drift checking."""
 
-    doc_config: AnyDocConfig
+    doc_config: "AnyDocConfig"
     output_path: str
     analysis_path: str
     analysis_depth: int
-````
+```
 
 **Benefits:**
 
 - All data models in one place
 - `workflows.py` focuses on orchestration
 - Better organization
+- Proper handling of circular import with TYPE_CHECKING
 
 **Effort:** Trivial
 
@@ -1027,7 +1044,7 @@ ______________________________________________________________________
 | ~~Add test fixtures~~ | Low | Medium | **MEDIUM** | Testing | ✅ DONE 2025-12-26 |
 | ~~Add Pydantic model tests~~ | Low | Medium | **MEDIUM** | Testing | ✅ DONE 2025-12-26 |
 | ~~Use TypedDict for config~~ | Low | Medium | **MEDIUM** | Type Safety | ✅ DONE 2025-12-26 |
-| Move DocumentationContext | Trivial | Low | **LOW** | Architecture | Pending |
+| ~~Move DocumentationContext~~ | Trivial | Low | **LOW** | Architecture | ✅ DONE 2025-12-26 |
 | Centralize error messages | Low | Low | **LOW** | Code Quality | Pending |
 | Replace NO_DOC_MARKER | Low | Low | **LOW** | Code Quality | Pending |
 | Improve fixture type hints | Low | Low | **LOW** | Type Safety | Pending |
@@ -1069,4 +1086,5 @@ ______________________________________________________________________
 
 **Last Updated:** 2025-12-26
 **Review By:** Claude Code (Comprehensive Architecture & Code Quality Review)
-**Latest Implementation:** Use TypedDict for config type safety (2025-12-26)
+**Latest Implementation:** Move DocumentationContext to records.py (2025-12-26)
+````
