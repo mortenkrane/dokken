@@ -243,7 +243,84 @@ def fix_documentation_drift(
     )
 
 
-def check_multiple_modules_drift(  # noqa: C901
+def _check_single_module_drift(
+    *,
+    module_path: str,
+    repo_root: str,
+    fix: bool,
+    depth: int | None,
+    doc_type: DocType,
+) -> tuple[str, str | None]:
+    """
+    Check drift for a single module.
+
+    Args:
+        module_path: Relative module path from repo root.
+        repo_root: Root directory of the repository.
+        fix: If True, automatically fixes detected drift.
+        depth: Directory depth to traverse.
+        doc_type: Type of documentation to check.
+
+    Returns:
+        Tuple of (module_path, error_rationale_or_None).
+        - If no drift: (module_path, None)
+        - If drift detected: (module_path, rationale)
+        - If module doesn't exist: (module_path, None) for categorization as skipped
+    """
+    full_module_path = str(Path(repo_root) / module_path)
+
+    console.print(f"[bold]Module:[/bold] {module_path}")
+
+    # Validate module path exists
+    if not os.path.isdir(full_module_path):
+        console.print("  [yellow]⚠[/yellow] Skipping - directory does not exist\n")
+        return module_path, None
+
+    try:
+        check_documentation_drift(
+            target_module_path=full_module_path,
+            fix=fix,
+            depth=depth,
+            doc_type=doc_type,
+        )
+        console.print("  [green]✓ No drift detected[/green]\n")
+        return module_path, None
+    except DocumentationDriftError as drift_error:
+        console.print(f"  [red]✗ Drift detected:[/red] {drift_error.rationale}\n")
+        return module_path, drift_error.rationale
+
+
+def _print_drift_summary(
+    *,
+    modules_without_drift: list[str],
+    modules_with_drift: list[tuple[str, str]],
+    modules_skipped: list[str],
+    total_modules: int,
+) -> None:
+    """
+    Print formatted drift check summary.
+
+    Args:
+        modules_without_drift: List of module paths with no drift.
+        modules_with_drift: List of (module_path, rationale) tuples for
+            modules with drift.
+        modules_skipped: List of module paths that were skipped.
+        total_modules: Total number of modules configured.
+    """
+    console.print("[bold cyan]Summary:[/bold cyan]")
+    console.print(f"  Total modules configured: {total_modules}")
+    console.print(f"  [green]✓ Up-to-date:[/green] {len(modules_without_drift)}")
+    console.print(f"  [red]✗ With drift:[/red] {len(modules_with_drift)}")
+    if modules_skipped:
+        console.print(f"  [yellow]⚠ Skipped:[/yellow] {len(modules_skipped)}")
+
+    if modules_with_drift:
+        console.print("\n[bold red]Modules with drift:[/bold red]")
+        for module_path, _ in modules_with_drift:
+            console.print(f"  • {module_path}")
+
+
+def check_multiple_modules_drift(
     *,
     fix: bool = False,
     depth: int | None = None,
@@ -291,50 +368,42 @@ def check_multiple_modules_drift(  # noqa: C901
         f"drift...[/bold cyan]\n"
     )
 
+    # Process each module and collect results
+    results = [
+        _check_single_module_drift(
+            module_path=module_path,
+            repo_root=repo_root,
+            fix=fix,
+            depth=depth,
+            doc_type=doc_type,
+        )
+        for module_path in config.modules
+    ]
+
+    # Categorize results by drift status
     modules_with_drift = []
     modules_without_drift = []
     modules_skipped = []
 
-    # Process each module sequentially
-    for module_path in config.modules:
-        # Resolve module path relative to repo root
+    for module_path, rationale in results:
         full_module_path = str(Path(repo_root) / module_path)
-
-        console.print(f"[bold]Module:[/bold] {module_path}")
-
-        # Validate module path exists
         if not os.path.isdir(full_module_path):
             modules_skipped.append(module_path)
-            console.print("  [yellow]⚠[/yellow] Skipping - directory does not exist\n")
-            continue
-
-        try:
-            check_documentation_drift(
-                target_module_path=full_module_path,
-                fix=fix,
-                depth=depth,
-                doc_type=doc_type,
-            )
+        elif rationale is not None:
+            modules_with_drift.append((module_path, rationale))
+        else:
             modules_without_drift.append(module_path)
-            console.print("  [green]✓ No drift detected[/green]\n")
-        except DocumentationDriftError as drift_error:
-            modules_with_drift.append((module_path, drift_error.rationale))
-            console.print(f"  [red]✗ Drift detected:[/red] {drift_error.rationale}\n")
 
     # Print summary
-    console.print("[bold cyan]Summary:[/bold cyan]")
-    console.print(f"  Total modules configured: {len(config.modules)}")
-    console.print(f"  [green]✓ Up-to-date:[/green] {len(modules_without_drift)}")
-    console.print(f"  [red]✗ With drift:[/red] {len(modules_with_drift)}")
-    if modules_skipped:
-        console.print(f"  [yellow]⚠ Skipped:[/yellow] {len(modules_skipped)}")
+    _print_drift_summary(
+        modules_without_drift=modules_without_drift,
+        modules_with_drift=modules_with_drift,
+        modules_skipped=modules_skipped,
+        total_modules=len(config.modules),
+    )
 
+    # Raise error if drift detected in any module
     if modules_with_drift:
-        console.print("\n[bold red]Modules with drift:[/bold red]")
-        for module_path, _ in modules_with_drift:
-            console.print(f"  • {module_path}")
-
-        # Aggregate rationales into error message for programmatic use
         rationales = "\n".join(
             f"  - {path}: {rationale}" for path, rationale in modules_with_drift
         )
