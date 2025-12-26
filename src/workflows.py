@@ -14,9 +14,9 @@ from src.config import load_config
 from src.doc_configs import DOC_CONFIGS, AnyDocConfig
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
+from src.file_utils import ensure_output_directory, find_repo_root, resolve_output_path
 from src.human_in_the_loop import ask_human_intent
 from src.llm import GenerationConfig, check_drift, generate_doc, initialize_llm
-from src.utils import ensure_output_directory, find_repo_root, resolve_output_path
 
 console = Console()
 

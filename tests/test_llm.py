@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 from pytest_mock import MockerFixture
 
+from src.cache import get_drift_cache_info
 from src.config import CustomPrompts
 from src.doc_types import DocType
 from src.llm import (
@@ -20,7 +21,6 @@ from src.llm import (
 )
 from src.prompts import MODULE_GENERATION_PROMPT
 from src.records import DocumentationDriftCheck, ModuleDocumentation, ModuleIntent
-from src.utils import get_drift_cache_info
 
 # --- Tests for initialize_llm() ---
 
@@ -322,7 +322,7 @@ def test_check_drift_cache_evicts_oldest_when_full(
     mock_program_class.from_defaults.return_value = mock_program
 
     # Temporarily reduce cache size for testing using mocker.patch
-    mocker.patch("src.utils.DRIFT_CACHE_SIZE", 2)
+    mocker.patch("src.cache.DRIFT_CACHE_SIZE", 2)
 
     # Fill cache to limit
     check_drift(llm=mock_llm_client, context="ctx1", current_doc="doc1")
