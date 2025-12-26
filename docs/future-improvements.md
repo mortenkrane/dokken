@@ -694,8 +694,6 @@ ______________________________________________________________________
 
 1. **External APIs**: Mock at the API client level, not individual methods
 
-````
-
 **Benefits:**
 
 - Consistency across test suite
