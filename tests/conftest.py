@@ -92,4 +92,8 @@ def mock_llm_client(mocker: MockerFixture) -> Any:
 @pytest.fixture
 def mock_console(mocker: MockerFixture) -> Any:
     """Mock Rich console to suppress output during tests."""
-    return mocker.patch("src.git.console")
+    # Patch all console locations
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.human_in_the_loop.console")
+    return mocker.patch("src.main.console")
