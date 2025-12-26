@@ -4,6 +4,7 @@ This document outlines potential improvements to the Dokken codebase identified 
 
 ## Recently Completed
 
+- **Reduce Workflow Duplication** (2025-12-26): Extracted common initialization logic into `_initialize_documentation_workflow` helper function, eliminating duplication between `check_documentation_drift` and `generate_documentation` workflows.
 - **Extract Prompt Building from `llm.py`** (2025-12-26): Separated prompt assembly logic into `src/prompt_builder.py` module for better separation of concerns. Tests split into `tests/test_prompt_builder.py`.
 
 ## Table of Contents
@@ -181,21 +182,32 @@ ______________________________________________________________________
 
 ## Code Quality
 
-### 1. Reduce Code Duplication in Workflows
+### 1. ✅ Reduce Code Duplication in Workflows - COMPLETED
 
-**Current State:** `check_documentation_drift` and `generate_documentation` share significant setup code:
+**Status:** ✅ **IMPLEMENTED** (2025-12-26)
+
+**Implementation Details:**
+
+- Created new `_initialize_documentation_workflow` helper function in `src/workflows.py`
+- Extracted common initialization logic (LLM setup, context preparation, code analysis)
+- Refactored `check_documentation_drift` and `generate_documentation` to use the helper
+- All 252 tests passing with 99.21% coverage
+- Full compliance with DRY principle
+
+**Original State:** `check_documentation_drift` and `generate_documentation` shared significant setup code:
 
 ```python
-# Both functions repeat this pattern:
+# Both functions repeated this pattern:
 llm_client = initialize_llm()
 ctx = prepare_documentation_context(...)
 code_context = get_module_context(...)
 ```
 
-**Recommendation:** Extract common initialization logic:
+**Solution Implemented:**
 
 ```python
 def _initialize_documentation_workflow(
+    *,
     target_module_path: str,
     doc_type: DocType,
     depth: int | None
@@ -219,6 +231,7 @@ def _initialize_documentation_workflow(
 - DRY principle compliance
 - Single place to update workflow initialization
 - Consistent behavior across workflows
+- Reduced code duplication by ~20 lines
 
 **Effort:** Low
 
@@ -941,10 +954,10 @@ ______________________________________________________________________
 | Improvement | Effort | Impact | Priority | Category | Status |
 |-------------|--------|--------|----------|----------|--------|
 | ~~Split utils.py~~ | Medium | High | **HIGH** | Architecture | ✅ DONE |
-| ~~Extract prompt building~~ | Low | High | **HIGH** | Architecture | ✅ Completed 2025-12-26 |
-| ~~Refactor check_multiple_modules_drift~~ | Low | High | **HIGH** | Code Quality | ✅ Completed 2025-12-26 |
-| ~~Fix dead mock_console fixture~~ | Trivial | Low | **HIGH** | Testing | ✅ Completed 2025-12-26 |
-| Reduce workflow duplication | Low | Medium | **MEDIUM** | Code Quality | Pending |
+| ~~Extract prompt building~~ | Low | High | **HIGH** | Architecture | ✅ DONE 2025-12-26 |
+| ~~Refactor check_multiple_modules_drift~~ | Low | High | **HIGH** | Code Quality | ✅ DONE 2025-12-26 |
+| ~~Fix dead mock_console fixture~~ | Trivial | Low | **HIGH** | Testing | ✅ DONE 2025-12-26 |
+| ~~Reduce workflow duplication~~ | Low | Medium | **MEDIUM** | Code Quality | ✅ DONE 2025-12-26 |
 | Add test fixtures | Low | Medium | **MEDIUM** | Testing | Pending |
 | Add Pydantic model tests | Low | Medium | **MEDIUM** | Testing | Pending |
 | Use TypedDict for config | Low | Medium | **MEDIUM** | Type Safety | Pending |
