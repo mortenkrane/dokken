@@ -8,11 +8,10 @@ from typing import Any, TypeVar
 
 from llama_index.core.llms import LLM
 
+from src.constants import DRIFT_CACHE_SIZE
+
 # Type variable for generic function return type
 T = TypeVar("T")
-
-# Cache size for drift detection results (configurable)
-DRIFT_CACHE_SIZE = 100
 
 # Module-level cache storage and lock for thread-safety
 _drift_cache: dict[str, Any] = {}

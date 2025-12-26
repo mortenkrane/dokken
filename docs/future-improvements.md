@@ -4,6 +4,7 @@ This document outlines potential improvements to the Dokken codebase identified 
 
 ## Recently Completed
 
+- **Centralize Error Messages** (2025-12-26): Created `src/constants.py` to centralize all error messages and constants. Eliminated duplicate error strings across `src/workflows.py`, `src/file_utils.py`, and `src/llm.py`. All modules now import from centralized constants for consistent error messaging and easier maintenance.
 - **Move DocumentationContext to records.py** (2025-12-26): Moved `DocumentationContext` dataclass from `src/workflows.py` to `src/records.py`, consolidating all data models in one location for better organization and separation of concerns.
 - **Use TypedDict for Config Type Safety** (2025-12-26): Added TypedDict definitions (`ExclusionsDict`, `CustomPromptsDict`, `ConfigDataDict`) to `src/config/loader.py`, eliminating all `type: ignore` comments and providing full type safety with better IDE autocomplete for config loading.
 - **Add Tests for Pydantic Model Validation** (2025-12-26): Created comprehensive `tests/test_records.py` with 40+ test cases covering all Pydantic models, including validation tests for required fields, type validation, optional field behavior, and edge cases.
@@ -357,30 +358,65 @@ Extracted two helper functions and simplified the main function:
 
 ______________________________________________________________________
 
-### 3. Centralize Error Messages
+### 3. ✅ Centralize Error Messages - COMPLETED
 
-**Current State:** Error messages duplicated across modules:
+**Status:** ✅ **IMPLEMENTED** (2025-12-26)
+
+**Implementation Details:**
+
+- Created `src/constants.py` with centralized error messages and constants
+- Defined error message constants:
+  - `ERROR_NOT_IN_GIT_REPO` - Git repository error
+  - `ERROR_NOT_IN_GIT_REPO_MULTI_MODULE` - Multi-module git error
+  - `ERROR_INVALID_DIRECTORY` - Invalid directory error with formatting
+  - `ERROR_NO_MODULES_CONFIGURED` - No modules configured error
+  - `ERROR_CANNOT_CREATE_DIR` - Directory creation error with formatting
+  - `ERROR_NO_API_KEY` - API key missing error with instructions
+- Moved `NO_DOC_MARKER` constant from `src/workflows.py` to centralized location
+- Moved `DRIFT_CACHE_SIZE` constant from `src/cache.py` to centralized location
+- Updated `src/workflows.py` to import and use centralized constants (4 error messages replaced)
+- Updated `src/file_utils.py` to import and use centralized constants (2 error messages replaced)
+- Updated `src/llm.py` to import and use centralized `ERROR_NO_API_KEY`
+- Updated `src/cache.py` to import `DRIFT_CACHE_SIZE` from constants
+- All 290 tests passing with 99.25% coverage
+- Full compliance with DRY principle
+
+**Original State:** Error messages duplicated across modules:
 
 - `"not in a git repository"` appears in:
   - `src/workflows.py:75-76`
   - `src/workflows.py:271-272`
-  - `src/utils.py:71-73`
+  - `src/file_utils.py:71-73`
 - `"is not a valid directory"` in multiple places
+- API key error message in `src/llm.py`
+- Cache size constant duplicated
 
-**Recommendation:** Create `src/constants.py`:
+**Solution Implemented:**
 
 ```python
 # src/constants.py
-"""Shared constants for Dokken."""
-
-# Error messages
-ERROR_NOT_IN_GIT_REPO = "Not in a git repository"
-ERROR_INVALID_DIRECTORY = "{path} is not a valid directory"
-ERROR_NO_API_KEY = "No API key found. Please set one of: {keys}"
-ERROR_NO_MODULES_CONFIGURED = "No modules configured in .dokken.toml"
+"""Shared constants and error messages for Dokken."""
 
 # Special markers
 NO_DOC_MARKER = "No existing documentation provided."
+
+# Error messages
+ERROR_NOT_IN_GIT_REPO = "not in a git repository"
+ERROR_NOT_IN_GIT_REPO_MULTI_MODULE = (
+    "Not in a git repository. Multi-module checking requires a git repository."
+)
+ERROR_INVALID_DIRECTORY = "{path} is not a valid directory"
+ERROR_NO_MODULES_CONFIGURED = (
+    "No modules configured in .dokken.toml. "
+    "Add a [modules] section with module paths to check."
+)
+ERROR_CANNOT_CREATE_DIR = "Cannot create {parent_dir}: {error}"
+ERROR_NO_API_KEY = (
+    "No API key found. Please set one of the following environment variables:\n"
+    "  - ANTHROPIC_API_KEY (for Claude)\n"
+    "  - OPENAI_API_KEY (for OpenAI)\n"
+    "  - GOOGLE_API_KEY (for Google Gemini)"
+)
 
 # Cache configuration
 DRIFT_CACHE_SIZE = 100
@@ -388,20 +424,27 @@ DRIFT_CACHE_SIZE = 100
 
 **Benefits:**
 
-- DRY principle
-- Easier to update messaging
-- Consistent error messages
-- Centralized configuration
+- DRY principle compliance
+- Single source of truth for error messages
+- Easier to update messaging across entire codebase
+- Consistent error messages throughout application
+- Centralized configuration for cache size
+- Reduced code duplication
 
 **Effort:** Low
 
-**Impact:** Low (minor quality improvement)
+**Impact:** Low (code quality and maintainability improvement)
 
 ______________________________________________________________________
 
 ### 4. Replace `NO_DOC_MARKER` String Constant
 
-**Current State:** Using special string marker `"No existing documentation provided."` (workflows.py:24)
+**Status:** ⚠️ **PARTIALLY ADDRESSED** (2025-12-26)
+
+**Current State:**
+
+- `NO_DOC_MARKER` constant moved to `src/constants.py` as part of "Centralize Error Messages" effort
+- Still uses string marker pattern instead of Optional pattern
 
 **Recommendation:** Use Optional pattern (simpler than sentinel):
 
@@ -423,6 +466,8 @@ prompt_doc_section = current_doc or "No existing documentation provided."
 **Effort:** Low
 
 **Impact:** Low (code clarity)
+
+**Note:** While the constant is now centralized, converting to Optional pattern would be a separate improvement for better type safety and Pythonic code.
 
 ______________________________________________________________________
 
@@ -1045,8 +1090,8 @@ ______________________________________________________________________
 | ~~Add Pydantic model tests~~ | Low | Medium | **MEDIUM** | Testing | ✅ DONE 2025-12-26 |
 | ~~Use TypedDict for config~~ | Low | Medium | **MEDIUM** | Type Safety | ✅ DONE 2025-12-26 |
 | ~~Move DocumentationContext~~ | Trivial | Low | **LOW** | Architecture | ✅ DONE 2025-12-26 |
-| Centralize error messages | Low | Low | **LOW** | Code Quality | Pending |
-| Replace NO_DOC_MARKER | Low | Low | **LOW** | Code Quality | Pending |
+| ~~Centralize error messages~~ | Low | Low | **LOW** | Code Quality | ✅ DONE 2025-12-26 |
+| Replace NO_DOC_MARKER | Low | Low | **LOW** | Code Quality | Partially Done |
 | Improve fixture type hints | Low | Low | **LOW** | Type Safety | Pending |
 | Standardize mocking patterns | Low | Low | **LOW** | Testing | Pending |
 | Question thread safety | Low | Low | **LOW** | Performance | Pending |
@@ -1086,5 +1131,5 @@ ______________________________________________________________________
 
 **Last Updated:** 2025-12-26
 **Review By:** Claude Code (Comprehensive Architecture & Code Quality Review)
-**Latest Implementation:** Move DocumentationContext to records.py (2025-12-26)
+**Latest Implementation:** Centralize Error Messages (2025-12-26)
 ````

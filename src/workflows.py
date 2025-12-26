@@ -10,6 +10,13 @@ from rich.console import Console
 
 from src.code_analyzer import get_module_context
 from src.config import load_config
+from src.constants import (
+    ERROR_INVALID_DIRECTORY,
+    ERROR_NO_MODULES_CONFIGURED,
+    ERROR_NOT_IN_GIT_REPO,
+    ERROR_NOT_IN_GIT_REPO_MULTI_MODULE,
+    NO_DOC_MARKER,
+)
 from src.doc_configs import DOC_CONFIGS, AnyDocConfig
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
@@ -19,9 +26,6 @@ from src.llm import GenerationConfig, check_drift, generate_doc, initialize_llm
 from src.records import DocumentationContext
 
 console = Console()
-
-# Constants
-NO_DOC_MARKER = "No existing documentation provided."
 
 
 def prepare_documentation_context(
@@ -45,9 +49,8 @@ def prepare_documentation_context(
         SystemExit: If the target path is invalid or git root not found.
     """
     if not os.path.isdir(target_module_path):
-        console.print(
-            f"[red]Error:[/red] {target_module_path} is not a valid directory"
-        )
+        error_msg = ERROR_INVALID_DIRECTORY.format(path=target_module_path)
+        console.print(f"[red]Error:[/red] {error_msg}")
         sys.exit(1)
 
     # Get doc type configuration
@@ -62,7 +65,7 @@ def prepare_documentation_context(
         if repo_root is None:
             console.print(
                 f"[red]Error:[/red] Cannot process {doc_type.value}: "
-                "not in a git repository"
+                f"{ERROR_NOT_IN_GIT_REPO}"
             )
             sys.exit(1)
         # Type narrowing: repo_root is str here (sys.exit prevents None)
@@ -367,10 +370,7 @@ def check_multiple_modules_drift(
     # Find repo root to load config
     repo_root = find_repo_root(".")
     if repo_root is None:
-        console.print(
-            "[red]Error:[/red] Not in a git repository. "
-            "Multi-module checking requires a git repository."
-        )
+        console.print(f"[red]Error:[/red] {ERROR_NOT_IN_GIT_REPO_MULTI_MODULE}")
         sys.exit(1)
 
     # Type narrowing: repo_root is guaranteed str after sys.exit check
@@ -380,10 +380,7 @@ def check_multiple_modules_drift(
     config = load_config(module_path=repo_root)
 
     if not config.modules:
-        console.print(
-            "[red]Error:[/red] No modules configured in .dokken.toml. "
-            "Add a [modules] section with module paths to check."
-        )
+        console.print(f"[red]Error:[/red] {ERROR_NO_MODULES_CONFIGURED}")
         sys.exit(1)
 
     console.print(
