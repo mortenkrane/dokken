@@ -95,6 +95,48 @@ def prepare_documentation_context(
     )
 
 
+def _initialize_documentation_workflow(
+    *,
+    target_module_path: str,
+    doc_type: DocType,
+    depth: int | None,
+) -> tuple[LLM, DocumentationContext, str]:
+    """
+    Common setup for documentation workflows.
+
+    Initializes LLM, prepares documentation context, and analyzes code.
+
+    Args:
+        target_module_path: Path to the module directory.
+        doc_type: Type of documentation to process.
+        depth: Directory depth to traverse, or None to use doc type's default.
+
+    Returns:
+        Tuple of (llm_client, context, code_context).
+
+    Raises:
+        SystemExit: If the target path is invalid or git root not found.
+    """
+    # Prepare documentation context
+    ctx = prepare_documentation_context(
+        target_module_path=target_module_path,
+        doc_type=doc_type,
+        depth=depth,
+    )
+
+    # Initialize LLM
+    with console.status("[cyan]Initializing LLM..."):
+        llm_client = initialize_llm()
+
+    # Analyze code context
+    with console.status("[cyan]Analyzing code context..."):
+        code_context = get_module_context(
+            module_path=ctx.analysis_path, depth=ctx.analysis_depth
+        )
+
+    return llm_client, ctx, code_context
+
+
 def check_documentation_drift(
     *,
     target_module_path: str,
@@ -116,21 +158,12 @@ def check_documentation_drift(
         DocumentationDriftError: If documentation drift is detected and fix=False.
         SystemExit: If the target path is invalid.
     """
-    # Prepare documentation context
-    ctx = prepare_documentation_context(
+    # Initialize workflow
+    llm_client, ctx, code_context = _initialize_documentation_workflow(
         target_module_path=target_module_path,
         doc_type=doc_type,
         depth=depth,
     )
-
-    # 1. Setup
-    with console.status("[cyan]Initializing LLM..."):
-        llm_client = initialize_llm()
-
-    with console.status("[cyan]Analyzing code context..."):
-        code_context = get_module_context(
-            module_path=ctx.analysis_path, depth=ctx.analysis_depth
-        )
 
     if not code_context:
         console.print(
@@ -438,21 +471,12 @@ def generate_documentation(
         SystemExit: If the target path is invalid.
         ValueError: If git root not found for repo-wide doc types.
     """
-    # Prepare documentation context
-    ctx = prepare_documentation_context(
+    # Initialize workflow
+    llm_client, ctx, code_context = _initialize_documentation_workflow(
         target_module_path=target_module_path,
         doc_type=doc_type,
         depth=depth,
     )
-
-    # 1. Setup
-    with console.status("[cyan]Initializing LLM..."):
-        llm_client = initialize_llm()
-
-    with console.status("[cyan]Analyzing code context..."):
-        code_context = get_module_context(
-            module_path=ctx.analysis_path, depth=ctx.analysis_depth
-        )
 
     if not code_context:
         console.print("[yellow]⚠[/yellow] No code context found. Exiting.")
