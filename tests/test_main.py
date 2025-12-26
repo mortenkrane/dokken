@@ -53,11 +53,10 @@ def test_generate_command_help(runner: CliRunner) -> None:
 
 
 def test_check_command_with_valid_path(
-    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+    runner: CliRunner, mock_main_console, mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test check command with valid module path."""
     mock_check = mocker.patch("src.main.check_documentation_drift")
-    mocker.patch("src.main.console")
 
     result = runner.invoke(cli, ["check", str(temp_module_dir)])
 
@@ -78,7 +77,7 @@ def test_check_command_with_invalid_path(runner: CliRunner) -> None:
 
 
 def test_check_command_drift_detected(
-    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+    runner: CliRunner, mock_main_console, mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test check command when drift is detected."""
     mock_check = mocker.patch(
@@ -88,7 +87,6 @@ def test_check_command_drift_detected(
             module_path=str(temp_module_dir),
         ),
     )
-    mocker.patch("src.main.console")
 
     result = runner.invoke(cli, ["check", str(temp_module_dir)])
 
@@ -97,11 +95,10 @@ def test_check_command_drift_detected(
 
 
 def test_check_command_no_drift(
-    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+    runner: CliRunner, mock_main_console, mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test check command when no drift is detected."""
     mock_check = mocker.patch("src.main.check_documentation_drift")
-    mocker.patch("src.main.console")
 
     result = runner.invoke(cli, ["check", str(temp_module_dir)])
 
@@ -110,14 +107,13 @@ def test_check_command_no_drift(
 
 
 def test_check_command_value_error(
-    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+    runner: CliRunner, mock_main_console, mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test check command handles ValueError."""
     mock_check = mocker.patch(
         "src.main.check_documentation_drift",
         side_effect=ValueError("Configuration error"),
     )
-    mocker.patch("src.main.console")
 
     result = runner.invoke(cli, ["check", str(temp_module_dir)])
 
@@ -126,11 +122,10 @@ def test_check_command_value_error(
 
 
 def test_generate_command_with_valid_path(
-    runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
+    runner: CliRunner, mock_main_console, mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test generate command with valid module path."""
     mock_generate = mocker.patch("src.main.generate_documentation", return_value=None)
-    mocker.patch("src.main.console")
 
     result = runner.invoke(cli, ["generate", str(temp_module_dir)])
 
