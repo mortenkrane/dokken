@@ -21,6 +21,7 @@ ______________________________________________________________________
 **Status:** ✅ **IMPLEMENTED** (2025-12-26)
 
 **Implementation Details:**
+
 - Split `src/utils.py` into two focused modules:
   - `src/file_utils.py` - File system operations (find_repo_root, resolve_output_path, ensure_output_directory)
   - `src/cache.py` - Caching utilities (content_based_cache, cache management functions)
