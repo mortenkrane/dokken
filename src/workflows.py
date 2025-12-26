@@ -2,7 +2,6 @@
 
 import os
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
@@ -17,21 +16,12 @@ from src.exceptions import DocumentationDriftError
 from src.file_utils import ensure_output_directory, find_repo_root, resolve_output_path
 from src.human_in_the_loop import ask_human_intent
 from src.llm import GenerationConfig, check_drift, generate_doc, initialize_llm
+from src.records import DocumentationContext
 
 console = Console()
 
 # Constants
 NO_DOC_MARKER = "No existing documentation provided."
-
-
-@dataclass
-class DocumentationContext:
-    """Context information for documentation generation or drift checking."""
-
-    doc_config: AnyDocConfig
-    output_path: str
-    analysis_path: str
-    analysis_depth: int
 
 
 def prepare_documentation_context(

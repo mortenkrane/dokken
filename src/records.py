@@ -1,4 +1,20 @@
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from src.doc_configs import AnyDocConfig
+
+
+@dataclass
+class DocumentationContext:
+    """Context information for documentation generation or drift checking."""
+
+    doc_config: "AnyDocConfig"
+    output_path: str
+    analysis_path: str
+    analysis_depth: int
 
 
 class DocumentationDriftCheck(BaseModel):
