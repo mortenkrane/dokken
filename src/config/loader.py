@@ -2,12 +2,37 @@
 
 import tomllib
 from pathlib import Path
+from typing import Any, TypedDict, cast
 
 from pydantic import ValidationError
 
 from src.config.merger import merge_config
 from src.config.models import CustomPrompts, DokkenConfig, ExclusionConfig
 from src.file_utils import find_repo_root
+
+
+class ExclusionsDict(TypedDict, total=False):
+    """Structure of the exclusions section in .dokken.toml."""
+
+    files: list[str]
+    symbols: list[str]
+
+
+class CustomPromptsDict(TypedDict, total=False):
+    """Structure of the custom_prompts section in .dokken.toml."""
+
+    global_prompt: str | None
+    module_readme: str | None
+    project_readme: str | None
+    style_guide: str | None
+
+
+class ConfigDataDict(TypedDict, total=False):
+    """Structure of .dokken.toml file."""
+
+    exclusions: ExclusionsDict
+    custom_prompts: CustomPromptsDict
+    modules: list[str]
 
 
 def load_config(*, module_path: str) -> DokkenConfig:
@@ -24,7 +49,7 @@ def load_config(*, module_path: str) -> DokkenConfig:
     Returns:
         DokkenConfig with merged configuration from all sources.
     """
-    config_data = {
+    config_data: ConfigDataDict = {
         "exclusions": {"files": [], "symbols": []},
         "custom_prompts": {
             "global_prompt": None,
@@ -45,23 +70,23 @@ def load_config(*, module_path: str) -> DokkenConfig:
 
     # Construct ExclusionConfig and CustomPrompts from the merged dictionary
     try:
-        exclusion_config = ExclusionConfig(**config_data["exclusions"])  # type: ignore
+        exclusion_config = ExclusionConfig(**config_data.get("exclusions", {}))
     except ValidationError as e:
         raise ValueError(f"Invalid exclusions configuration: {e}") from e
 
     try:
-        custom_prompts = CustomPrompts(**config_data["custom_prompts"])  # type: ignore
+        custom_prompts = CustomPrompts(**config_data.get("custom_prompts", {}))
     except ValidationError as e:
         raise ValueError(f"Invalid custom prompts configuration: {e}") from e
 
     return DokkenConfig(
         exclusions=exclusion_config,
         custom_prompts=custom_prompts,
-        modules=config_data["modules"],  # type: ignore[arg-type]
+        modules=config_data.get("modules", []),
     )
 
 
-def _load_and_merge_config(config_path: Path, base_config: dict) -> None:
+def _load_and_merge_config(config_path: Path, base_config: ConfigDataDict) -> None:
     """
     Load a TOML config file and merge it into the base config.
 
@@ -72,4 +97,5 @@ def _load_and_merge_config(config_path: Path, base_config: dict) -> None:
     if config_path.exists():
         with open(config_path, "rb") as f:
             config_data = tomllib.load(f)
-            merge_config(base_config, config_data)
+            # TypedDict is compatible with dict[str, Any] at runtime, cast for type checker
+            merge_config(cast(dict[str, Any], base_config), config_data)
