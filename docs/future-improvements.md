@@ -215,9 +215,11 @@ ______________________________________________________________________
 
 ### 2. Refactor `check_multiple_modules_drift` Complexity
 
-**Current State:** `src/workflows.py:246-348` - 103 lines with complexity warning suppressed (`noqa: C901`)
+**Status:** ✅ **COMPLETED** (2025-12-26)
 
-Function mixes multiple concerns:
+**Previous State:** `src/workflows.py:246-348` - 103 lines with complexity warning suppressed (`noqa: C901`)
+
+Function mixed multiple concerns:
 
 - Module iteration and validation
 - Individual drift checking
@@ -303,6 +305,22 @@ def check_multiple_modules_drift(...) -> None:
 - Easier to test individual pieces
 - Removes complexity warning
 - More maintainable
+
+**Implementation:**
+
+Extracted two helper functions and simplified the main function:
+
+1. `_check_single_module_drift()` - Handles checking a single module and returns a tuple of (module_path, rationale_or_None)
+1. `_print_drift_summary()` - Handles all summary printing logic
+1. Simplified `check_multiple_modules_drift()` - Now orchestrates the workflow by calling helpers
+
+**Results:**
+
+- Removed `noqa: C901` complexity warning
+- Each function has a single responsibility
+- Easier to test individual pieces
+- More maintainable and readable code
+- All tests pass with 100% coverage
 
 **Effort:** Low
 
@@ -911,7 +929,7 @@ ______________________________________________________________________
 |-------------|--------|--------|----------|----------|--------|
 | ~~Split utils.py~~ | Medium | High | **HIGH** | Architecture | ✅ DONE |
 | ~~Extract prompt building~~ | Low | High | **HIGH** | Architecture | ✅ Completed 2025-12-26 |
-| Refactor check_multiple_modules_drift | Low | High | **HIGH** | Code Quality | Pending |
+| ~~Refactor check_multiple_modules_drift~~ | Low | High | **HIGH** | Code Quality | ✅ Completed |
 | Fix dead mock_console fixture | Trivial | Low | **HIGH** | Testing | Pending |
 | Reduce workflow duplication | Low | Medium | **MEDIUM** | Code Quality | Pending |
 | Add test fixtures | Low | Medium | **MEDIUM** | Testing | Pending |
