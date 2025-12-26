@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from src.config.merger import merge_config
 from src.config.models import CustomPrompts, DokkenConfig, ExclusionConfig
-from src.utils import find_repo_root
+from src.file_utils import find_repo_root
 
 
 def load_config(*, module_path: str) -> DokkenConfig:

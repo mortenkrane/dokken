@@ -6,8 +6,8 @@ from typing import Any
 import pytest
 from pytest_mock import MockerFixture
 
+from src.cache import clear_drift_cache
 from src.records import DocumentationDriftCheck, ModuleDocumentation
-from src.utils import clear_drift_cache
 
 
 @pytest.fixture(autouse=True)

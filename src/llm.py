@@ -10,11 +10,11 @@ from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 from pydantic import BaseModel
 
+from src.cache import _generate_cache_key, content_based_cache
 from src.config import CustomPrompts
 from src.doc_types import DocType
 from src.prompts import DRIFT_CHECK_PROMPT
 from src.records import DocumentationDriftCheck
-from src.utils import _generate_cache_key, content_based_cache
 
 # Temperature setting for deterministic, reproducible documentation output
 TEMPERATURE = 0.0
