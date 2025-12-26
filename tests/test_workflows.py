@@ -19,10 +19,9 @@ from src.workflows import (
 
 
 def test_check_documentation_drift_invalid_directory(
-    mocker: MockerFixture, tmp_path: Path
+    mock_workflows_console, tmp_path: Path
 ) -> None:
     """Test check_documentation_drift exits when given invalid directory."""
-    mocker.patch("src.workflows.console")
     invalid_path = str(tmp_path / "nonexistent")
 
     with pytest.raises(SystemExit) as exc_info:
@@ -45,10 +44,9 @@ def test_check_documentation_drift_no_git_for_project_readme(
 
 
 def test_check_documentation_drift_no_code_context(
-    mocker: MockerFixture, temp_module_dir: Path
+    mock_workflows_console, mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test check_documentation_drift returns early when no code context."""
-    mocker.patch("src.workflows.console")
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="")
 
@@ -58,10 +56,9 @@ def test_check_documentation_drift_no_code_context(
 
 
 def test_check_documentation_drift_no_readme_raises_error(
-    mocker: MockerFixture, temp_module_dir: Path
+    mock_workflows_console, mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test check_documentation_drift raises error when README.md doesn't exist."""
-    mocker.patch("src.workflows.console")
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
 
@@ -72,6 +69,7 @@ def test_check_documentation_drift_no_readme_raises_error(
 
 
 def test_check_documentation_drift_no_drift_detected(
+    mock_workflows_console,
     mocker: MockerFixture,
     tmp_path: Path,
     sample_drift_check_no_drift: DocumentationDriftCheck,
@@ -83,7 +81,6 @@ def test_check_documentation_drift_no_drift_detected(
     readme = module_dir / "README.md"
     readme.write_text("# Test\n\nDocumentation")
 
-    mocker.patch("src.workflows.console")
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
     mocker.patch("src.workflows.check_drift", return_value=sample_drift_check_no_drift)
@@ -94,6 +91,7 @@ def test_check_documentation_drift_no_drift_detected(
 
 
 def test_check_documentation_drift_with_drift_raises_error(
+    mock_workflows_console,
     mocker: MockerFixture,
     tmp_path: Path,
     sample_drift_check_with_drift: DocumentationDriftCheck,
@@ -105,7 +103,6 @@ def test_check_documentation_drift_with_drift_raises_error(
     readme = module_dir / "README.md"
     readme.write_text("# Test\n\nDocumentation")
 
-    mocker.patch("src.workflows.console")
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code context")
     mocker.patch(
@@ -119,10 +116,9 @@ def test_check_documentation_drift_with_drift_raises_error(
 
 
 def test_generate_documentation_invalid_directory(
-    mocker: MockerFixture, tmp_path: Path
+    mock_workflows_console, tmp_path: Path
 ) -> None:
     """Test generate_documentation exits when given invalid directory."""
-    mocker.patch("src.workflows.console")
     invalid_path = str(tmp_path / "nonexistent")
 
     with pytest.raises(SystemExit) as exc_info:
@@ -133,10 +129,9 @@ def test_generate_documentation_invalid_directory(
 
 
 def test_generate_documentation_no_code_context(
-    mocker: MockerFixture, temp_module_dir: Path
+    mock_workflows_console, mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test generate_documentation returns early when no code context."""
-    mocker.patch("src.workflows.console")
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="")
 

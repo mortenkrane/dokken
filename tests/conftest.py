@@ -97,3 +97,57 @@ def mock_console(mocker: MockerFixture) -> Any:
     mocker.patch("src.code_analyzer.console")
     mocker.patch("src.human_in_the_loop.console")
     return mocker.patch("src.main.console")
+
+
+@pytest.fixture
+def mock_workflows_console(mocker: MockerFixture) -> Any:
+    """Mock workflows console to suppress output."""
+    return mocker.patch("src.workflows.console")
+
+
+@pytest.fixture
+def mock_main_console(mocker: MockerFixture) -> Any:
+    """Mock main console to suppress output."""
+    return mocker.patch("src.main.console")
+
+
+@pytest.fixture
+def mock_code_analyzer_console(mocker: MockerFixture) -> Any:
+    """Mock code_analyzer console to suppress output."""
+    return mocker.patch("src.code_analyzer.console")
+
+
+@pytest.fixture
+def mock_hitl_console(mocker: MockerFixture) -> Any:
+    """Mock human_in_the_loop console to suppress output."""
+    return mocker.patch("src.human_in_the_loop.console")
+
+
+@pytest.fixture
+def mock_all_consoles(mocker: MockerFixture) -> dict[str, Any]:
+    """Mock all console instances across modules."""
+    return {
+        "workflows": mocker.patch("src.workflows.console"),
+        "code_analyzer": mocker.patch("src.code_analyzer.console"),
+        "human_in_the_loop": mocker.patch("src.human_in_the_loop.console"),
+        "main": mocker.patch("src.main.console"),
+    }
+
+
+@pytest.fixture
+def git_repo(tmp_path: Path) -> Path:
+    """Create a temporary git repository."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".git").mkdir()
+    return repo
+
+
+@pytest.fixture
+def git_repo_with_module(git_repo: Path) -> tuple[Path, Path]:
+    """Create a git repo with a Python module."""
+    module = git_repo / "src"
+    module.mkdir()
+    (module / "__init__.py").write_text("")
+    (module / "main.py").write_text("def main():\n    pass\n")
+    return git_repo, module

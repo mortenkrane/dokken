@@ -8,21 +8,16 @@ from src.doc_types import DocType
 from src.file_utils import ensure_output_directory, find_repo_root, resolve_output_path
 
 
-def test_find_repo_root_with_git(tmp_path: Path) -> None:
+def test_find_repo_root_with_git(git_repo: Path) -> None:
     """Test find_repo_root finds .git directory."""
-    # Create repo structure with .git
-    repo_root = tmp_path / "repo"
-    repo_root.mkdir()
-    (repo_root / ".git").mkdir()
-
     # Create nested directory
-    nested = repo_root / "src" / "module"
+    nested = git_repo / "src" / "module"
     nested.mkdir(parents=True)
 
     # Should find repo root from nested directory
     result = find_repo_root(str(nested))
 
-    assert result == str(repo_root)
+    assert result == str(git_repo)
 
 
 def test_find_repo_root_no_git(tmp_path: Path) -> None:
@@ -36,15 +31,11 @@ def test_find_repo_root_no_git(tmp_path: Path) -> None:
     assert result is None
 
 
-def test_find_repo_root_from_root_directory(tmp_path: Path) -> None:
+def test_find_repo_root_from_root_directory(git_repo: Path) -> None:
     """Test find_repo_root when starting from repo root."""
-    repo_root = tmp_path / "repo"
-    repo_root.mkdir()
-    (repo_root / ".git").mkdir()
+    result = find_repo_root(str(git_repo))
 
-    result = find_repo_root(str(repo_root))
-
-    assert result == str(repo_root)
+    assert result == str(git_repo)
 
 
 def test_resolve_output_path_module_readme(tmp_path: Path) -> None:
@@ -59,15 +50,11 @@ def test_resolve_output_path_module_readme(tmp_path: Path) -> None:
     assert result == str(module_dir / "README.md")
 
 
-def test_resolve_output_path_project_readme(tmp_path: Path) -> None:
+def test_resolve_output_path_project_readme(
+    git_repo_with_module: tuple[Path, Path],
+) -> None:
     """Test resolve_output_path for PROJECT_README."""
-    # Create repo structure
-    repo_root = tmp_path / "repo"
-    repo_root.mkdir()
-    (repo_root / ".git").mkdir()
-
-    module_dir = repo_root / "src"
-    module_dir.mkdir()
+    repo_root, module_dir = git_repo_with_module
 
     result = resolve_output_path(
         doc_type=DocType.PROJECT_README, module_path=str(module_dir)
@@ -76,15 +63,11 @@ def test_resolve_output_path_project_readme(tmp_path: Path) -> None:
     assert result == str(repo_root / "README.md")
 
 
-def test_resolve_output_path_style_guide(tmp_path: Path) -> None:
+def test_resolve_output_path_style_guide(
+    git_repo_with_module: tuple[Path, Path],
+) -> None:
     """Test resolve_output_path for STYLE_GUIDE."""
-    # Create repo structure
-    repo_root = tmp_path / "repo"
-    repo_root.mkdir()
-    (repo_root / ".git").mkdir()
-
-    module_dir = repo_root / "src"
-    module_dir.mkdir()
+    repo_root, module_dir = git_repo_with_module
 
     result = resolve_output_path(
         doc_type=DocType.STYLE_GUIDE, module_path=str(module_dir)
