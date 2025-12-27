@@ -5,14 +5,20 @@ AI-powered documentation generation and drift detection. Detects when documentat
 ## Quick Start
 
 ```bash
-# Check for drift
+# Check for drift in a module
 dokken check src/module_name
 
 # Check all modules configured in .dokken.toml
 dokken check --all
 
-# Generate/update documentation
+# Generate module documentation
 dokken generate src/module_name
+
+# Generate project README
+dokken generate . --doc-type project-readme
+
+# Generate style guide
+dokken generate . --doc-type style-guide
 ```
 
 ## Installation
@@ -20,7 +26,7 @@ dokken generate src/module_name
 **Prerequisites:** [mise](https://mise.jdx.dev) and API key (Anthropic/OpenAI/Google)
 
 ```bash
-git clone https://github.com/your-username/dokken.git
+git clone https://github.com/mortenkrane/dokken.git
 cd dokken
 mise install         # Python 3.13.7 + uv
 uv sync --all-groups # Dependencies + dev tools
@@ -40,18 +46,47 @@ Detect documentation drift. Exit code 1 if drift detected (CI/CD-friendly).
 **Options:**
 
 - `--all` - Check all modules configured in `.dokken.toml`
-- `--fix` - Auto-generate documentation for modules with drift (use with `--all`)
+- `--fix` - Auto-generate documentation for modules with drift
+- `--doc-type <type>` - Type of documentation (module-readme, project-readme, style-guide)
+- `--depth <n>` - Directory depth to traverse (0=root only, 1=root+1 level, -1=infinite)
+
+**Examples:**
+
+```bash
+dokken check src/auth                    # Check single module
+dokken check --all                       # Check all configured modules
+dokken check --all --fix                 # Check and auto-fix drift
+dokken check . --doc-type project-readme # Check project README
+dokken check . --doc-type style-guide    # Check style guide
+```
 
 ### `dokken generate <module>`
 
-Generate or update documentation. Creates `README.md` in module directory.
+Generate or update documentation.
+
+**Options:**
+
+- `--doc-type <type>` - Type of documentation to generate:
+  - `module-readme` (default) - Module architectural docs in `<module>/README.md`
+  - `project-readme` - Project README in `README.md`
+  - `style-guide` - Code conventions guide in `docs/style-guide.md`
+- `--depth <n>` - Directory depth to traverse (defaults: module=0, project=1, style-guide=-1)
 
 **Process:**
 
-1. Analyze code and detect drift
+1. Analyze code (depth varies by doc type)
 1. Interactive questionnaire (captures human intent)
 1. Generate documentation with LLM
-1. Write to module's `README.md`
+1. Write to appropriate location
+
+**Examples:**
+
+```bash
+dokken generate src/auth                # Generate module docs
+dokken generate . --doc-type project-readme # Generate project README
+dokken generate . --doc-type style-guide    # Generate style guide
+dokken generate src/auth --depth 2         # Custom depth
+```
 
 ## Key Concepts
 
@@ -60,16 +95,22 @@ Generate or update documentation. Creates `README.md` in module directory.
 - New/removed functions or classes
 - Changed function signatures
 - Modified exports
-- See `DRIFT_CHECK_PROMPT` in `src/prompts.py:23` for criteria
+- Major architectural changes
+- See `DRIFT_CHECK_PROMPT` in `src/prompts.py:6` for full criteria
+
+**Documentation Types**: Dokken generates three types of documentation:
+
+- **module-readme**: Architectural docs for a specific module (depth=0 by default)
+- **project-readme**: Top-level project README (depth=1, analyzes entire repo)
+- **style-guide**: Code conventions and patterns guide (depth=-1, full recursion)
 
 **Module**: Python package or directory. Target for `dokken check/generate`.
 
-**Human Intent Questions**: Interactive questionnaire during generation:
+**Human Intent Questions**: Interactive questionnaire during generation (questions vary by doc type):
 
-- What problems does this module solve?
-- What are the module's core responsibilities?
-- What is NOT this module's responsibility?
-- How does the module fit into the larger system?
+- **Module**: Problems solved, core responsibilities, boundaries, system context
+- **Project**: Project type, target audience, key problem, setup notes
+- **Style Guide**: Unique conventions, organization, patterns to follow/avoid
 
 ## Interactive Questionnaire
 
@@ -212,9 +253,12 @@ style_guide = "Reference specific files as examples."
 
 ## Features
 
-- **Drift Detection**: Criteria-based detection (see `src/prompts.py`)
+- **Three Documentation Types**: Module READMEs, project READMEs, and style guides
+- **Configurable Depth**: Control code analysis depth (0=root only, -1=infinite recursion)
+- **Drift Detection**: Criteria-based detection (see `src/prompts.py:6`)
 - **Multi-Module Check**: Check all modules with `--all` flag
 - **Custom Prompts**: Inject preferences into generation (see Configuration)
+- **Exclusion Rules**: Filter files and symbols via `.dokken.toml`
 - **Multi-Provider LLM**: Claude (Haiku), OpenAI (GPT-4o-mini), Google (Gemini Flash)
 - **Cost-Optimized**: Fast, budget-friendly models
 - **Human-in-the-Loop**: Interactive questionnaire for context AI can't infer
@@ -243,7 +287,7 @@ uvx ty check                  # Type checking
 A: Run `uv sync --all-groups` to install dependencies
 
 **Q: Drift detection too sensitive**
-A: Adjust criteria in `DRIFT_CHECK_PROMPT` (`src/prompts.py:23`)
+A: Adjust criteria in `DRIFT_CHECK_PROMPT` (`src/prompts.py:6`)
 
 **Q: How to skip questionnaire?**
 A: Press `ESC` on first question
@@ -274,14 +318,19 @@ A: Configure modules in `.dokken.toml` and run `dokken check --all`
 
 ```
 src/
-  code_analyzer.py - Extract code structure (shallow, non-recursive)
-  config.py        - Load .dokken.toml configuration
-  drift_detector.py - Detect documentation drift
-  generator.py     - Generate documentation with LLM
-  git.py           - Git operations (base branch: "main")
-  llm.py           - LLM provider abstraction
-  prompts.py       - LLM prompt templates
-  questionnaire.py - Interactive human intent capture
+  code_analyzer.py     - Extract code structure with configurable depth
+  config/              - Configuration loading (.dokken.toml)
+    loader.py          - TOML config loading and merging
+    models.py          - Pydantic config models
+  doc_configs.py       - Doc type configuration registry
+  doc_types.py         - Documentation type definitions
+  workflows.py         - High-level orchestration logic
+  llm.py               - LLM provider abstraction
+  prompts.py           - LLM prompt templates
+  formatters.py        - Output formatting (markdown)
+  human_in_the_loop.py - Interactive questionnaire
+  records.py           - Pydantic data models
+  main.py              - CLI interface (Click)
 ```
 
 ## License
