@@ -3,6 +3,8 @@
 import ast
 import fnmatch
 import os
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
 
 from rich.console import Console
@@ -49,27 +51,52 @@ def get_module_context(*, module_path: str, depth: int = 0) -> str:
 
         context = f"--- MODULE PATH: {module_path} ---\n\n"
 
-        for file_path in sorted(filtered_files):
-            try:
-                # Get the current file content
-                with open(file_path) as f:
-                    code_content = f.read()
-
-                # Filter out excluded symbols
-                filtered_content = _filter_excluded_symbols(
-                    code_content, config.exclusions.symbols
+        # Read files in parallel for better I/O performance on large codebases
+        with ThreadPoolExecutor() as executor:
+            file_results = list(
+                executor.map(
+                    partial(
+                        _read_and_filter_file,
+                        exclusion_symbols=config.exclusions.symbols,
+                    ),
+                    sorted(filtered_files),
                 )
+            )
 
-                # Add file context
+        # Combine results in sorted order
+        for file_path, filtered_content in file_results:
+            if filtered_content is not None:
                 context += f"--- FILE: {file_path} ---\n{filtered_content}\n\n"
-            except OSError as e:
-                console.print(f"[yellow]⚠[/yellow] Could not read {file_path}: {e}")
-                continue
 
         return context
     except OSError as e:
         console.print(f"[red]Error accessing module path {module_path}:[/red] {e}")
         return ""
+
+
+def _read_and_filter_file(
+    file_path: str, exclusion_symbols: list[str]
+) -> tuple[str, str] | tuple[str, None]:
+    """
+    Read and filter a single file for parallel execution.
+
+    Args:
+        file_path: Path to the Python file to read.
+        exclusion_symbols: List of symbol name patterns to exclude.
+
+    Returns:
+        Tuple of (file_path, filtered_content) on success, or
+        (file_path, None) on error.
+    """
+    try:
+        with open(file_path) as f:
+            code_content = f.read()
+
+        filtered_content = _filter_excluded_symbols(code_content, exclusion_symbols)
+        return file_path, filtered_content
+    except OSError as e:
+        console.print(f"[yellow]⚠[/yellow] Could not read {file_path}: {e}")
+        return file_path, None
 
 
 def _find_python_files(*, module_path: str, depth: int) -> list[str]:
