@@ -96,7 +96,7 @@ dokken generate src/auth --depth 2         # Custom depth
 - Changed function signatures
 - Modified exports
 - Major architectural changes
-- See `DRIFT_CHECK_PROMPT` in `src/prompts.py:6` for full criteria
+- See `DRIFT_CHECK_PROMPT` in `src/prompts.py` for full criteria
 
 **Documentation Types**: Dokken generates three types of documentation:
 
@@ -255,7 +255,7 @@ style_guide = "Reference specific files as examples."
 
 - **Three Documentation Types**: Module READMEs, project READMEs, and style guides
 - **Configurable Depth**: Control code analysis depth (0=root only, -1=infinite recursion)
-- **Drift Detection**: Criteria-based detection (see `src/prompts.py:6`)
+- **Drift Detection**: Criteria-based detection (see `src/prompts.py`)
 - **Multi-Module Check**: Check all modules with `--all` flag
 - **Custom Prompts**: Inject preferences into generation (see Configuration)
 - **Exclusion Rules**: Filter files and symbols via `.dokken.toml`
@@ -287,7 +287,7 @@ uvx ty check                  # Type checking
 A: Run `uv sync --all-groups` to install dependencies
 
 **Q: Drift detection too sensitive**
-A: Adjust criteria in `DRIFT_CHECK_PROMPT` (`src/prompts.py:6`)
+A: Adjust criteria in `DRIFT_CHECK_PROMPT` in `src/prompts.py`
 
 **Q: How to skip questionnaire?**
 A: Press `ESC` on first question
@@ -313,25 +313,6 @@ global_prompt = "Use British spelling throughout."
 
 **Q: How to check multiple modules at once?**
 A: Configure modules in `.dokken.toml` and run `dokken check --all`
-
-## File Structure
-
-```
-src/
-  code_analyzer.py     - Extract code structure with configurable depth
-  config/              - Configuration loading (.dokken.toml)
-    loader.py          - TOML config loading and merging
-    models.py          - Pydantic config models
-  doc_configs.py       - Doc type configuration registry
-  doc_types.py         - Documentation type definitions
-  workflows.py         - High-level orchestration logic
-  llm.py               - LLM provider abstraction
-  prompts.py           - LLM prompt templates
-  formatters.py        - Output formatting (markdown)
-  human_in_the_loop.py - Interactive questionnaire
-  records.py           - Pydantic data models
-  main.py              - CLI interface (Click)
-```
 
 ## License
 
