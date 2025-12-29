@@ -8,6 +8,7 @@ from rich.panel import Panel
 
 from src.cache import load_drift_cache_from_disk, save_drift_cache_to_disk
 from src.config import load_config
+from src.constants import DEFAULT_CACHE_FILE
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.file_utils import find_repo_root
@@ -56,9 +57,56 @@ def _get_cache_file_path(module_path: str) -> str:
         return config.cache.file
     except (ValueError, OSError, RuntimeError):
         # If config loading fails, use default
-        from src.constants import DEFAULT_CACHE_FILE
-
         return DEFAULT_CACHE_FILE
+
+
+def _validate_check_args(module_path: str | None, check_all: bool) -> None:
+    """
+    Validate arguments for the check command.
+
+    Args:
+        module_path: Optional module path.
+        check_all: Whether to check all modules.
+
+    Raises:
+        SystemExit: If arguments are invalid.
+    """
+    if check_all and module_path:
+        console.print(
+            "[bold red]Error:[/bold red] Cannot use --all with a module path. "
+            "Use either --all or specify a module path."
+        )
+        sys.exit(1)
+
+    if not check_all and not module_path:
+        console.print(
+            "[bold red]Error:[/bold red] Must specify either a module "
+            "path or --all flag."
+        )
+        sys.exit(1)
+
+
+def _get_cache_module_path(module_path: str | None, check_all: bool) -> str:
+    """
+    Determine the module path to use for cache file lookup.
+
+    Args:
+        module_path: The provided module path, or None.
+        check_all: Whether checking all modules.
+
+    Returns:
+        The module path to use for cache configuration lookup.
+    """
+    if module_path:
+        return module_path
+
+    # For --all without module_path, try to use repo root
+    if check_all:
+        repo_root = find_repo_root(".")
+        if repo_root:
+            return repo_root
+
+    return "."
 
 
 # --- CLI Interface ---
@@ -103,7 +151,7 @@ def cli():
     default=DocType.MODULE_README.value,
     help=DOC_TYPE_HELP,
 )
-def check(  # noqa: C901
+def check(
     module_path: str | None,
     check_all: bool,
     fix: bool,
@@ -127,34 +175,17 @@ def check(  # noqa: C901
         dokken check src/payment_service --doc-type project-readme
         dokken check src/payment_service --depth 2
     """
+    # Validate arguments
+    _validate_check_args(module_path, check_all)
+
+    # Determine module path for cache loading
+    cache_module_path = _get_cache_module_path(module_path, check_all)
+
+    # Load persistent cache
+    cache_file = _get_cache_file_path(cache_module_path)
+    load_drift_cache_from_disk(cache_file)
+
     try:
-        # Validate arguments
-        if check_all and module_path:
-            console.print(
-                "[bold red]Error:[/bold red] Cannot use --all with a module path. "
-                "Use either --all or specify a module path."
-            )
-            sys.exit(1)
-
-        if not check_all and not module_path:
-            console.print(
-                "[bold red]Error:[/bold red] Must specify either a module "
-                "path or --all flag."
-            )
-            sys.exit(1)
-
-        # Determine module path for cache loading
-        cache_module_path = module_path if module_path else "."
-        if check_all and not module_path:
-            # For --all, try to use repo root
-            repo_root = find_repo_root(".")
-            if repo_root:
-                cache_module_path = repo_root
-
-        # Load persistent cache
-        cache_file = _get_cache_file_path(cache_module_path)
-        load_drift_cache_from_disk(cache_file)
-
         # Convert string to DocType enum
         doc_type_enum = DocType(doc_type)
 
@@ -169,8 +200,7 @@ def check(  # noqa: C901
             check_multiple_modules_drift(fix=fix, depth=depth, doc_type=doc_type_enum)
             console.print("\n[bold green]✓ All modules are up-to-date![/bold green]")
         else:
-            # Check single module - module_path guaranteed non-None
-            # by earlier validation
+            # Check single module - module_path guaranteed non-None by validation
             assert module_path is not None  # Type narrowing
             console.print(
                 Panel.fit(
@@ -185,17 +215,15 @@ def check(  # noqa: C901
                 doc_type=doc_type_enum,
             )
             console.print("\n[bold green]✓ Documentation is up-to-date![/bold green]")
-
-        # Save persistent cache
-        save_drift_cache_to_disk(cache_file)
     except DocumentationDriftError as drift_error:
-        # Save cache even on drift error (we still cached successful checks)
-        save_drift_cache_to_disk(cache_file)
         console.print(f"\n[bold red]✗ {drift_error}[/bold red]")
         sys.exit(1)
     except ValueError as config_error:
         console.print(f"[bold red]Configuration Error:[/bold red] {config_error}")
         sys.exit(1)
+    finally:
+        # Always save cache, even on errors (preserves partial results)
+        save_drift_cache_to_disk(cache_file)
 
 
 @cli.command()
@@ -225,11 +253,11 @@ def generate(module_path: str, depth: int | None, doc_type: str):
         dokken generate . --doc-type style-guide
         dokken generate src/payment_service --depth -1
     """
-    try:
-        # Load persistent cache
-        cache_file = _get_cache_file_path(module_path)
-        load_drift_cache_from_disk(cache_file)
+    # Load persistent cache
+    cache_file = _get_cache_file_path(module_path)
+    load_drift_cache_from_disk(cache_file)
 
+    try:
         # Convert string to DocType enum
         doc_type_enum = DocType(doc_type)
 
@@ -255,17 +283,15 @@ def generate(module_path: str, depth: int | None, doc_type: str):
         console.print(
             "\n[bold green]✓ Documentation generated successfully![/bold green]"
         )
-
-        # Save persistent cache
-        save_drift_cache_to_disk(cache_file)
     except DocumentationDriftError as drift_error:
-        # Save cache even on error (we may have cached some checks)
-        save_drift_cache_to_disk(cache_file)
         console.print(f"\n[bold red]✗ {drift_error}[/bold red]")
         sys.exit(1)
     except ValueError as config_error:
         console.print(f"[bold red]Configuration Error:[/bold red] {config_error}")
         sys.exit(1)
+    finally:
+        # Always save cache, even on errors (preserves partial results)
+        save_drift_cache_to_disk(cache_file)
 
 
 if __name__ == "__main__":

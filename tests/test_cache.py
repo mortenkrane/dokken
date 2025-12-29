@@ -167,8 +167,6 @@ def test_load_drift_cache_from_disk(
     mock_llm_client: Any,
 ) -> None:
     """Test load_drift_cache_from_disk restores cache from JSON file."""
-    from src.llm import check_drift
-
     clear_drift_cache()
 
     # Create a cache file
