@@ -12,8 +12,9 @@ Use this checklist to determine drift. Drift is detected if ANY of these are tru
    removed components, restructured packages) not reflected in documentation.
 2. **Purpose Mismatch**: The documentation's stated purpose contradicts what the
    code actually does.
-3. **Missing Key Features**: The code implements significant features/functionality
-   that are not mentioned in the documentation.
+3. **Missing Key Features**: The code implements significant NEW features/functionality
+   (not just helpers or utilities) that are not mentioned in the documentation.
+   Examples: new API endpoints, new user-facing commands, new integration points.
 4. **Outdated Design Decisions**: The documentation explains design decisions that
    are no longer present in the code.
 5. **Incorrect Dependencies**: The documentation lists external dependencies that
@@ -24,6 +25,14 @@ IMPORTANT: Do NOT flag drift for:
 - Code comments or docstring updates
 - Implementation details not typically in high-level docs
 - Additions that don't change the core purpose/architecture
+- Internal helper functions or utilities that support existing features
+
+EXAMPLES OF NON-DRIFT (do NOT flag these):
+- Code refactored from classes to functions, but purpose remains unchanged
+- New private/helper function added, but core documented functionality is the same
+- Variable renamed from `data` to `payload`, but logic is identical
+- Docstrings or inline comments updated, but architectural decisions unchanged
+- Minor bug fixes that don't change the documented behavior
 
 --- CODE CONTEXT ---
 {context}
@@ -34,8 +43,19 @@ IMPORTANT: Do NOT flag drift for:
 Analyze methodically:
 1. Read the documentation's claims about purpose and architecture
 2. Check if the code context contradicts or significantly extends those claims
-3. Apply the checklist above
-4. Set drift_detected=true ONLY if at least one checklist item applies
+3. Apply the checklist above strictly
+4. If at least one checklist item clearly applies, set drift_detected=true
+5. If NONE of the checklist items apply, you MUST set drift_detected=false
+
+CONSERVATIVE BIAS: When uncertain or borderline, prefer drift_detected=false to
+avoid false positives. Only flag drift when you are confident a checklist item
+clearly applies.
+
+RATIONALE REQUIREMENTS:
+- If drift_detected=true: Cite the specific checklist item number(s) that apply
+  (e.g., "Item 3: Missing Key Features - ...") and provide concrete evidence
+- If drift_detected=false: Briefly confirm the documentation accurately reflects
+  the code
 
 Respond ONLY with the JSON object schema provided."""
 
