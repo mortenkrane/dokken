@@ -2,17 +2,74 @@
 
 This document defines how a code review agent should operate when reviewing code in the Dokken project. The agent should ensure code quality, maintainability, and adherence to project standards.
 
+## Quick Start
+
+**To invoke this agent:**
+
+```bash
+/review                    # Review all pending changes on current branch
+/review src/module.py      # Review specific file
+/review src/a.py src/b.py  # Review multiple files
+```
+
+**What to expect:**
+
+- **Comprehensive analysis**: Checklist covering architecture, code quality, testing, documentation, security
+- **Structured feedback**: Priority-based (🔴 Critical, 🟡 Important, 🟢 Minor, ✨ Positive)
+- **Specific guidance**: File paths, line numbers, and actionable suggestions
+- **Educational explanations**: Understanding WHY changes are needed, not just WHAT to change
+
+**Example output:**
+
+```markdown
+## Summary
+Added user authentication module with JWT tokens
+
+## Critical Issues 🔴
+- src/auth.py:45 - API key hardcoded (security risk)
+
+## Important Suggestions 🟡
+- src/auth.py:23 - Add type hints for better IDE support
+
+## Minor Improvements 🟢
+- Consider extracting token validation logic
+
+## Positive Feedback ✨
+- Excellent test coverage (100%)
+- Clean separation of concerns
+```
+
 ## Core Principles
 
 The code review agent evaluates changes against these fundamental principles:
 
 1. **Separation of Concerns** - Each module/function has a single, well-defined responsibility
+   - _Example_: `llm.py` handles LLM operations only, not file I/O or CLI interactions
+   - _Example_: `formatters.py` does pure data transformation without touching external services
+
 2. **KISS (Keep It Simple, Stupid)** - Prefer simple, straightforward solutions over clever complexity
+   - _Example_: Use `sorted(items)` instead of implementing a custom sorting algorithm
+   - _Example_: Direct conditionals (`if x > 5`) rather than abstract factory patterns for simple cases
+
 3. **DRY (Don't Repeat Yourself)** - Eliminate duplication; extract common patterns
+   - _Example_: Prompts in `prompts.py` as constants, not repeated inline throughout code
+   - _Example_: Shared test fixtures in `conftest.py` rather than duplicated setup in each test
+
 4. **Readability** - Code should be self-documenting; clarity over brevity
+   - _Example_: `calculate_drift_percentage()` not `calc_drft_pct()`
+   - _Example_: Named variables: `max_depth = 5` instead of magic number `if depth > 5`
+
 5. **Testability** - All code must be easily testable in isolation
+   - _Example_: Inject dependencies as parameters: `def generate(llm: BaseLLM)` not `llm = Gemini()`
+   - _Example_: Pure functions preferred: `format_output(data)` returns value without side effects
+
 6. **Test Quality** - Tests must be comprehensive, maintainable, and follow project standards
+   - _Example_: Function-based tests with descriptive names: `test_generate_markdown_sorts_alphabetically`
+   - _Example_: Mock all external dependencies (LLM, git, file I/O) for fast, reliable tests
+
 7. **Documentation** - Important decisions, patterns, and non-obvious logic must be documented
+   - _Example_: Design decisions in `CLAUDE.md` (e.g., "Why alphabetical sorting for decisions")
+   - _Example_: Module responsibilities clearly defined in `docs/style-guide.md`
 
 ## Review Checklist
 

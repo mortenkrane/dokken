@@ -74,9 +74,20 @@ Comprehensive code review agent that evaluates changes against Dokken project st
 Manually invoke a code review:
 
 ```bash
-/review                              # Review all pending changes on current branch
-/review src/llm.py                   # Review specific file
-/review src/workflows.py src/llm.py  # Review multiple files
+/review
+# → Reviews all pending changes on current branch
+# → Provides comprehensive analysis against checklist
+# → Returns structured feedback with 🔴🟡🟢✨ priorities
+
+/review src/llm.py
+# → Focuses analysis on the single file
+# → Checks code quality, testing, documentation
+# → References line numbers for specific issues
+
+/review src/workflows.py src/llm.py
+# → Reviews multiple files
+# → Cross-checks for consistency and patterns
+# → Identifies duplication between files
 ```
 
 ### Subagent: Code Review Agent
