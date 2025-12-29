@@ -45,8 +45,8 @@ if not python_files:
 **Recommendation:** Document error handling strategy in style guide:
 
 1. **Fatal errors (CLI entrypoints)**: Use `sys.exit(1)` in main.py and top-level workflows
-2. **Library functions**: Raise specific exceptions (ValueError, FileNotFoundError, etc.)
-3. **Warnings/skippable issues**: Print warning and return safe default
+1. **Library functions**: Raise specific exceptions (ValueError, FileNotFoundError, etc.)
+1. **Warnings/skippable issues**: Print warning and return safe default
 
 **Benefits:**
 
@@ -573,8 +573,8 @@ _cache_lock = threading.Lock()
 **Recommendation:** Either:
 
 1. **Remove thread safety** if CLI is always single-threaded (simpler code)
-2. **Keep thread safety** if planning async/parallel processing (document why)
-3. **Use `functools.lru_cache`** if simpler caching suffices
+1. **Keep thread safety** if planning async/parallel processing (document why)
+1. **Use `functools.lru_cache`** if simpler caching suffices
 
 **Option 1: Simplify (if single-threaded)**
 
@@ -659,10 +659,10 @@ ______________________________________________________________________
 These improvements are suggestions based on comprehensive code reviews. Before implementing:
 
 1. **Discuss with maintainers** - Ensure alignment with project goals
-2. **Create issues** - Track each improvement separately
-3. **Start small** - Begin with high-priority, low-effort items
-4. **Test thoroughly** - All changes should maintain 99%+ test coverage
-5. **Follow style guide** - Adhere to conventions in `docs/style-guide.md`
+1. **Create issues** - Track each improvement separately
+1. **Start small** - Begin with high-priority, low-effort items
+1. **Test thoroughly** - All changes should maintain 99%+ test coverage
+1. **Follow style guide** - Adhere to conventions in `docs/style-guide.md`
 
 ______________________________________________________________________
 
