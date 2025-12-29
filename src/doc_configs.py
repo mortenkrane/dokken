@@ -6,6 +6,7 @@ keeping generation config separate from path resolution logic.
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -20,9 +21,13 @@ from src.records import (
     StyleGuideIntent,
 )
 
+# Type variables for generic DocConfig class
+IntentT = TypeVar("IntentT", bound=BaseModel)
+ModelT = TypeVar("ModelT", bound=BaseModel)
+
 
 @dataclass
-class DocConfig[IntentT: BaseModel, ModelT: BaseModel]:
+class DocConfig(Generic[IntentT, ModelT]):
     """Configuration for documentation generation (NOT path resolution).
 
     This class uses generics to provide type safety across different doc types.
@@ -54,7 +59,7 @@ AnyDocConfig = (
 
 # Registry mapping doc types to their configurations
 DOC_CONFIGS: dict[DocType, AnyDocConfig] = {
-    DocType.MODULE_README: DocConfig[ModuleIntent, ModuleDocumentation](
+    DocType.MODULE_README: DocConfig(
         model=ModuleDocumentation,
         prompt=prompts.MODULE_GENERATION_PROMPT,
         formatter=formatters.format_module_documentation,
@@ -80,7 +85,7 @@ DOC_CONFIGS: dict[DocType, AnyDocConfig] = {
         default_depth=0,
         analyze_entire_repo=False,
     ),
-    DocType.PROJECT_README: DocConfig[ProjectIntent, ProjectDocumentation](
+    DocType.PROJECT_README: DocConfig(
         model=ProjectDocumentation,
         prompt=prompts.PROJECT_README_GENERATION_PROMPT,
         formatter=formatters.format_project_documentation,
@@ -106,7 +111,7 @@ DOC_CONFIGS: dict[DocType, AnyDocConfig] = {
         default_depth=1,
         analyze_entire_repo=True,
     ),
-    DocType.STYLE_GUIDE: DocConfig[StyleGuideIntent, StyleGuideDocumentation](
+    DocType.STYLE_GUIDE: DocConfig(
         model=StyleGuideDocumentation,
         prompt=prompts.STYLE_GUIDE_GENERATION_PROMPT,
         formatter=formatters.format_style_guide,

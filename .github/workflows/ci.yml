@@ -9,22 +9,24 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
-      - name: Read versions from .mise.toml
+      - name: Read uv version from .mise.toml
         id: versions
         run: |
-          PYTHON_VERSION=$(grep 'python = ' .mise.toml | cut -d'"' -f2)
           UV_VERSION=$(grep 'uv = ' .mise.toml | cut -d'"' -f2)
-          echo "python=$PYTHON_VERSION" >> $GITHUB_OUTPUT
           echo "uv=$UV_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
         with:
-          python-version: ${{ steps.versions.outputs.python }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7

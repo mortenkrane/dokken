@@ -7,7 +7,7 @@ name = "dokken"
 version = "0.1.0"
 description = "AI-powered documentation generation and drift detection tool"
 readme = "README.md"
-requires-python = ">=3.13.7"
+requires-python = ">=3.10"
 dependencies = [
     "click>=8.3.1",
     "llama-index>=0.14.10",
@@ -30,7 +30,7 @@ include = ["src*"]
 [tool.ruff]
 exclude = [".venv"]
 line-length = 88
-target-version = "py313"
+target-version = "py310"
 
 [tool.ruff.lint]
 # See https://beta.ruff.rs/docs/rules/ for more info on the rules
@@ -108,7 +108,8 @@ fail_under = 99
 
 [tool.ty.environment]
 # Configure ty to use the uv-managed virtual environment
-extra-paths = [".venv/lib/python3.13/site-packages"]
+# Path is version-agnostic to support Python 3.10+
+extra-paths = [".venv"]
 
 [dependency-groups]
 dev = [
