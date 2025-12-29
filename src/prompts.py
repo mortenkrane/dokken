@@ -294,7 +294,8 @@ APPROACH:
 
 CHANGE TYPES:
 - **update**: Modify existing section content (e.g., outdated function signature,
-  incorrect description)
+  incorrect description). IMPORTANT: Provide the COMPLETE section content with your
+  changes integrated, preserving all parts that are still accurate.
 - **add**: Add new section or content (e.g., document a new feature that was added)
 - **remove**: Remove obsolete content (e.g., deleted functions, deprecated features)
 
@@ -310,7 +311,9 @@ documentation. Common sections include:
 
 For each change:
 - Reference the specific drift issue you're addressing
-- Provide only the updated content for that section (not the full document)
+- For **update** changes: Provide the COMPLETE section content with changes merged in,
+  preserving all accurate existing content and integrating your updates
+- For **add** changes: Provide the complete content for the new section
 - Keep the section's original structure and formatting style
 - Maintain consistency with adjacent sections
 
@@ -327,9 +330,18 @@ For each change:
 
 IMPORTANT INSTRUCTIONS:
 1. Analyze the drift issues and determine which sections need updates
-2. For each affected section, provide the minimal change required
-3. Preserve all sections that are still accurate
+2. For each affected section with change_type="update":
+   - CRITICAL: You MUST include ALL existing content from that section
+   - Merge your changes INTO the existing content, don't replace it
+   - Think of it as editing the section, not rewriting it
+   - Only the specific outdated/incorrect parts should change
+3. For sections marked as preserved_sections: Do NOT include them in changes list
 4. Maintain the original documentation's style and tone
 5. If custom prompts are provided above, apply them to your changes
+
+COMMON MISTAKE TO AVOID:
+❌ WRONG: Returning only the new/changed bullet points for an "update"
+✓ CORRECT: Returning the FULL section with new bullet points added and old ones
+preserved
 
 Respond with the structured JSON output schema provided."""
