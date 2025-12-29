@@ -22,3 +22,6 @@ ENV/
 .env
 .env.local
 .coverage
+
+# Dokken cache
+.dokken-cache.json

@@ -20,3 +20,4 @@ ERROR_NO_API_KEY = (
 
 # Cache configuration
 DRIFT_CACHE_SIZE = 100
+DEFAULT_CACHE_FILE = ".dokken-cache.json"

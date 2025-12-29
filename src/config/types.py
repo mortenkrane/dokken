@@ -19,9 +19,17 @@ class CustomPromptsDict(TypedDict, total=False):
     style_guide: str | None
 
 
+class CacheDict(TypedDict, total=False):
+    """Structure of the cache section in .dokken.toml."""
+
+    file: str
+    max_size: int
+
+
 class ConfigDataDict(TypedDict, total=False):
     """Structure of .dokken.toml file."""
 
     exclusions: ExclusionsDict
     custom_prompts: CustomPromptsDict
+    cache: CacheDict
     modules: list[str]

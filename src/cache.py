@@ -1,14 +1,17 @@
 """Caching utilities for expensive operations like LLM API calls."""
 
 import hashlib
+import json
 import threading
 from collections.abc import Callable
 from functools import wraps
+from pathlib import Path
 from typing import Any, TypeVar
 
 from llama_index.core.llms import LLM
 
-from src.constants import DRIFT_CACHE_SIZE
+from src.constants import DEFAULT_CACHE_FILE, DRIFT_CACHE_SIZE
+from src.records import DocumentationDriftCheck
 
 # Type variable for generic function return type
 T = TypeVar("T")
@@ -130,3 +133,62 @@ def get_drift_cache_info() -> dict[str, int]:
     """
     with _cache_lock:
         return {"size": len(_drift_cache), "maxsize": DRIFT_CACHE_SIZE}
+
+
+def load_drift_cache_from_disk(path: str = DEFAULT_CACHE_FILE) -> None:
+    """
+    Load drift cache from JSON file if it exists.
+
+    Populates the in-memory cache from a previously saved cache file.
+    If the file doesn't exist or is corrupted, silently continues with
+    an empty cache.
+
+    Args:
+        path: Path to the cache file. Defaults to DEFAULT_CACHE_FILE.
+    """
+    cache_path = Path(path)
+    if not cache_path.exists():
+        return
+
+    try:
+        data = json.loads(cache_path.read_text())
+
+        # Validate version (for future compatibility)
+        if data.get("version") != 1:
+            return
+
+        with _cache_lock:
+            # Load each cache entry and reconstruct DocumentationDriftCheck objects
+            for key, value in data.get("entries", {}).items():
+                _drift_cache[key] = DocumentationDriftCheck(
+                    drift_detected=value["drift_detected"],
+                    rationale=value["rationale"],
+                )
+    except (json.JSONDecodeError, KeyError, ValueError, TypeError):
+        # Corrupted cache - silently ignore and start with empty cache
+        pass
+
+
+def save_drift_cache_to_disk(path: str = DEFAULT_CACHE_FILE) -> None:
+    """
+    Save current drift cache to JSON file.
+
+    Persists the in-memory cache to disk so it can be restored in future runs.
+    Creates the cache file if it doesn't exist.
+
+    Args:
+        path: Path to the cache file. Defaults to DEFAULT_CACHE_FILE.
+    """
+    with _cache_lock:
+        cache_data = {
+            "version": 1,  # For future compatibility
+            "entries": {
+                key: {
+                    "drift_detected": value.drift_detected,
+                    "rationale": value.rationale,
+                }
+                for key, value in _drift_cache.items()
+            },
+        }
+
+    Path(path).write_text(json.dumps(cache_data, indent=2))

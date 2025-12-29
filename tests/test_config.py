@@ -446,3 +446,20 @@ files = "not_a_list"
     # Should raise ValueError with helpful message
     with pytest.raises(ValueError, match="Invalid exclusions configuration"):
         load_config(module_path=str(module_dir))
+
+
+def test_load_config_invalid_cache_validation(tmp_path: Path) -> None:
+    """Test load_config raises ValueError for invalid cache configuration."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    # Create config with invalid cache (max_size must be > 0)
+    config_content = """
+[cache]
+max_size = 0
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    # Should raise ValueError with helpful message
+    with pytest.raises(ValueError, match="Invalid cache configuration"):
+        load_config(module_path=str(module_dir))
