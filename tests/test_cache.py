@@ -355,7 +355,7 @@ def test_save_drift_cache_handles_permission_error(
     mock_llm_client: Any,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
-    """Test save_drift_cache_to_disk handles permission errors gracefully."""
+    """Test save_drift_cache_to_disk handles OSError gracefully."""
     from src.llm import check_drift
 
     clear_drift_cache()
@@ -368,20 +368,16 @@ def test_save_drift_cache_handles_permission_error(
     # Add entry to cache
     check_drift(llm=mock_llm_client, context="test", current_doc="doc")
 
-    # Create read-only directory
-    readonly_dir = tmp_path / "readonly"
-    readonly_dir.mkdir()
-    readonly_dir.chmod(0o555)  # Read and execute only
-
-    cache_file = readonly_dir / "cache.json"
+    # Mock Path.write_text to raise OSError
+    mock_path = mocker.patch("src.cache.Path")
+    mock_path_instance = mocker.MagicMock()
+    mock_path.return_value = mock_path_instance
+    mock_path_instance.with_suffix.return_value.write_text.side_effect = OSError(
+        "Permission denied"
+    )
 
     # Should not raise exception, just silently fail
-    try:
-        save_drift_cache_to_disk(str(cache_file))
-        # If we got here, save either succeeded or failed gracefully
-    finally:
-        # Clean up - restore permissions
-        readonly_dir.chmod(0o755)
+    save_drift_cache_to_disk("/some/path/cache.json")  # Should not crash
 
 
 def test_save_drift_cache_atomic_write(

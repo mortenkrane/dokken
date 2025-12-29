@@ -405,3 +405,18 @@ def test_get_cache_file_path_with_config_error(mocker: MockerFixture) -> None:
     from src.constants import DEFAULT_CACHE_FILE
 
     assert result == DEFAULT_CACHE_FILE
+
+
+def test_get_cache_module_path_with_check_all_no_repo_root(
+    mocker: MockerFixture,
+) -> None:
+    """Test _get_cache_module_path returns '.' when --all is used outside git repo."""
+    from src.main import _get_cache_module_path
+
+    # Mock find_repo_root to return None (not in a git repo)
+    mocker.patch("src.main.find_repo_root", return_value=None)
+
+    # Should return "." as fallback
+    result = _get_cache_module_path(module_path=None, check_all=True)
+
+    assert result == "."
