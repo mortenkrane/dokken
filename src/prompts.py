@@ -47,7 +47,8 @@ work with this codebase.
 FORMATTING GUIDELINES:
 - Use scannable bullet lists instead of dense paragraphs where appropriate
 - Front-load keywords in each section (put important terms first)
-- Include specific file references (e.g., "see `module_name.py:45`")
+- Include file references, but without specific line numbers (e.g., "see
+`module_name.py`", not "see `module_name.py:45`"))
 - Make content easy to grep/search (use consistent terminology)
 - Use **bold** for key terms and concepts
 
@@ -56,7 +57,7 @@ Analyze the code context and generate comprehensive documentation that covers:
 1. **Main Entry Points**: The primary functions, classes, or CLI commands developers
    use to interact with this component. Format as a bulleted or structured list.
    For each entry point:
-   - Function/class name with file reference
+   - Function/class name
    - What it does (one line)
    - When to use it
    - Key parameters or usage notes
@@ -89,8 +90,23 @@ Analyze the code context and generate comprehensive documentation that covers:
    Example structure: Entry → Decision → Branch A/B → Processing → Converge → Exit
    Skip this if the flow is purely linear with no meaningful branches
 
-6. **External Dependencies**: Third-party libraries, APIs, or systems used. Format as:
-   - **Dependency name**: What it's used for (with file references if specific)
+6. **Key External Dependencies**: Core third-party libraries that are essential to this
+   module's functionality. Focus ONLY on dependencies that:
+   - Define what the module does (e.g., LLM SDKs for AI features, web frameworks for
+   APIs)
+   - Are central to the module's core purpose
+   - Would require significant refactoring to replace
+
+   EXCLUDE:
+   - Standard library imports (os, sys, pathlib, etc.)
+   - Internal imports from the same project
+   - Generic utility libraries (typing, dataclasses, etc.)
+   - Common infrastructure (logging, testing frameworks)
+
+   Format as:
+   - **Dependency name**: What it's used for and why it's key
+
+   If there are no key external dependencies, omit this section entirely
 
 7. **Key Design Decisions**: The most important architectural choices and WHY they were
    made. Write this as flowing prose, not bullet points. Explain patterns, technologies,
@@ -101,7 +117,6 @@ Focus on information that helps developers:
 - Know where to start when making changes
 - Trace how data and control flow through the code
 - Understand why certain design choices were made
-- Find specific code locations via file references
 
 Do NOT include:
 - Function signature details (those belong in docstrings)
@@ -192,7 +207,7 @@ used in this codebase, not generic best practices.
 FORMATTING GUIDELINES:
 - Use clear subsections with descriptive headers
 - Provide concrete code examples (not just descriptions)
-- Include file references for patterns (e.g., "see `module.py`")
+- Include file references for patterns (e.g., "see `module.py`"), but omit line numbers
 - Use bullet lists for conventions and patterns
 - Make content scannable and reference-friendly
 
@@ -212,7 +227,7 @@ Analyze the code context and extract the following:
    - **Test Structure**: How tests are written (function-based vs class-based)
    - **Mocking & Fixtures**: Common patterns with examples
    - **Running Tests**: Commands to execute tests
-   Include file references to example tests.
+   Include file references to example tests, without line numbers.
 
 4. **Architecture & Patterns**: Design patterns and architectural approaches.
    Organize by pattern type:
