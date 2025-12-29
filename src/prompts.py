@@ -8,17 +8,23 @@ analyze if the current documentation accurately reflects the code context.
 
 Use this checklist to determine drift. Drift is detected if ANY of these are true:
 
-1. **Structural Changes**: The code shows major architectural changes (new modules,
-   removed components, restructured packages) not reflected in documentation.
-2. **Purpose Mismatch**: The documentation's stated purpose contradicts what the
-   code actually does.
-3. **Missing Key Features**: The code implements significant NEW features/functionality
-   (not just helpers or utilities) that are not mentioned in the documentation.
-   Examples: new API endpoints, new user-facing commands, new integration points.
+1. **Structural Changes**: The code shows major architectural changes not reflected
+   in documentation. Examples: new top-level modules added, entire components
+   removed, core abstractions changed (e.g., ORM to raw SQL), module responsibilities
+   reorganized.
+2. **Purpose Mismatch**: The documentation's stated primary purpose clearly contradicts
+   what the code actually does. Examples: docs say "handles authentication" but code
+   only does logging; docs describe REST API but code implements CLI tool.
+3. **Missing Key Features**: The code implements significant NEW user-facing
+   features that change what the module does or how users interact with it, and
+   these are NOT documented. This applies to features that alter the module's
+   capabilities or external interface, NOT internal helpers. Examples: new API
+   endpoints, new user-facing commands, new integration points, new data
+   sources/outputs.
 4. **Outdated Design Decisions**: The documentation explains design decisions that
    are no longer present in the code.
-5. **Incorrect Dependencies**: The documentation lists external dependencies that
-   don't match what's in the code.
+5. **Incorrect Dependencies**: The documentation lists external dependencies (different
+   libraries, not just different versions) that don't match what's in the code.
 
 IMPORTANT: Do NOT flag drift for:
 - Minor code changes (refactoring, variable renames, formatting)
@@ -26,13 +32,19 @@ IMPORTANT: Do NOT flag drift for:
 - Implementation details not typically in high-level docs
 - Additions that don't change the core purpose/architecture
 - Internal helper functions or utilities that support existing features
+- Type hint additions or updates that don't change function behavior
+- Dependency version updates (same library, different version)
+- Error handling improvements that don't fundamentally change the API contract
 
 EXAMPLES OF NON-DRIFT (do NOT flag these):
 - Code refactored from classes to functions, but purpose remains unchanged
 - New private/helper function added, but core documented functionality is the same
 - Variable renamed from `data` to `payload`, but logic is identical
+- Function renamed from `authenticate_user` to `verify_user`, but logic unchanged
 - Docstrings or inline comments updated, but architectural decisions unchanged
+- Type hints added: `def foo(x)` → `def foo(x: int) -> str`
 - Minor bug fixes that don't change the documented behavior
+- Dependency upgraded: `requests==2.28.0` → `requests==2.31.0`
 
 --- CODE CONTEXT ---
 {context}
@@ -44,12 +56,16 @@ Analyze methodically:
 1. Read the documentation's claims about purpose and architecture
 2. Check if the code context contradicts or significantly extends those claims
 3. Apply the checklist above strictly
-4. If at least one checklist item clearly applies, set drift_detected=true
-5. If NONE of the checklist items apply, you MUST set drift_detected=false
+4. If at least one checklist item unambiguously matches, set drift_detected=true
+5. If ZERO checklist items match, you MUST set drift_detected=false
 
-CONSERVATIVE BIAS: When uncertain or borderline, prefer drift_detected=false to
-avoid false positives. Only flag drift when you are confident a checklist item
-clearly applies.
+CONSERVATIVE BIAS: When uncertain or borderline, prefer drift_detected=false.
+Only set drift_detected=true when you can:
+- Point to a specific checklist item that unambiguously applies
+- Provide concrete evidence from the code
+- Explain why this would materially impact a developer's understanding
+
+If you're uncertain whether a checklist item applies, it doesn't apply.
 
 RATIONALE REQUIREMENTS:
 - If drift_detected=true: Cite the specific checklist item number(s) that apply
