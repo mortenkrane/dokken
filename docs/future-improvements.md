@@ -2,760 +2,343 @@
 
 This document outlines potential improvements to the Dokken codebase identified during comprehensive code reviews.
 
-## Recently Completed
-
-- **Parallelize File Reading** (2025-12-27): Implemented parallel file reading in `src/code_analyzer.py` using `concurrent.futures.ThreadPoolExecutor`. Extracted file reading and filtering logic into `_read_and_filter_file()` helper function. Modified `get_module_context()` to read and filter files concurrently, improving performance for large codebases with many Python files. All 291 tests pass with 99.26% coverage.
-- **Replace NO_DOC_MARKER with Optional Pattern** (2025-12-26): Replaced string marker pattern with Pythonic Optional pattern. Updated `check_drift()` in `src/llm.py` to accept `str | None` for `current_doc` parameter. Removed `NO_DOC_MARKER` constant from `src/constants.py`. Updated `src/workflows.py` to use `None` instead of marker string. Updated cache utilities in `src/cache.py` to handle None values. Added comprehensive test coverage in `tests/test_llm.py`. Results in more type-safe, Pythonic code with clearer intent.
-- **Centralize Error Messages** (2025-12-26): Created `src/constants.py` to centralize all error messages and constants. Eliminated duplicate error strings across `src/workflows.py`, `src/file_utils.py`, and `src/llm.py`. All modules now import from centralized constants for consistent error messaging and easier maintenance.
-- **Move DocumentationContext to records.py** (2025-12-26): Moved `DocumentationContext` dataclass from `src/workflows.py` to `src/records.py`, consolidating all data models in one location for better organization and separation of concerns.
-- **Use TypedDict for Config Type Safety** (2025-12-26): Added TypedDict definitions (`ExclusionsDict`, `CustomPromptsDict`, `ConfigDataDict`) to `src/config/loader.py`, eliminating all `type: ignore` comments and providing full type safety with better IDE autocomplete for config loading.
-- **Add Tests for Pydantic Model Validation** (2025-12-26): Created comprehensive `tests/test_records.py` with 40+ test cases covering all Pydantic models, including validation tests for required fields, type validation, optional field behavior, and edge cases.
-- **Reduce Workflow Duplication** (2025-12-26): Extracted common initialization logic into `_initialize_documentation_workflow` helper function, eliminating duplication between `check_documentation_drift` and `generate_documentation` workflows.
-- **Extract Prompt Building from `llm.py`** (2025-12-26): Separated prompt assembly logic into `src/prompt_builder.py` module for better separation of concerns. Tests split into `tests/test_prompt_builder.py`.
-
 ## Table of Contents
 
-- [Critical Issues](#critical-issues)
 - [Code Quality](#code-quality)
-- [Testing](#testing)
 - [Architecture](#architecture)
+- [Testing](#testing)
 - [Type Safety](#type-safety)
 - [Performance](#performance)
 - [Priority Matrix](#priority-matrix)
 
 ______________________________________________________________________
 
-## Critical Issues
-
-### 1. ✅ Split `utils.py` into Focused Modules (SRP Violation) - COMPLETED
-
-**Status:** ✅ **IMPLEMENTED** (2025-12-26)
-
-**Implementation Details:**
-
-- Split `src/utils.py` into two focused modules:
-  - `src/file_utils.py` - File system operations (find_repo_root, resolve_output_path, ensure_output_directory)
-  - `src/cache.py` - Caching utilities (content_based_cache, cache management functions)
-- Updated all imports across codebase (src/llm.py, src/workflows.py, src/config/loader.py)
-- Split test file accordingly:
-  - `tests/test_file_utils.py` - Tests for file utilities
-  - `tests/test_cache.py` - Tests for caching utilities
-- All tests pass with 99.20% code coverage
-- Full compliance with Single Responsibility Principle
-
-**Original State:** `src/utils.py` had 210 lines mixing multiple unrelated responsibilities:
-
-- File system operations (lines 26-44: `find_repo_root`)
-- Path resolution (lines 47-81: `resolve_output_path`)
-- Directory creation (lines 84-99: `ensure_output_directory`)
-- Hashing (lines 102-134: `_hash_content`, `_generate_cache_key`)
-- Generic caching decorator (lines 136-187: `content_based_cache`)
-- Cache management (lines 190-209: `clear_drift_cache`, `get_drift_cache_info`)
-
-**Recommendation:** Split into focused modules:
-
-```python
-# src/file_utils.py
-def find_repo_root(start_path: str) -> str | None: ...
-def resolve_output_path(...) -> str: ...
-def ensure_output_directory(output_path: str) -> None: ...
-
-# src/cache.py
-def content_based_cache(...) -> ...: ...
-def _generate_cache_key(...) -> str: ...
-def _hash_content(content: str) -> str: ...
-def clear_drift_cache() -> None: ...
-def get_drift_cache_info() -> dict[str, int]: ...
-```
-
-**Benefits:**
-
-- Single Responsibility Principle compliance
-- Easier to test individual concerns
-- Clearer import dependencies
-- Better code discoverability
-
-**Effort:** Medium (requires updating imports across codebase)
-
-**Impact:** High (improves architecture and maintainability)
-
-______________________________________________________________________
-
-### 2. Extract Prompt Building from `llm.py` ✅ COMPLETED (2025-12-26)
-
-**Status:** Implemented in commit on branch `claude/implement-priority-issue-2-yPsh5`
-
-**What Was Done:**
-
-- Created new `src/prompt_builder.py` module with all prompt assembly functions
-- Extracted `build_human_intent_section`, `get_doc_type_prompt`, `build_custom_prompt_section`, and `build_drift_context_section` functions
-- Added new high-level `build_generation_prompt` function to orchestrate prompt assembly
-- Refactored `llm.py` to use the new prompt_builder module
-- Split tests into dedicated `tests/test_prompt_builder.py` file
-- All 252 tests passing with 99% coverage
-
-**Original State:** `src/llm.py` mixed LLM operations with prompt assembly logic:
-
-- Lines 103-125: `_build_human_intent_section` - prompt assembly
-- Lines 127-136: `_get_doc_type_prompt` - prompt mapping
-- Lines 139-180: `_build_custom_prompt_section` - prompt assembly
-- Lines 183-211: `_build_drift_context_section` - prompt assembly
-- Lines 214-271: `generate_doc` - actual LLM operation
-
-**Recommendation:** Extract to `src/prompt_builder.py` or merge into `src/prompts.py`:
-
-```python
-# src/prompt_builder.py
-def build_generation_prompt(
-    *,
-    base_prompt: str,
-    context: str,
-    config: GenerationConfig,
-) -> str:
-    """Assembles complete prompt from components."""
-    sections = [base_prompt, context]
-
-    if config.human_intent:
-        sections.append(_build_human_intent_section(config.human_intent))
-
-    if config.custom_prompts:
-        sections.append(_build_custom_prompt_section(config.custom_prompts, config.doc_type))
-
-    if config.drift_rationale:
-        sections.append(_build_drift_context_section(config.drift_rationale))
-
-    return "\n\n".join(sections)
-```
-
-**Benefits:**
-
-- `llm.py` focuses only on LLM initialization and execution
-- Prompt assembly logic is testable in isolation
-- Clearer separation of concerns
-
-**Effort:** Low
-
-**Impact:** High (improves module cohesion)
-
-______________________________________________________________________
-
-### 3. ✅ Fix Dead `mock_console` Fixture in `conftest.py` - COMPLETED
-
-**Status:** ✅ **IMPLEMENTED** (2025-12-26)
-
-**Implementation Details:**
-
-- Updated `tests/conftest.py:92-99` to patch actual console locations
-- Now patches all four console instances:
-  - `src.workflows.console`
-  - `src.code_analyzer.console`
-  - `src.human_in_the_loop.console`
-  - `src.main.console`
-- Fixture now works correctly for any test that needs to suppress all console output
-- All 252 tests pass with 99% coverage
-
-**Original State:** `tests/conftest.py:93-95` patched non-existent module:
-
-```python
-@pytest.fixture
-def mock_console(mocker: MockerFixture) -> Any:
-    """Mock Rich console to suppress output during tests."""
-    return mocker.patch("src.git.console")  # ❌ src/git.py doesn't exist!
-```
-
-**Recommendation:** Remove fixture or update to patch actual console locations:
-
-```python
-@pytest.fixture
-def mock_console(mocker: MockerFixture) -> Any:
-    """Mock Rich console to suppress output during tests."""
-    # Patch all console locations
-    mocker.patch("src.workflows.console")
-    mocker.patch("src.code_analyzer.console")
-    return mocker.patch("src.main.console")
-```
-
-**Benefits:**
-
-- Removes dead code
-- Fixture actually works as intended
-
-**Effort:** Trivial
-
-**Impact:** Low (cleanup)
-
-______________________________________________________________________
-
 ## Code Quality
 
-### 1. ✅ Reduce Code Duplication in Workflows - COMPLETED
+### 1. Standardize Error Handling Patterns
 
-**Status:** ✅ **IMPLEMENTED** (2025-12-26)
+**Current State:** Inconsistent error handling across modules:
 
-**Implementation Details:**
+- `workflows.py` and `main.py`: Use `sys.exit(1)` for fatal errors
+- `file_utils.py`: Raises `ValueError` and `PermissionError`
+- `code_analyzer.py`: Prints warnings and continues with empty results
+- `llm.py`: Raises `ValueError` for missing API keys
 
-- Created new `_initialize_documentation_workflow` helper function in `src/workflows.py`
-- Extracted common initialization logic (LLM setup, context preparation, code analysis)
-- Refactored `check_documentation_drift` and `generate_documentation` to use the helper
-- All 252 tests passing with 99.21% coverage
-- Full compliance with DRY principle
-
-**Original State:** `check_documentation_drift` and `generate_documentation` shared significant setup code:
+**Example Inconsistency:**
 
 ```python
-# Both functions repeated this pattern:
-llm_client = initialize_llm()
-ctx = prepare_documentation_context(...)
-code_context = get_module_context(...)
+# workflows.py:51-53 - uses sys.exit
+if not os.path.isdir(target_module_path):
+    console.print(f"[red]Error:[/red] {error_msg}")
+    sys.exit(1)
+
+# file_utils.py:54-57 - raises ValueError
+if not repo_root:
+    raise ValueError(f"Cannot generate {doc_type.value}: {ERROR_NOT_IN_GIT_REPO}...")
+
+# code_analyzer.py:38-39 - prints and returns empty
+if not python_files:
+    console.print(f"[yellow]⚠[/yellow] No Python files found in {module_path}")
+    return ""
 ```
 
-**Solution Implemented:**
+**Recommendation:** Document error handling strategy in style guide:
+
+1. **Fatal errors (CLI entrypoints)**: Use `sys.exit(1)` in main.py and top-level workflows
+1. **Library functions**: Raise specific exceptions (ValueError, FileNotFoundError, etc.)
+1. **Warnings/skippable issues**: Print warning and return safe default
+
+**Benefits:**
+
+- Clear, predictable error patterns
+- Easier to test (exceptions are easier to catch than sys.exit)
+- Better reusability (library functions shouldn't call sys.exit)
+
+**Effort:** Low (mostly documentation + minor refactoring)
+
+**Impact:** Medium (maintainability and consistency)
+
+______________________________________________________________________
+
+### 2. Extract Repetitive GenerationConfig Creation
+
+**Current State:** `GenerationConfig` objects created with similar patterns in multiple places:
 
 ```python
-def _initialize_documentation_workflow(
+# workflows.py:241-246 (in fix_documentation_drift)
+gen_config = GenerationConfig(
+    custom_prompts=config.custom_prompts,
+    doc_type=doc_type,
+    human_intent=human_intent,
+    drift_rationale=drift_rationale,
+)
+
+# workflows.py:512-518 (in generate_documentation)
+gen_config = GenerationConfig(
+    custom_prompts=config.custom_prompts,
+    doc_type=doc_type,
+    human_intent=human_intent,
+    drift_rationale=(drift_check.rationale if drift_check.drift_detected else None),
+)
+```
+
+**Recommendation:** Extract to helper function:
+
+```python
+def _build_generation_config(
     *,
-    target_module_path: str,
+    config: DokkenConfig,
     doc_type: DocType,
-    depth: int | None
-) -> tuple[LLM, DocumentationContext, str]:
-    """Common setup for documentation workflows."""
-    llm_client = initialize_llm()
-    ctx = prepare_documentation_context(
-        target_module_path=target_module_path,
+    human_intent: BaseModel | None,
+    drift_rationale: str | None = None,
+) -> GenerationConfig:
+    """Build GenerationConfig from common parameters."""
+    return GenerationConfig(
+        custom_prompts=config.custom_prompts,
         doc_type=doc_type,
-        depth=depth,
+        human_intent=human_intent,
+        drift_rationale=drift_rationale,
     )
-    code_context = get_module_context(
-        module_path=ctx.analysis_path,
-        depth=ctx.analysis_depth
-    )
-    return llm_client, ctx, code_context
 ```
 
 **Benefits:**
 
 - DRY principle compliance
-- Single place to update workflow initialization
-- Consistent behavior across workflows
-- Reduced code duplication by ~20 lines
+- Single place to update config building logic
+- Easier to add new configuration parameters
 
 **Effort:** Low
 
-**Impact:** Medium (maintainability)
+**Impact:** Low (minor code quality improvement)
 
 ______________________________________________________________________
 
-### 2. Refactor `check_multiple_modules_drift` Complexity
+### 3. Centralize More Constants
 
-**Status:** ✅ **COMPLETED** (2025-12-26)
+**Current State:** Some constants scattered across modules:
 
-**Previous State:** `src/workflows.py:246-348` - 103 lines with complexity warning suppressed (`noqa: C901`)
+- `TEMPERATURE = 0.0` in `src/llm.py:22`
+- `depth` defaults in `src/doc_configs.py:80,106,130`
+- Section headers hardcoded in `src/formatters.py` (e.g., "## Main Entry Points")
 
-Function mixed multiple concerns:
-
-- Module iteration and validation
-- Individual drift checking
-- Error aggregation
-- Summary reporting
-
-**Recommendation:** Extract helper functions:
+**Recommendation:** Consider moving to `src/constants.py`:
 
 ```python
-def _check_single_module_drift(
-    module_path: str,
-    repo_root: str,
-    fix: bool,
-    depth: int | None,
-    doc_type: DocType,
-) -> tuple[str, str | None]:
-    """
-    Check drift for a single module.
+# LLM configuration
+LLM_TEMPERATURE = 0.0
 
-    Returns:
-        (module_path, error_rationale_or_None)
-    """
-    full_path = str(Path(repo_root) / module_path)
+# Analysis depth defaults
+DEFAULT_DEPTH_MODULE = 0
+DEFAULT_DEPTH_PROJECT = 1
+DEFAULT_DEPTH_STYLE_GUIDE = -1
 
-    if not os.path.isdir(full_path):
-        return module_path, None  # Will be marked as skipped
+# Formatter section headers
+SECTION_MAIN_ENTRY_POINTS = "## Main Entry Points"
+SECTION_PURPOSE_SCOPE = "## Purpose & Scope"
+# ... etc
+```
 
+**Benefits:**
+
+- Single source of truth for all constants
+- Easier to change formatting conventions
+- Clearer what values are configurable vs hardcoded
+
+**Drawbacks:**
+
+- May be over-engineering for values that rarely change
+- Section headers in formatters might be better as template strings
+
+**Effort:** Low
+
+**Impact:** Low (code organization)
+
+**Recommendation:** Only move constants that are genuinely reused or likely to change. Section headers in formatters might be better left inline.
+
+______________________________________________________________________
+
+### 4. Extract Config Validation Helper
+
+**Current State:** Repeated try/except pattern in `src/config/loader.py`:
+
+```python
+# Lines 49-52
+try:
+    exclusion_config = ExclusionConfig(**config_data.get("exclusions", {}))
+except ValidationError as e:
+    raise ValueError(f"Invalid exclusions configuration: {e}") from e
+
+# Lines 54-57 - nearly identical
+try:
+    custom_prompts = CustomPrompts(**config_data.get("custom_prompts", {}))
+except ValidationError as e:
+    raise ValueError(f"Invalid custom prompts configuration: {e}") from e
+```
+
+**Recommendation:** Extract to generic helper:
+
+```python
+def _validate_config_section[T: BaseModel](
+    config_data: ConfigDataDict,
+    section_name: str,
+    model_class: type[T],
+) -> T:
+    """Validate and construct a config section with clear error messages."""
     try:
-        check_documentation_drift(
-            target_module_path=full_path,
-            fix=fix,
-            depth=depth,
-            doc_type=doc_type,
-        )
-        return module_path, None  # No drift
-    except DocumentationDriftError as e:
-        return module_path, e.rationale
-
-
-def _print_drift_summary(
-    modules_without_drift: list[str],
-    modules_with_drift: list[tuple[str, str]],
-    modules_skipped: list[str],
-    total_modules: int,
-) -> None:
-    """Print formatted drift check summary."""
-    console.print("[bold cyan]Summary:[/bold cyan]")
-    console.print(f"  Total modules configured: {total_modules}")
-    console.print(f"  [green]✓ Up-to-date:[/green] {len(modules_without_drift)}")
-    console.print(f"  [red]✗ With drift:[/red] {len(modules_with_drift)}")
-    if modules_skipped:
-        console.print(f"  [yellow]⚠ Skipped:[/yellow] {len(modules_skipped)}")
-
-    if modules_with_drift:
-        console.print("\n[bold red]Modules with drift:[/bold red]")
-        for module_path, _ in modules_with_drift:
-            console.print(f"  • {module_path}")
-
-
-def check_multiple_modules_drift(...) -> None:
-    # Setup code...
-
-    results = [
-        _check_single_module_drift(module, repo_root, fix, depth, doc_type)
-        for module in config.modules
-    ]
-
-    # Categorize results...
-
-    _print_drift_summary(
-        modules_without_drift,
-        modules_with_drift,
-        modules_skipped,
-        len(config.modules),
-    )
-
-    # Raise error if needed...
-```
-
-**Benefits:**
-
-- Each function has single responsibility
-- Easier to test individual pieces
-- Removes complexity warning
-- More maintainable
-
-**Implementation:**
-
-Extracted two helper functions and simplified the main function:
-
-1. `_check_single_module_drift()` - Handles checking a single module and returns a tuple of (module_path, rationale_or_None)
-1. `_print_drift_summary()` - Handles all summary printing logic
-1. Simplified `check_multiple_modules_drift()` - Now orchestrates the workflow by calling helpers
-
-**Results:**
-
-- Removed `noqa: C901` complexity warning
-- Each function has a single responsibility
-- Easier to test individual pieces
-- More maintainable and readable code
-- All tests pass with 100% coverage
-
-**Effort:** Low
-
-**Impact:** High (code readability)
-
-______________________________________________________________________
-
-### 3. ✅ Centralize Error Messages - COMPLETED
-
-**Status:** ✅ **IMPLEMENTED** (2025-12-26)
-
-**Implementation Details:**
-
-- Created `src/constants.py` with centralized error messages and constants
-- Defined error message constants:
-  - `ERROR_NOT_IN_GIT_REPO` - Git repository error
-  - `ERROR_NOT_IN_GIT_REPO_MULTI_MODULE` - Multi-module git error
-  - `ERROR_INVALID_DIRECTORY` - Invalid directory error with formatting
-  - `ERROR_NO_MODULES_CONFIGURED` - No modules configured error
-  - `ERROR_CANNOT_CREATE_DIR` - Directory creation error with formatting
-  - `ERROR_NO_API_KEY` - API key missing error with instructions
-- Moved `NO_DOC_MARKER` constant from `src/workflows.py` to centralized location
-- Moved `DRIFT_CACHE_SIZE` constant from `src/cache.py` to centralized location
-- Updated `src/workflows.py` to import and use centralized constants (4 error messages replaced)
-- Updated `src/file_utils.py` to import and use centralized constants (2 error messages replaced)
-- Updated `src/llm.py` to import and use centralized `ERROR_NO_API_KEY`
-- Updated `src/cache.py` to import `DRIFT_CACHE_SIZE` from constants
-- All 290 tests passing with 99.25% coverage
-- Full compliance with DRY principle
-
-**Original State:** Error messages duplicated across modules:
-
-- `"not in a git repository"` appears in:
-  - `src/workflows.py:75-76`
-  - `src/workflows.py:271-272`
-  - `src/file_utils.py:71-73`
-- `"is not a valid directory"` in multiple places
-- API key error message in `src/llm.py`
-- Cache size constant duplicated
-
-**Solution Implemented:**
-
-```python
-# src/constants.py
-"""Shared constants and error messages for Dokken."""
-
-# Special markers
-NO_DOC_MARKER = "No existing documentation provided."
-
-# Error messages
-ERROR_NOT_IN_GIT_REPO = "not in a git repository"
-ERROR_NOT_IN_GIT_REPO_MULTI_MODULE = (
-    "Not in a git repository. Multi-module checking requires a git repository."
-)
-ERROR_INVALID_DIRECTORY = "{path} is not a valid directory"
-ERROR_NO_MODULES_CONFIGURED = (
-    "No modules configured in .dokken.toml. "
-    "Add a [modules] section with module paths to check."
-)
-ERROR_CANNOT_CREATE_DIR = "Cannot create {parent_dir}: {error}"
-ERROR_NO_API_KEY = (
-    "No API key found. Please set one of the following environment variables:\n"
-    "  - ANTHROPIC_API_KEY (for Claude)\n"
-    "  - OPENAI_API_KEY (for OpenAI)\n"
-    "  - GOOGLE_API_KEY (for Google Gemini)"
-)
-
-# Cache configuration
-DRIFT_CACHE_SIZE = 100
+        return model_class(**config_data.get(section_name, {}))
+    except ValidationError as e:
+        raise ValueError(
+            f"Invalid {section_name} configuration: {e}"
+        ) from e
 ```
 
 **Benefits:**
 
 - DRY principle compliance
-- Single source of truth for error messages
-- Easier to update messaging across entire codebase
-- Consistent error messages throughout application
-- Centralized configuration for cache size
-- Reduced code duplication
+- Consistent error messages
+- Easier to add new config sections
 
 **Effort:** Low
 
-**Impact:** Low (code quality and maintainability improvement)
-
-______________________________________________________________________
-
-### 4. ✅ Replace `NO_DOC_MARKER` String Constant - COMPLETED
-
-**Status:** ✅ **IMPLEMENTED** (2025-12-26)
-
-**Implementation Details:**
-
-- Updated `check_drift()` in `src/llm.py` to accept `str | None` for `current_doc` parameter
-- Removed `NO_DOC_MARKER` constant from `src/constants.py` and all imports
-- Updated `src/workflows.py` to use `None` instead of marker string when no documentation exists
-- Updated cache utilities (`_hash_content()` and `_generate_cache_key()`) in `src/cache.py` to handle None values
-- Added type annotation `current_doc: str | None` in workflows for clarity
-- Added comprehensive test `test_check_drift_handles_none_documentation()` in `tests/test_llm.py`
-- All 291 tests passing with maintained coverage
-
-**Original State:** Used string marker pattern with `NO_DOC_MARKER = "No existing documentation provided."`
-
-**Solution Implemented:**
-
-```python
-# src/workflows.py
-current_doc_content: str | None
-if os.path.exists(ctx.output_path):
-    with open(ctx.output_path) as f:
-        current_doc_content = f.read()
-else:
-    current_doc_content = None
-
-# src/llm.py
-def check_drift(*, llm: LLM, context: str, current_doc: str | None) -> DocumentationDriftCheck:
-    # Convert None to a message for the prompt
-    doc_for_prompt = current_doc or "No existing documentation provided."
-    ...
-```
-
-**Benefits:**
-
-- More Pythonic and type-safe
-- Clearer intent (None explicitly means "no documentation")
-- Eliminated magic string constant
-- Better IDE support and type checking
-- Consistent with Python best practices
-
-**Effort:** Low
-
-**Impact:** Low (code clarity and type safety improvement)
-
-______________________________________________________________________
-
-## Testing
-
-### 1. ✅ Add Test Fixtures for Common Patterns - COMPLETED
-
-**Status:** ✅ **IMPLEMENTED** (2025-12-26)
-
-**Implementation Details:**
-
-- Added individual console fixtures to `tests/conftest.py`:
-  - `mock_workflows_console` - Mock workflows console
-  - `mock_main_console` - Mock main console
-  - `mock_code_analyzer_console` - Mock code_analyzer console
-  - `mock_hitl_console` - Mock human_in_the_loop console
-  - `mock_all_consoles` - Mock all consoles and return dict of mocks
-- Added git repository fixtures:
-  - `git_repo` - Create temporary git repository with .git directory
-  - `git_repo_with_module` - Create git repo with Python module structure
-- All 252 tests pass with 99% coverage
-- Fixtures available for reuse across all test files
-
-**Original State:** Repeated test setup patterns:
-
-- Console mocking appears 30+ times across test files
-- Git repo creation duplicated 10+ times
-- Similar LLM client mocking patterns
-
-**Recommendation:** Add to `tests/conftest.py`:
-
-```python
-@pytest.fixture
-def mock_workflows_console(mocker: MockerFixture) -> Any:
-    """Mock workflows console to suppress output."""
-    return mocker.patch("src.workflows.console")
-
-
-@pytest.fixture
-def mock_all_consoles(mocker: MockerFixture) -> dict[str, Any]:
-    """Mock all console instances across modules."""
-    return {
-        "workflows": mocker.patch("src.workflows.console"),
-        "code_analyzer": mocker.patch("src.code_analyzer.console"),
-        "main": mocker.patch("src.main.console"),
-    }
-
-
-@pytest.fixture
-def git_repo(tmp_path: Path) -> Path:
-    """Create a temporary git repository."""
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    (repo / ".git").mkdir()
-    return repo
-
-
-@pytest.fixture
-def git_repo_with_module(git_repo: Path) -> tuple[Path, Path]:
-    """Create a git repo with a Python module."""
-    module = git_repo / "src"
-    module.mkdir()
-    (module / "__init__.py").write_text("")
-    (module / "main.py").write_text("def main():\n    pass\n")
-    return git_repo, module
-```
-
-**Benefits:**
-
-- DRY principle in tests
-- Faster test writing
-- Consistent test setup
-- Less boilerplate
-
-**Effort:** Low
-
-**Impact:** Medium (test maintainability)
-
-______________________________________________________________________
-
-### 2. ✅ Add Tests for Pydantic Model Validation - COMPLETED
-
-**Status:** ✅ **IMPLEMENTED** (2025-12-26)
-
-**Implementation Details:**
-
-- Created comprehensive `tests/test_records.py` with 40+ test cases
-- Tests cover all Pydantic models in `src/records.py`:
-  - `DocumentationDriftCheck` - Required field validation, type validation
-  - `ModuleDocumentation` - All required fields, optional fields, type validation
-  - `ProjectDocumentation` - Required fields and optional contributing field
-  - `StyleGuideDocumentation` - List validation, multiple languages support
-  - Intent models (`ModuleIntent`, `ProjectIntent`, `StyleGuideIntent`) - Optional field behavior
-- Comprehensive test coverage includes:
-  - Valid model creation with all combinations
-  - Missing required field validation
-  - Type validation for all fields
-  - Optional field behavior (None values and provided values)
-  - Edge cases (empty strings, Unicode, empty lists)
-  - Serialization (model_dump and model_dump_json)
-- All tests pass with maintained coverage
-
-**Original State:** `src/records.py` Pydantic models lacked dedicated validation tests
-
-**Recommendation:** Create `tests/test_records.py`:
-
-```python
-def test_documentation_drift_check_requires_fields() -> None:
-    """Test that DocumentationDriftCheck validates required fields."""
-    with pytest.raises(ValidationError, match="drift_detected"):
-        DocumentationDriftCheck(rationale="Test")  # Missing drift_detected
-
-
-def test_documentation_drift_check_validates_types() -> None:
-    """Test that DocumentationDriftCheck validates field types."""
-    with pytest.raises(ValidationError, match="bool"):
-        DocumentationDriftCheck(
-            drift_detected="yes",  # Should be bool
-            rationale="Test"
-        )
-
-
-@pytest.mark.parametrize("invalid_value", [None, "", "  "])
-def test_module_documentation_rejects_empty_strings(invalid_value: str | None) -> None:
-    """Test that ModuleDocumentation rejects empty/None values."""
-    with pytest.raises(ValidationError):
-        ModuleDocumentation(
-            component_name=invalid_value,  # Should reject
-            purpose_and_scope="Test",
-            # ... other fields
-        )
-```
-
-**Benefits:**
-
-- Documents expected validation behavior
-- Catches regression if validation rules change
-- Provides examples of valid/invalid inputs
-
-**Effort:** Low
-
-**Impact:** Medium (test coverage completeness)
-
-______________________________________________________________________
-
-### 3. Add Property-Based Tests
-
-**Current State:** Example-based tests only
-
-**Recommendation:** Use hypothesis for property-based testing:
-
-```python
-from hypothesis import given
-import hypothesis.strategies as st
-
-@given(st.text(), st.text())
-def test_drift_check_always_returns_valid_result(code: str, doc: str) -> None:
-    """Drift check should never crash, regardless of input."""
-    result = check_drift(llm, code, doc)
-    assert isinstance(result, DocumentationDriftCheck)
-    assert isinstance(result.drift_detected, bool)
-    assert isinstance(result.rationale, str)
-    assert len(result.rationale) > 0
-```
-
-**Benefits:**
-
-- Find edge cases automatically
-- Better test coverage
-- Discover unexpected bugs
-
-**Effort:** Medium
-
-**Impact:** Medium (catches edge cases)
-
-______________________________________________________________________
-
-### 4. Standardize Mocking Patterns
-
-**Current State:** Inconsistent mocking approaches across test files:
-
-- Some tests: `mocker.patch("src.workflows.generate_doc")`
-- Other tests: `mocker.patch.dict("src.workflows.DOC_CONFIGS", ...)`
-- Some tests mock at function level, others at module level
-
-**Recommendation:** Document preferred patterns in `tests/README.md`:
-
-````markdown
-# Testing Conventions
-
-## Mocking Guidelines
-
-1. **LLM Operations**: Always mock at the function level
-   ```python
-   mocker.patch("src.workflows.generate_doc", return_value=expected)
-````
-
-2. **Console Output**: Use fixtures from conftest.py
-
-   ```python
-   def test_something(mock_workflows_console): ...
-   ```
-
-1. **File I/O**: Use tmp_path fixture, avoid mocking when possible
-
-   ```python
-   def test_writes_file(tmp_path: Path): ...
-   ```
-
-1. **External APIs**: Mock at the API client level, not individual methods
-
-**Benefits:**
-
-- Consistency across test suite
-- Easier for new contributors
-- Less confusion about approach
-
-**Effort:** Low
-
-**Impact:** Low (developer experience)
+**Impact:** Low (code quality)
 
 ______________________________________________________________________
 
 ## Architecture
 
-### 1. ✅ Move `DocumentationContext` to `records.py` - COMPLETED
+### 1. Simplify Generic Types in `doc_configs.py`
 
-**Status:** ✅ **IMPLEMENTED** (2025-12-26)
-
-**Implementation Details:**
-
-- Moved `DocumentationContext` dataclass from `src/workflows.py:27-34` to `src/records.py`
-- Added `TYPE_CHECKING` import to avoid circular dependencies with `AnyDocConfig`
-- Updated `src/workflows.py` to import `DocumentationContext` from `src.records`
-- Removed unused `dataclass` import from `src/workflows.py`
-- All data models now consolidated in `src/records.py`
-
-**Original State:** `DocumentationContext` dataclass defined in `workflows.py:27-35`
-
-**Solution Implemented:**
+**Current State:** `src/doc_configs.py:25-35` uses complex generics:
 
 ```python
-# src/records.py
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from src.doc_configs import AnyDocConfig
-
 @dataclass
-class DocumentationContext:
-    """Context information for documentation generation or drift checking."""
+class DocConfig[IntentT: BaseModel, ModelT: BaseModel]:
+    """Configuration for documentation generation."""
+    model: type[ModelT]
+    intent_model: type[IntentT]
+    # ...
 
-    doc_config: "AnyDocConfig"
-    output_path: str
-    analysis_path: str
-    analysis_depth: int
+# But usage still requires union type anyway:
+AnyDocConfig = (
+    DocConfig[ModuleIntent, ModuleDocumentation]
+    | DocConfig[ProjectIntent, ProjectDocumentation]
+    | DocConfig[StyleGuideIntent, StyleGuideDocumentation]
+)
+```
+
+**Question:** Does the generic complexity provide value over direct union types?
+
+**Recommendation:** Consider simplifying if generics don't provide practical type safety benefits:
+
+```python
+@dataclass
+class DocConfig:
+    """Configuration for documentation generation."""
+    model: type[BaseModel]
+    prompt: str
+    formatter: Callable[..., str]
+    intent_model: type[BaseModel]
+    intent_questions: list[dict[str, str]]
+    default_depth: int
+    analyze_entire_repo: bool
 ```
 
 **Benefits:**
 
-- All data models in one place
-- `workflows.py` focuses on orchestration
-- Better organization
-- Proper handling of circular import with TYPE_CHECKING
+- Simpler code
+- Easier to understand
+- Less type complexity
+- Same runtime behavior
 
-**Effort:** Trivial
+**Drawbacks:**
 
-**Impact:** Low (minor organization improvement)
+- Loses some compile-time type checking
+- IDE autocomplete slightly less specific
+
+**Effort:** Low
+
+**Impact:** Low (code simplification)
+
+**Note:** Only simplify if the generics don't provide real type safety benefits in practice. The current approach is correct but potentially over-engineered.
 
 ______________________________________________________________________
 
-### 2. Consider Plugin Architecture for Formatters
+### 2. Reduce Overload Complexity in `human_in_the_loop.py`
+
+**Current State:** Four overload signatures for type hints (`src/human_in_the_loop.py:14-44`):
+
+```python
+@overload
+def ask_human_intent(
+    *, intent_model: type[ModuleIntent], questions: list[dict[str, str]] | None = None
+) -> ModuleIntent | None: ...
+
+@overload
+def ask_human_intent(
+    *, intent_model: type[ProjectIntent], questions: list[dict[str, str]] | None = None
+) -> ProjectIntent | None: ...
+
+@overload
+def ask_human_intent(
+    *, intent_model: type[StyleGuideIntent], questions: list[dict[str, str]] | None = None
+) -> StyleGuideIntent | None: ...
+
+@overload
+def ask_human_intent[IntentModelT: BaseModel](
+    *, intent_model: type[IntentModelT], questions: list[dict[str, str]] | None = None
+) -> IntentModelT | None: ...
+```
+
+**Question:** Are the specific overloads necessary, or would the generic version suffice?
+
+**Recommendation:** Consider whether the three specific overloads add value. The generic overload (`IntentModelT`) should handle all cases.
+
+**Benefits of Simplification:**
+
+- Less code to maintain
+- Simpler type signatures
+- Still provides correct type hints
+
+**Effort:** Low
+
+**Impact:** Low (code simplification)
+
+______________________________________________________________________
+
+### 3. Intent Questions Duplication
+
+**Current State:** Default questions duplicated in two places:
+
+- `src/doc_configs.py:62-79` - Defined in DOC_CONFIGS registry
+- `src/human_in_the_loop.py:71-87` - Duplicated as fallback defaults
+
+**Recommendation:** Remove duplication by importing from doc_configs:
+
+```python
+# src/human_in_the_loop.py
+from src.doc_configs import DOC_CONFIGS
+from src.doc_types import DocType
+
+def ask_human_intent(...):
+    if questions is None:
+        # Use module questions as default (most common case)
+        questions = DOC_CONFIGS[DocType.MODULE_README].intent_questions
+    ...
+```
+
+**Benefits:**
+
+- Single source of truth
+- Guaranteed consistency
+- DRY principle compliance
+
+**Effort:** Trivial
+
+**Impact:** Low (eliminates duplication)
+
+______________________________________________________________________
+
+### 4. Consider Plugin Architecture for Formatters
 
 **Current State:** Formatters hardcoded in `formatters.py` and `doc_configs.py`
 
@@ -794,83 +377,117 @@ class ModuleFormatter:
 
 ______________________________________________________________________
 
-## Type Safety
+## Testing
 
-### 1. ✅ Use TypedDict to Eliminate `type: ignore` Comments - COMPLETED
+### 1. Add Property-Based Tests
 
-**Status:** ✅ **IMPLEMENTED** (2025-12-26)
+**Current State:** Example-based tests only
 
-**Implementation Details:**
-
-- Added three TypedDict definitions to `src/config/loader.py`:
-  - `ExclusionsDict` - Structure for exclusions section
-  - `CustomPromptsDict` - Structure for custom_prompts section
-  - `ConfigDataDict` - Overall TOML file structure
-- Updated `load_config` function to use `config_data: ConfigDataDict` type annotation
-- Updated `_load_and_merge_config` to accept `ConfigDataDict` parameter
-- Replaced all direct dict access with `.get()` calls for type safety
-- Eliminated all three `type: ignore` comments (lines 48, 53, 60)
-- Full type safety achieved with better IDE autocomplete
-
-**Original State:** `src/config/loader.py:48,53,60` had type ignores due to untyped dict:
+**Recommendation:** Use hypothesis for property-based testing:
 
 ```python
-exclusion_config = ExclusionConfig(**config_data["exclusions"])  # type: ignore
-custom_prompts = CustomPrompts(**config_data["custom_prompts"])  # type: ignore
-modules=config_data["modules"],  # type: ignore[arg-type]
-```
+from hypothesis import given
+import hypothesis.strategies as st
 
-**Solution Implemented:**
+@given(st.text(), st.text())
+def test_drift_check_never_crashes(code: str, doc: str) -> None:
+    """Drift check should never crash, regardless of input."""
+    result = check_drift(llm, code, doc)
+    assert isinstance(result, DocumentationDriftCheck)
+    assert isinstance(result.drift_detected, bool)
+    assert isinstance(result.rationale, str)
+    assert len(result.rationale) > 0
 
-```python
-from typing import TypedDict
-
-class ExclusionsDict(TypedDict, total=False):
-    """Structure of the exclusions section in .dokken.toml."""
-    files: list[str]
-    symbols: list[str]
-
-class CustomPromptsDict(TypedDict, total=False):
-    """Structure of the custom_prompts section in .dokken.toml."""
-    global_prompt: str | None
-    module_readme: str | None
-    project_readme: str | None
-    style_guide: str | None
-
-class ConfigDataDict(TypedDict, total=False):
-    """Structure of .dokken.toml file."""
-    exclusions: ExclusionsDict
-    custom_prompts: CustomPromptsDict
-    modules: list[str]
-
-# In load_config:
-config_data: ConfigDataDict = {...}
-exclusion_config = ExclusionConfig(**config_data.get("exclusions", {}))
-custom_prompts = CustomPrompts(**config_data.get("custom_prompts", {}))
-modules = config_data.get("modules", [])
-# ... no type: ignore needed!
+@given(st.lists(st.text(min_size=1), min_size=1))
+def test_filter_excluded_symbols_preserves_structure(symbols: list[str]) -> None:
+    """Symbol filtering should never corrupt valid Python syntax."""
+    code = "\n".join(f"def {symbol}(): pass" for symbol in symbols)
+    filtered = _filter_excluded_symbols(code, symbols[:1])
+    # Should still be valid Python
+    ast.parse(filtered)
 ```
 
 **Benefits:**
 
-- Full type safety achieved
-- Zero type: ignore comments
-- Better IDE autocomplete
-- Validates config structure
-- Clearer type contracts
+- Find edge cases automatically
+- Better test coverage
+- Discover unexpected bugs
+- Tests document properties/invariants
 
-**Effort:** Low
+**Effort:** Medium
 
-**Impact:** Medium (type safety)
+**Impact:** Medium (catches edge cases)
 
 ______________________________________________________________________
 
-### 2. Improve Test Fixture Type Hints
+### 2. Document Testing Conventions
 
-**Current State:** Multiple fixtures return `Any`:
+**Current State:** No formal documentation of testing patterns, though tests are well-organized
 
-- `tests/conftest.py:84-89` - `mock_llm_client: Any`
-- `tests/conftest.py:93-95` - `mock_console` returns `Any`
+**Recommendation:** Create `tests/README.md` documenting conventions:
+
+````markdown
+# Testing Conventions
+
+## Mocking Guidelines
+
+1. **LLM Operations**: Always mock at the function level
+   ```python
+   mocker.patch("src.workflows.generate_doc", return_value=expected)
+   ```
+
+2. **Console Output**: Use fixtures from conftest.py
+   ```python
+   def test_something(mock_workflows_console): ...
+   ```
+
+3. **File I/O**: Use tmp_path fixture, avoid mocking when possible
+   ```python
+   def test_writes_file(tmp_path: Path): ...
+   ```
+
+4. **External APIs**: Mock at the API client level, not individual methods
+
+## Test Structure
+
+- All tests must be function-based (not class-based)
+- Use descriptive test names: `test_<function>_<scenario>_<expected_result>`
+- One assertion per test when possible
+- Use fixtures from conftest.py for common setup
+
+## Coverage Requirements
+
+- Minimum 99% coverage (enforced in CI)
+- All new code must include tests
+- Test both happy paths and error cases
+````
+
+**Benefits:**
+
+- Consistency across test suite
+- Easier for new contributors
+- Documents existing best practices
+
+**Effort:** Low
+
+**Impact:** Low (developer experience)
+
+______________________________________________________________________
+
+## Type Safety
+
+### 1. Improve Test Fixture Type Hints
+
+**Current State:** Some fixtures return `Any`:
+
+```python
+# tests/conftest.py:84-89
+@pytest.fixture
+def mock_llm_client(mocker: MockerFixture) -> Any:
+    """Mock LLM client."""
+    mock_client = mocker.MagicMock()
+    # ...
+```
 
 **Recommendation:** Define Protocol for mock types:
 
@@ -885,7 +502,7 @@ class MockLLM(Protocol):
 @pytest.fixture
 def mock_llm_client(mocker: MockerFixture) -> MockLLM:
     """Mock LLM client with proper typing."""
-    mock_client = mocker.MagicMock()
+    mock_client = mocker.MagicMock(spec=["model", "temperature"])
     mock_client.model = "gemini-2.5-flash"
     mock_client.temperature = 0.0
     return mock_client
@@ -896,6 +513,7 @@ def mock_llm_client(mocker: MockerFixture) -> MockLLM:
 - Better type checking in tests
 - IDE autocomplete for mock attributes
 - Documents expected interface
+- Catches attribute typos
 
 **Effort:** Low
 
@@ -903,7 +521,7 @@ def mock_llm_client(mocker: MockerFixture) -> MockLLM:
 
 ______________________________________________________________________
 
-### 3. Add Runtime Type Validation for Critical Functions
+### 2. Add Runtime Type Validation for Critical Functions
 
 **Current State:** Type hints not enforced at runtime
 
@@ -925,8 +543,13 @@ def resolve_output_path(
 **Benefits:**
 
 - Catch type errors early
-- Better error messages
-- Validates external inputs
+- Better error messages for users
+- Validates external inputs (CLI args, config files)
+
+**Drawbacks:**
+
+- Small performance overhead
+- May be overkill for internal functions
 
 **Effort:** Low
 
@@ -938,7 +561,12 @@ ______________________________________________________________________
 
 ### 1. Question: Is Thread Safety Necessary for Caching?
 
-**Current State:** `src/utils.py:136-187` - caching decorator uses `threading.Lock` for thread safety
+**Current State:** `src/cache.py:17-18` uses `threading.Lock` for thread safety
+
+```python
+_drift_cache: dict[str, Any] = {}
+_cache_lock = threading.Lock()
+```
 
 **Question:** Is thread safety needed for single-threaded CLI tool?
 
@@ -946,7 +574,7 @@ ______________________________________________________________________
 
 1. **Remove thread safety** if CLI is always single-threaded (simpler code)
 1. **Keep thread safety** if planning async/parallel processing (document why)
-1. **Use `functools.lru_cache`** if generic caching not needed
+1. **Use `functools.lru_cache`** if simpler caching suffices
 
 **Option 1: Simplify (if single-threaded)**
 
@@ -975,141 +603,17 @@ def content_based_cache(cache_key_fn):
     return decorator
 ```
 
-**Option 3: Use stdlib (if simpler caching suffices)**
-
-```python
-from functools import lru_cache
-
-# If cache key can be derived from args alone:
-@lru_cache(maxsize=100)
-def check_drift(llm_model: str, context_hash: str, doc_hash: str):
-    ...
-```
-
 **Benefits:**
 
 - Simpler code (if removing locks)
 - Better performance (no lock overhead)
-- Uses stdlib (if using lru_cache)
+- Clearer intent
 
 **Effort:** Low
 
 **Impact:** Low (code simplification)
 
-______________________________________________________________________
-
-### 2. ✅ Parallelize File Reading - COMPLETED
-
-**Status:** ✅ **IMPLEMENTED** (2025-12-27)
-
-**Implementation Details:**
-
-- Added `concurrent.futures.ThreadPoolExecutor` import to `src/code_analyzer.py`
-- Created `_read_and_filter_file()` helper function that reads and filters a single file
-- Modified `get_module_context()` to use `ThreadPoolExecutor` for parallel file reading
-- Files are read concurrently while maintaining sorted order in output
-- Error handling preserved - failed file reads are logged and skipped
-- All 291 tests pass with 99.26% coverage
-
-**Original State:** Files read sequentially in `get_module_context` (lines 52-67)
-
-**Solution Implemented:**
-
-```python
-from concurrent.futures import ThreadPoolExecutor
-
-def _read_and_filter_file(
-    file_path: str, exclusion_symbols: list[str]
-) -> tuple[str, str] | tuple[str, None]:
-    """Read and filter a single file (for parallel execution)."""
-    try:
-        with open(file_path) as f:
-            code_content = f.read()
-        filtered_content = _filter_excluded_symbols(code_content, exclusion_symbols)
-        return file_path, filtered_content
-    except OSError as e:
-        console.print(f"[yellow]⚠[/yellow] Could not read {file_path}: {e}")
-        return file_path, None
-
-
-# In get_module_context():
-with ThreadPoolExecutor() as executor:
-    file_results = list(
-        executor.map(
-            lambda f: _read_and_filter_file(f, config.exclusions.symbols),
-            sorted(filtered_files),
-        )
-    )
-
-for file_path, filtered_content in file_results:
-    if filtered_content is not None:
-        context += f"--- FILE: {file_path} ---\n{filtered_content}\n\n"
-```
-
-**Benefits:**
-
-- Faster for large projects with many Python files
-- Better resource utilization (I/O parallelization)
-- Maintained backward compatibility and error handling
-- No breaking changes to API
-
-**Effort:** Medium
-
-**Impact:** Medium (performance for large codebases)
-
-______________________________________________________________________
-
-### 3. Simplify Generic Types in `doc_configs.py`
-
-**Current State:** `src/doc_configs.py:25-35` uses complex generics:
-
-```python
-@dataclass
-class DocConfig[IntentT: BaseModel, ModelT: BaseModel]:
-    """Complex generic configuration."""
-    ...
-
-# But usage still requires union type:
-AnyDocConfig = (
-    DocConfig[ModuleIntent, ModuleDocumentation]
-    | DocConfig[ProjectIntent, ProjectDocumentation]
-    | DocConfig[StyleGuideIntent, StyleGuideDocumentation]
-)
-```
-
-**Question:** Does the generic complexity provide value over direct union types?
-
-**Recommendation:** Consider simplifying to direct dataclass:
-
-```python
-@dataclass
-class DocConfig:
-    """Configuration for documentation generation."""
-    model: type[BaseModel]
-    prompt: str
-    formatter: Callable[..., str]
-    intent_model: type[BaseModel]
-    intent_questions: list[dict[str, str]]
-    default_depth: int
-    analyze_entire_repo: bool
-
-
-# Type alias for possible configs
-AnyDocConfig = DocConfig  # Just one type now
-```
-
-**Benefits:**
-
-- Simpler code
-- Easier to understand
-- Less type complexity
-- Same runtime behavior
-
-**Effort:** Low
-
-**Impact:** Low (code simplification)
-
-**Note:** Only simplify if generics don't provide real type safety benefits in practice.
+**Note:** The parallel file reading in code_analyzer.py uses ThreadPoolExecutor, so threads do exist. However, the cache is only accessed from the main thread. Document the decision either way.
 
 ______________________________________________________________________
 
@@ -1117,22 +621,16 @@ ______________________________________________________________________
 
 | Improvement | Effort | Impact | Priority | Category | Status |
 |-------------|--------|--------|----------|----------|--------|
-| ~~Split utils.py~~ | Medium | High | **HIGH** | Architecture | ✅ DONE |
-| ~~Extract prompt building~~ | Low | High | **HIGH** | Architecture | ✅ DONE 2025-12-26 |
-| ~~Refactor check_multiple_modules_drift~~ | Low | High | **HIGH** | Code Quality | ✅ DONE 2025-12-26 |
-| ~~Fix dead mock_console fixture~~ | Trivial | Low | **HIGH** | Testing | ✅ DONE 2025-12-26 |
-| ~~Reduce workflow duplication~~ | Low | Medium | **MEDIUM** | Code Quality | ✅ DONE 2025-12-26 |
-| ~~Add test fixtures~~ | Low | Medium | **MEDIUM** | Testing | ✅ DONE 2025-12-26 |
-| ~~Add Pydantic model tests~~ | Low | Medium | **MEDIUM** | Testing | ✅ DONE 2025-12-26 |
-| ~~Use TypedDict for config~~ | Low | Medium | **MEDIUM** | Type Safety | ✅ DONE 2025-12-26 |
-| ~~Move DocumentationContext~~ | Trivial | Low | **LOW** | Architecture | ✅ DONE 2025-12-26 |
-| ~~Centralize error messages~~ | Low | Low | **LOW** | Code Quality | ✅ DONE 2025-12-26 |
-| ~~Replace NO_DOC_MARKER~~ | Low | Low | **LOW** | Code Quality | ✅ DONE 2025-12-26 |
-| ~~Parallelize file reading~~ | Medium | Medium | **OPTIONAL** | Performance | ✅ DONE 2025-12-27 |
-| Improve fixture type hints | Low | Low | **LOW** | Type Safety | Pending |
-| Standardize mocking patterns | Low | Low | **LOW** | Testing | Pending |
+| Standardize error handling | Low | Medium | **HIGH** | Code Quality | Pending |
+| Intent questions duplication | Trivial | Low | **HIGH** | Architecture | Pending |
+| Improve fixture type hints | Low | Low | **MEDIUM** | Type Safety | Pending |
+| Extract GenerationConfig creation | Low | Low | **MEDIUM** | Code Quality | Pending |
+| Extract config validation helper | Low | Low | **MEDIUM** | Code Quality | Pending |
+| Document testing conventions | Low | Low | **MEDIUM** | Testing | Pending |
+| Centralize more constants | Low | Low | **LOW** | Code Quality | Pending |
+| Simplify generic types | Low | Low | **LOW** | Architecture | Pending |
+| Reduce overload complexity | Low | Low | **LOW** | Architecture | Pending |
 | Question thread safety | Low | Low | **LOW** | Performance | Pending |
-| Simplify generic types | Low | Low | **LOW** | Type Safety | Pending |
 | Add property-based tests | Medium | Medium | **OPTIONAL** | Testing | Pending |
 | Add runtime type validation | Low | Low | **OPTIONAL** | Type Safety | Pending |
 | Plugin architecture | High | Low | **FUTURE** | Architecture | Pending |
@@ -1143,13 +641,16 @@ ______________________________________________________________________
 
 The following patterns are working well and should be maintained:
 
-✅ **Clean config module separation** (`src/config/` split into models, loader, merger)
-✅ **Function-based testing approach** (following style guide)
+✅ **Excellent architecture** - Clean separation of concerns across modules
+✅ **Outstanding test coverage** (99.26% with 291 tests)
+✅ **Function-based testing** (following style guide consistently)
 ✅ **Pydantic for structured output** (runtime validation + LLM integration)
 ✅ **Dependency injection pattern** (testable, explicit dependencies)
-✅ **Clear module naming and responsibilities**
-✅ **Excellent test coverage** (99%+ across most modules)
+✅ **Clean config module organization** (`src/config/` well-structured)
+✅ **Consistent naming conventions** (clear, descriptive names)
 ✅ **Comprehensive documentation** (README, style guide, CLAUDE.md)
+✅ **Good use of type hints** (mypy-compatible throughout)
+✅ **Effective use of Pydantic models** (all data models in records.py)
 
 ______________________________________________________________________
 
@@ -1160,14 +661,11 @@ These improvements are suggestions based on comprehensive code reviews. Before i
 1. **Discuss with maintainers** - Ensure alignment with project goals
 1. **Create issues** - Track each improvement separately
 1. **Start small** - Begin with high-priority, low-effort items
-1. **Test thoroughly** - All changes should maintain 100% test pass rate
+1. **Test thoroughly** - All changes should maintain 99%+ test coverage
 1. **Follow style guide** - Adhere to conventions in `docs/style-guide.md`
 
 ______________________________________________________________________
 
-**Last Updated:** 2025-12-27
+**Last Updated:** 2025-12-29
 **Review By:** Claude Code (Comprehensive Architecture & Code Quality Review)
-**Latest Implementation:** Parallelize File Reading (2025-12-27)
-
-```
-```
+**Previous Review:** 2025-12-27 (Parallelization Implementation)
