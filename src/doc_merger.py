@@ -63,14 +63,19 @@ def parse_sections(markdown: str) -> dict[str, str]:
     if current_section is not None:
         _save_section(sections, current_section, current_content)
 
-    # Finalize preamble - convert list to string
-    if "_preamble" in sections:
-        preamble = sections["_preamble"]
-        if isinstance(preamble, list):
-            sections["_preamble"] = "\n".join(preamble)
-
     # Type checker knows all values are now str after finalization
-    return sections  # type: ignore[return-value]
+    return _flatten_values(sections)
+
+
+def _flatten_values(sections: dict[str, str | list[str]]) -> dict[str, str]:
+    # Finalize preamble and other values - convert list to string
+    new_sections: dict[str, str] = {}
+    for key, value in sections.items():
+        if isinstance(value, list):
+            new_sections[key] = "\n".join(value)
+        else:
+            new_sections[key] = value
+    return new_sections
 
 
 def _apply_change(
