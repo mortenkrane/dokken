@@ -2,20 +2,6 @@
 
 This document outlines potential improvements to the Dokken codebase identified during comprehensive code reviews.
 
-## Recently Completed
-
-- **Parallelize File Reading** (2025-12-27): Implemented parallel file reading in `src/code_analyzer.py` using `concurrent.futures.ThreadPoolExecutor`. Extracted file reading and filtering logic into `_read_and_filter_file()` helper function. Modified `get_module_context()` to read and filter files concurrently, improving performance for large codebases with many Python files. All 291 tests pass with 99.26% coverage.
-- **Replace NO_DOC_MARKER with Optional Pattern** (2025-12-26): Replaced string marker pattern with Pythonic Optional pattern. Updated `check_drift()` in `src/llm.py` to accept `str | None` for `current_doc` parameter. Removed `NO_DOC_MARKER` constant from `src/constants.py`. Updated `src/workflows.py` to use `None` instead of marker string. Updated cache utilities in `src/cache.py` to handle None values. Added comprehensive test coverage in `tests/test_llm.py`. Results in more type-safe, Pythonic code with clearer intent.
-- **Centralize Error Messages** (2025-12-26): Created `src/constants.py` to centralize all error messages and constants. Eliminated duplicate error strings across `src/workflows.py`, `src/file_utils.py`, and `src/llm.py`. All modules now import from centralized constants for consistent error messaging and easier maintenance.
-- **Move DocumentationContext to records.py** (2025-12-26): Moved `DocumentationContext` dataclass from `src/workflows.py` to `src/records.py`, consolidating all data models in one location for better organization and separation of concerns.
-- **Use TypedDict for Config Type Safety** (2025-12-26): Added TypedDict definitions (`ExclusionsDict`, `CustomPromptsDict`, `ConfigDataDict`) to `src/config/loader.py`, eliminating all `type: ignore` comments and providing full type safety with better IDE autocomplete for config loading.
-- **Add Tests for Pydantic Model Validation** (2025-12-26): Created comprehensive `tests/test_records.py` with 40+ test cases covering all Pydantic models, including validation tests for required fields, type validation, optional field behavior, and edge cases.
-- **Reduce Workflow Duplication** (2025-12-26): Extracted common initialization logic into `_initialize_documentation_workflow` helper function, eliminating duplication between `check_documentation_drift` and `generate_documentation` workflows.
-- **Extract Prompt Building from `llm.py`** (2025-12-26): Separated prompt assembly logic into `src/prompt_builder.py` module for better separation of concerns. Tests split into `tests/test_prompt_builder.py`.
-- **Split `utils.py` into Focused Modules** (2025-12-26): Split `src/utils.py` into two focused modules: `src/file_utils.py` (file system operations) and `src/cache.py` (caching utilities). Updated all imports and tests. Full compliance with Single Responsibility Principle.
-- **Fix Dead `mock_console` Fixture** (2025-12-26): Updated `tests/conftest.py` to patch actual console locations across all four modules where console is used. Fixture now works correctly.
-- **Refactor `check_multiple_modules_drift` Complexity** (2025-12-26): Extracted `_check_single_module_drift()` and `_print_drift_summary()` helper functions. Removed `noqa: C901` complexity warning. Each function now has a single responsibility.
-
 ## Table of Contents
 
 - [Code Quality](#code-quality)
