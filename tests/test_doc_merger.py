@@ -367,14 +367,16 @@ def test_apply_incremental_fixes_mixed_change_types(module_doc_with_all_sections
 
 
 def test_apply_incremental_fixes_strips_trailing_whitespace(simple_module_doc):
-    """Test that trailing whitespace in content is stripped to prevent extra newlines."""
+    """Test that trailing whitespace in content is stripped to prevent extra
+    newlines."""
     fixes = IncrementalDocumentationFix(
         changes=[
             DocumentationChange(
                 section="Purpose & Scope",
                 change_type="update",
                 rationale="Updated with trailing whitespace",
-                updated_content="New purpose content.\n\n\n",  # Excessive trailing newlines
+                # Excessive trailing newlines
+                updated_content="New purpose content.\n\n\n",
             )
         ],
         summary="Updated with trailing whitespace",

@@ -341,6 +341,7 @@ IMPORTANT INSTRUCTIONS:
 
 COMMON MISTAKE TO AVOID:
 ❌ WRONG: Returning only the new/changed bullet points for an "update"
-✓ CORRECT: Returning the FULL section with new bullet points added and old ones preserved
+✓ CORRECT: Returning the FULL section with new bullet points added and old ones
+preserved
 
 Respond with the structured JSON output schema provided."""
