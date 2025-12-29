@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from pytest_mock import MockerFixture
 
-from src.cache import get_drift_cache_info
+from src.cache import DRIFT_CACHE_SIZE, get_drift_cache_info, set_cache_max_size
 from src.llm import (
     TEMPERATURE,
     GenerationConfig,
@@ -316,34 +316,38 @@ def test_check_drift_cache_evicts_oldest_when_full(
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
 
-    # Temporarily reduce cache size for testing using mocker.patch
-    mocker.patch("src.cache.DRIFT_CACHE_SIZE", 2)
+    # Temporarily reduce cache size for testing
+    set_cache_max_size(2)
 
-    # Fill cache to limit
-    check_drift(llm=mock_llm_client, context="ctx1", current_doc="doc1")
-    check_drift(llm=mock_llm_client, context="ctx2", current_doc="doc2")
+    try:
+        # Fill cache to limit
+        check_drift(llm=mock_llm_client, context="ctx1", current_doc="doc1")
+        check_drift(llm=mock_llm_client, context="ctx2", current_doc="doc2")
 
-    cache_info = get_drift_cache_info()
-    assert cache_info["size"] == 2
+        cache_info = get_drift_cache_info()
+        assert cache_info["size"] == 2
 
-    # Add one more entry - should evict oldest
-    check_drift(llm=mock_llm_client, context="ctx3", current_doc="doc3")
+        # Add one more entry - should evict oldest
+        check_drift(llm=mock_llm_client, context="ctx3", current_doc="doc3")
 
-    cache_info = get_drift_cache_info()
-    assert cache_info["size"] == 2  # Still at max size
+        cache_info = get_drift_cache_info()
+        assert cache_info["size"] == 2  # Still at max size
 
-    # First entry should be evicted, so accessing it should trigger new LLM call
-    # Reset call count
-    mock_program_class.from_defaults.reset_mock()
+        # First entry should be evicted, so accessing it should trigger new LLM call
+        # Reset call count
+        mock_program_class.from_defaults.reset_mock()
 
-    # Access first entry again (should be evicted)
-    check_drift(llm=mock_llm_client, context="ctx1", current_doc="doc1")
-    assert mock_program_class.from_defaults.call_count == 1  # New call
+        # Access first entry again (should be evicted)
+        check_drift(llm=mock_llm_client, context="ctx1", current_doc="doc1")
+        assert mock_program_class.from_defaults.call_count == 1  # New call
 
-    # Access third entry (should still be cached)
-    mock_program_class.from_defaults.reset_mock()
-    check_drift(llm=mock_llm_client, context="ctx3", current_doc="doc3")
-    assert mock_program_class.from_defaults.call_count == 0  # Cached
+        # Access third entry (should still be cached)
+        mock_program_class.from_defaults.reset_mock()
+        check_drift(llm=mock_llm_client, context="ctx3", current_doc="doc3")
+        assert mock_program_class.from_defaults.call_count == 0  # Cached
+    finally:
+        # Reset cache size to default
+        set_cache_max_size(DRIFT_CACHE_SIZE)
 
 
 # --- Tests for generate_doc() ---

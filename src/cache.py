@@ -19,6 +19,7 @@ T = TypeVar("T")
 # Module-level cache storage and lock for thread-safety
 _drift_cache: dict[str, Any] = {}
 _cache_lock = threading.Lock()
+_max_cache_size = DRIFT_CACHE_SIZE
 
 
 def _hash_content(content: str | None) -> str:
@@ -98,7 +99,7 @@ def content_based_cache(
 
             # Store in cache (with lock and size limit)
             with _cache_lock:
-                if len(_drift_cache) >= DRIFT_CACHE_SIZE:
+                if len(_drift_cache) >= _max_cache_size:
                     # Remove oldest entry (FIFO eviction)
                     # In Python 3.7+, dicts maintain insertion order
                     oldest_key = next(iter(_drift_cache))
@@ -132,7 +133,18 @@ def get_drift_cache_info() -> dict[str, int]:
         A dictionary with cache statistics (current size and max size).
     """
     with _cache_lock:
-        return {"size": len(_drift_cache), "maxsize": DRIFT_CACHE_SIZE}
+        return {"size": len(_drift_cache), "maxsize": _max_cache_size}
+
+
+def set_cache_max_size(size: int) -> None:
+    """
+    Set the maximum cache size from configuration.
+
+    Args:
+        size: Maximum number of entries to keep in the cache.
+    """
+    global _max_cache_size  # noqa: PLW0603
+    _max_cache_size = size
 
 
 def load_drift_cache_from_disk(path: str = DEFAULT_CACHE_FILE) -> None:
@@ -174,21 +186,40 @@ def save_drift_cache_to_disk(path: str = DEFAULT_CACHE_FILE) -> None:
     Save current drift cache to JSON file.
 
     Persists the in-memory cache to disk so it can be restored in future runs.
-    Creates the cache file if it doesn't exist.
+    Creates the cache file and parent directories if they don't exist.
+
+    If save fails (permissions, disk full, etc.), silently continues to avoid
+    disrupting the main workflow. The cache is a performance optimization, not
+    a critical requirement.
 
     Args:
         path: Path to the cache file. Defaults to DEFAULT_CACHE_FILE.
     """
-    with _cache_lock:
-        cache_data = {
-            "version": 1,  # For future compatibility
-            "entries": {
-                key: {
-                    "drift_detected": value.drift_detected,
-                    "rationale": value.rationale,
-                }
-                for key, value in _drift_cache.items()
-            },
-        }
+    try:
+        cache_path = Path(path)
 
-    Path(path).write_text(json.dumps(cache_data, indent=2))
+        # Create parent directory if it doesn't exist
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Collect cache data under lock
+        with _cache_lock:
+            cache_data = {
+                "version": 1,  # For future compatibility
+                "entries": {
+                    key: {
+                        "drift_detected": value.drift_detected,
+                        "rationale": value.rationale,
+                    }
+                    for key, value in _drift_cache.items()
+                },
+            }
+
+        # Write atomically to prevent corruption if process is killed
+        temp_path = cache_path.with_suffix(".tmp")
+        temp_path.write_text(json.dumps(cache_data, indent=2))
+        temp_path.replace(cache_path)  # Atomic on POSIX systems
+
+    except OSError:
+        # Silently ignore save failures - cache is optional
+        # Common failures: disk full, permission denied, read-only filesystem
+        pass

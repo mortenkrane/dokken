@@ -14,6 +14,7 @@ from src.cache import (
     get_drift_cache_info,
     load_drift_cache_from_disk,
     save_drift_cache_to_disk,
+    set_cache_max_size,
 )
 from src.records import DocumentationDriftCheck
 
@@ -281,3 +282,138 @@ def test_save_and_load_roundtrip(
     initial_call_count = mock_program_class.from_defaults.call_count
     check_drift(llm=mock_llm_client, context="ctx1", current_doc="doc1")
     assert mock_program_class.from_defaults.call_count == initial_call_count
+
+
+def test_set_cache_max_size(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+) -> None:
+    """Test set_cache_max_size updates the maximum cache size."""
+    from src.llm import check_drift
+
+    clear_drift_cache()
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_drift_check_no_drift
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Set small cache size
+    set_cache_max_size(2)
+
+    # Verify cache info reflects new size
+    cache_info = get_drift_cache_info()
+    assert cache_info["maxsize"] == 2
+
+    # Add 3 entries (should evict oldest)
+    check_drift(llm=mock_llm_client, context="ctx1", current_doc="doc1")
+    check_drift(llm=mock_llm_client, context="ctx2", current_doc="doc2")
+    check_drift(llm=mock_llm_client, context="ctx3", current_doc="doc3")
+
+    # Cache should only have 2 entries (FIFO eviction)
+    cache_info = get_drift_cache_info()
+    assert cache_info["size"] == 2
+
+    # Reset to default
+    set_cache_max_size(DRIFT_CACHE_SIZE)
+
+
+def test_save_drift_cache_creates_parent_directory(
+    tmp_path: Path,
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+) -> None:
+    """Test save_drift_cache_to_disk creates parent directories."""
+    from src.llm import check_drift
+
+    clear_drift_cache()
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_drift_check_no_drift
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Add entry to cache
+    check_drift(llm=mock_llm_client, context="test", current_doc="doc")
+
+    # Save to nested path that doesn't exist
+    nested_path = tmp_path / "cache" / "nested" / "test.json"
+    assert not nested_path.parent.exists()
+
+    save_drift_cache_to_disk(str(nested_path))
+
+    # Verify parent directory was created and file exists
+    assert nested_path.parent.exists()
+    assert nested_path.exists()
+
+
+def test_save_drift_cache_handles_permission_error(
+    tmp_path: Path,
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+) -> None:
+    """Test save_drift_cache_to_disk handles permission errors gracefully."""
+    from src.llm import check_drift
+
+    clear_drift_cache()
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_drift_check_no_drift
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Add entry to cache
+    check_drift(llm=mock_llm_client, context="test", current_doc="doc")
+
+    # Create read-only directory
+    readonly_dir = tmp_path / "readonly"
+    readonly_dir.mkdir()
+    readonly_dir.chmod(0o555)  # Read and execute only
+
+    cache_file = readonly_dir / "cache.json"
+
+    # Should not raise exception, just silently fail
+    try:
+        save_drift_cache_to_disk(str(cache_file))
+        # If we got here, save either succeeded or failed gracefully
+    finally:
+        # Clean up - restore permissions
+        readonly_dir.chmod(0o755)
+
+
+def test_save_drift_cache_atomic_write(
+    tmp_path: Path,
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+    sample_drift_check_no_drift: DocumentationDriftCheck,
+) -> None:
+    """Test save_drift_cache_to_disk uses atomic write."""
+    from src.llm import check_drift
+
+    clear_drift_cache()
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = sample_drift_check_no_drift
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Add entry to cache
+    check_drift(llm=mock_llm_client, context="test", current_doc="doc")
+
+    cache_file = tmp_path / "cache.json"
+
+    # Save cache
+    save_drift_cache_to_disk(str(cache_file))
+
+    # Verify cache file exists and temp file is gone
+    assert cache_file.exists()
+    temp_file = cache_file.with_suffix(".tmp")
+    assert not temp_file.exists()
+
+    # Verify cache file is valid JSON
+    data = json.loads(cache_file.read_text())
+    assert "version" in data
+    assert "entries" in data

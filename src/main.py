@@ -6,7 +6,11 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 
-from src.cache import load_drift_cache_from_disk, save_drift_cache_to_disk
+from src.cache import (
+    load_drift_cache_from_disk,
+    save_drift_cache_to_disk,
+    set_cache_max_size,
+)
 from src.config import load_config
 from src.constants import DEFAULT_CACHE_FILE
 from src.doc_types import DocType
@@ -44,7 +48,9 @@ DOC_TYPE_HELP = "Type of documentation to generate: " + ", ".join(
 
 def _get_cache_file_path(module_path: str) -> str:
     """
-    Get the cache file path from config.
+    Get the cache file path from config and apply cache settings.
+
+    Also sets the cache max size from configuration.
 
     Args:
         module_path: Path to the module being processed.
@@ -54,6 +60,8 @@ def _get_cache_file_path(module_path: str) -> str:
     """
     try:
         config = load_config(module_path=module_path)
+        # Apply cache configuration
+        set_cache_max_size(config.cache.max_size)
         return config.cache.file
     except (ValueError, OSError, RuntimeError):
         # If config loading fails, use default
