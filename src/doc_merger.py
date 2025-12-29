@@ -83,8 +83,15 @@ def _apply_change(
 ) -> None:
     """Apply a single change to the sections dictionary."""
     if change_type in {"update", "add"}:
+        # Clean up content: remove header if LLM included it, strip trailing whitespace
+        cleaned_content = content.strip()
         header_line = f"## {section_header}"
-        sections[section_header] = f"{header_line}\n\n{content}"
+
+        # Remove duplicate header if LLM included it in the content
+        if cleaned_content.startswith(header_line):
+            cleaned_content = cleaned_content[len(header_line) :].lstrip()
+
+        sections[section_header] = f"{header_line}\n\n{cleaned_content}"
     elif change_type == "remove":
         sections.pop(section_header, None)
 

@@ -364,3 +364,51 @@ def test_apply_incremental_fixes_mixed_change_types(module_doc_with_all_sections
     assert "New Section" in result
     assert "New content here" in result
     assert "Old architecture" in result  # Preserved
+
+
+def test_apply_incremental_fixes_strips_trailing_whitespace(simple_module_doc):
+    """Test that trailing whitespace in content is stripped to prevent extra newlines."""
+    fixes = IncrementalDocumentationFix(
+        changes=[
+            DocumentationChange(
+                section="Purpose & Scope",
+                change_type="update",
+                rationale="Updated with trailing whitespace",
+                updated_content="New purpose content.\n\n\n",  # Excessive trailing newlines
+            )
+        ],
+        summary="Updated with trailing whitespace",
+        preserved_sections=[],
+    )
+
+    result = apply_incremental_fixes(current_doc=simple_module_doc, fixes=fixes)
+
+    # Should only have 2 newlines between sections, not more
+    # Count newlines after "New purpose content" and before end
+    assert "New purpose content.\n" in result
+    # Should not have 4+ consecutive newlines
+    assert "\n\n\n\n" not in result
+
+
+def test_apply_incremental_fixes_removes_duplicate_header(simple_module_doc):
+    """Test that duplicate section headers are removed if LLM includes them."""
+    fixes = IncrementalDocumentationFix(
+        changes=[
+            DocumentationChange(
+                section="Purpose & Scope",
+                change_type="update",
+                rationale="LLM included header in content",
+                # LLM mistakenly included the header in the content
+                updated_content="## Purpose & Scope\n\nNew purpose with header.",
+            )
+        ],
+        summary="Updated with duplicate header",
+        preserved_sections=[],
+    )
+
+    result = apply_incremental_fixes(current_doc=simple_module_doc, fixes=fixes)
+
+    # Should only have one occurrence of the header, not two
+    header_count = result.count("## Purpose & Scope")
+    assert header_count == 1, f"Expected 1 header, found {header_count}"
+    assert "New purpose with header" in result
