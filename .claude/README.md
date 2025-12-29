@@ -1,6 +1,6 @@
-# Claude Code Hooks
+# Claude Code Configuration
 
-This directory contains Claude Code hooks that automatically run code quality checks and tests during AI coding sessions.
+This directory contains Claude Code configuration including hooks, slash commands, and agents for automated code quality and reviews.
 
 ## Hook Scripts
 
@@ -64,6 +64,43 @@ Available in hook scripts:
 1. **When session ends**: The `SessionEnd` hook runs the full test suite
 
 This ensures code quality without manual intervention while keeping the workflow fast by only checking changed files.
+
+## Code Review Agent
+
+Comprehensive code review agent that evaluates changes against Dokken project standards.
+
+### Slash Command: `/review`
+
+Manually invoke a code review:
+
+```bash
+/review                              # Review all pending changes on current branch
+/review src/llm.py                   # Review specific file
+/review src/workflows.py src/llm.py  # Review multiple files
+```
+
+### Subagent: Code Review Agent
+
+The code review agent can be automatically invoked by Claude when doing code reviews.
+
+**Review Criteria:**
+- Separation of Concerns
+- KISS (Keep It Simple, Stupid)
+- DRY (Don't Repeat Yourself)
+- Readability
+- Testability & Test Quality (≥99% coverage)
+- Documentation
+
+**Configuration Files:**
+- `commands/review.md` - Slash command definition
+- `agents/code-review.json` - Subagent configuration
+- `code-review-agent.md` - Complete review specification
+
+**Feedback Format:**
+- 🔴 Critical Issues (MUST fix before merge)
+- 🟡 Important Suggestions (SHOULD address)
+- 🟢 Minor Improvements (nice-to-have)
+- ✨ Positive Feedback (things done well)
 
 ## Related
 
