@@ -467,7 +467,117 @@ def test_check_drift_handles_none_documentation(
     # And: The program should have been called with the default message
     mock_program.assert_called_once()
     call_kwargs = mock_program.call_args[1]
-    assert call_kwargs["current_doc"] == "No existing documentation provided."
+    expected_doc = "No existing documentation provided."
+    assert call_kwargs["current_doc"] == expected_doc
+
+
+def test_check_drift_no_drift_for_helper_function_addition(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+) -> None:
+    """Test that adding helper functions should NOT trigger drift (conservative)."""
+    # Mock the LLM to return no drift (expected conservative behavior)
+    no_drift_result = DocumentationDriftCheck(
+        drift_detected=False,
+        rationale="Documentation accurately reflects the code. Helper function "
+        "_validate_input supports existing authenticate_user functionality.",
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = no_drift_result
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Given: Code with a new private helper function
+    code = """
+def authenticate_user(username, password):
+    _validate_input(username, password)
+    return check_credentials(username, password)
+
+def _validate_input(username, password):
+    if not username or not password:
+        raise ValueError("Invalid input")
+"""
+    # And: Documentation that describes main functionality
+    doc = """## Functions
+- authenticate_user() - Authenticates users with credentials"""
+
+    # When: Checking drift
+    result = check_drift(llm=mock_llm_client, context=code, current_doc=doc)
+
+    # Then: No drift should be detected (helper doesn't change core functionality)
+    assert result.drift_detected is False
+
+
+def test_check_drift_no_drift_for_refactoring(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+) -> None:
+    """Test that code refactoring should NOT trigger drift (conservative)."""
+    # Mock the LLM to return no drift (expected conservative behavior)
+    no_drift_result = DocumentationDriftCheck(
+        drift_detected=False,
+        rationale="Documentation accurately reflects the code. Refactoring from "
+        "class to functions maintains the same purpose and functionality.",
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = no_drift_result
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Given: Code refactored from class to functions (same purpose)
+    code = """
+def create_payment(amount):
+    return {"amount": amount, "status": "pending"}
+
+def process_payment(payment_id):
+    return {"payment_id": payment_id, "status": "completed"}
+"""
+    # And: Documentation describing the payment system
+    doc = """## Payment Processing
+This module handles payment creation and processing.
+Main functions: create_payment, process_payment."""
+
+    # When: Checking drift
+    result = check_drift(llm=mock_llm_client, context=code, current_doc=doc)
+
+    # Then: No drift should be detected (refactoring doesn't change purpose)
+    assert result.drift_detected is False
+
+
+def test_check_drift_requires_checklist_citation_when_drift_detected(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+) -> None:
+    """Test that drift rationale cites specific checklist items."""
+    # Mock the LLM to return drift with checklist citation
+    drift_result = DocumentationDriftCheck(
+        drift_detected=True,
+        rationale="Item 3: Missing Key Features - New API endpoint /api/refund "
+        "is implemented but not documented.",
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = drift_result
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Given: Code with new significant feature
+    code = """
+def create_payment(): pass
+def process_payment(): pass
+def refund_payment(): pass  # NEW user-facing feature
+"""
+    # And: Documentation without the new feature
+    doc = "## Features\n- Payment creation\n- Payment processing"
+
+    # When: Checking drift
+    result = check_drift(llm=mock_llm_client, context=code, current_doc=doc)
+
+    # Then: Drift should be detected with checklist reference
+    assert result.drift_detected is True
+    assert "Item 3" in result.rationale or "Missing Key Features" in result.rationale
 
 
 @pytest.mark.parametrize(
