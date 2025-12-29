@@ -3,8 +3,6 @@
 import json
 from pathlib import Path
 
-import pytest
-
 
 def test_code_review_specification_exists() -> None:
     """Test that code review specification file exists."""
@@ -41,8 +39,12 @@ def test_code_review_agent_config_valid_json() -> None:
 
     # Verify field types
     assert isinstance(config["name"], str), "Agent name should be a string"
-    assert isinstance(config["description"], str), "Agent description should be a string"
-    assert isinstance(config["instructions"], str), "Agent instructions should be a string"
+    assert isinstance(config["description"], str), (
+        "Agent description should be a string"
+    )
+    assert isinstance(config["instructions"], str), (
+        "Agent instructions should be a string"
+    )
 
 
 def test_code_review_command_has_frontmatter() -> None:
@@ -54,7 +56,9 @@ def test_code_review_command_has_frontmatter() -> None:
     # Check for YAML frontmatter
     assert content.startswith("---\n"), "Command should start with YAML frontmatter"
     assert "name:" in content, "Command frontmatter should have 'name' field"
-    assert "description:" in content, "Command frontmatter should have 'description' field"
+    assert "description:" in content, (
+        "Command frontmatter should have 'description' field"
+    )
 
 
 def test_code_review_references_exist() -> None:
