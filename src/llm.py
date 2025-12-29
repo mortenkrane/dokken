@@ -14,9 +14,9 @@ from src.cache import _generate_cache_key, content_based_cache
 from src.config import CustomPrompts
 from src.constants import ERROR_NO_API_KEY
 from src.doc_types import DocType
-from src.prompt_builder import build_generation_prompt
-from src.prompts import DRIFT_CHECK_PROMPT
-from src.records import DocumentationDriftCheck
+from src.prompt_builder import build_custom_prompt_section, build_generation_prompt
+from src.prompts import DRIFT_CHECK_PROMPT, INCREMENTAL_FIX_PROMPT
+from src.records import DocumentationDriftCheck, IncrementalDocumentationFix
 
 # Temperature setting for deterministic, reproducible documentation output
 TEMPERATURE = 0.0
@@ -148,4 +148,51 @@ def generate_doc(
     # Run the generation
     return generate_program(
         context=combined_context, human_intent_section=combined_intent_section
+    )
+
+
+def fix_doc_incrementally(
+    *,
+    llm: LLM,
+    context: str,
+    current_doc: str,
+    drift_rationale: str,
+    custom_prompts: CustomPrompts | None = None,
+    doc_type: DocType | None = None,
+) -> IncrementalDocumentationFix:
+    """
+    Generates minimal, targeted fixes for documentation drift.
+
+    Unlike generate_doc(), this function preserves the existing documentation
+    structure and only modifies sections that need updates to address detected
+    drift. This approach is faster, more conservative, and maintains consistency
+    with the original documentation's style and voice.
+
+    Args:
+        llm: The LLM client instance.
+        context: The code context showing current state.
+        current_doc: The existing documentation content to fix.
+        drift_rationale: Explanation of what drift was detected.
+        custom_prompts: Optional custom prompts configuration from .dokken.toml.
+        doc_type: Optional documentation type being fixed.
+
+    Returns:
+        An IncrementalDocumentationFix with targeted changes.
+    """
+    # Build custom prompts section if provided
+    custom_prompts_section = build_custom_prompt_section(custom_prompts, doc_type)
+
+    # Use LLMTextCompletionProgram for structured Pydantic output
+    fix_program = LLMTextCompletionProgram.from_defaults(
+        output_cls=IncrementalDocumentationFix,
+        llm=llm,
+        prompt_template_str=INCREMENTAL_FIX_PROMPT,
+    )
+
+    # Run the incremental fix
+    return fix_program(
+        current_doc=current_doc,
+        context=context,
+        drift_rationale=drift_rationale,
+        custom_prompts_section=custom_prompts_section,
     )

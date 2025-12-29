@@ -16,12 +16,19 @@ from src.constants import (
     ERROR_NOT_IN_GIT_REPO,
     ERROR_NOT_IN_GIT_REPO_MULTI_MODULE,
 )
-from src.doc_configs import DOC_CONFIGS, AnyDocConfig
+from src.doc_configs import DOC_CONFIGS
+from src.doc_merger import apply_incremental_fixes
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.file_utils import ensure_output_directory, find_repo_root, resolve_output_path
 from src.human_in_the_loop import ask_human_intent
-from src.llm import GenerationConfig, check_drift, generate_doc, initialize_llm
+from src.llm import (
+    GenerationConfig,
+    check_drift,
+    fix_doc_incrementally,
+    generate_doc,
+    initialize_llm,
+)
 from src.records import DocumentationContext
 
 console = Console()
@@ -191,12 +198,12 @@ def check_documentation_drift(
         if fix:
             fix_documentation_drift(
                 llm_client=llm_client,
+                ctx=ctx,
                 code_context=code_context,
-                output_path=ctx.output_path,
-                doc_config=ctx.doc_config,
                 drift_rationale=drift_check.rationale,
                 doc_type=doc_type,
                 module_path=target_module_path,
+                current_doc=current_doc_content,
             )
             return
 
@@ -208,64 +215,71 @@ def check_documentation_drift(
 def fix_documentation_drift(
     *,
     llm_client: LLM,
+    ctx: DocumentationContext,
     code_context: str,
-    output_path: str,
-    doc_config: AnyDocConfig,
     drift_rationale: str,
     doc_type: DocType,
     module_path: str,
+    current_doc: str,
 ) -> None:
     """
-    Fix documentation drift by generating and writing updated documentation.
+    Fix documentation drift using incremental, minimal changes.
+
+    This function applies targeted fixes to address specific drift issues
+    without regenerating the entire document. It skips the human intent
+    questionnaire and makes minimal modifications to preserve the existing
+    documentation's structure and style.
 
     Args:
         llm_client: The LLM client to use for generation.
+        ctx: Documentation context containing output path and doc config.
         code_context: The code context to analyze.
-        output_path: Path to the documentation file to update.
-        doc_config: DocConfig instance for the documentation type.
         drift_rationale: Explanation of what drift was detected.
         doc_type: The type of documentation being generated.
         module_path: Path to the module for loading config.
+        current_doc: The existing documentation content to fix.
     """
-    console.print("[cyan]Fixing drift by generating updated documentation...\n")
+    console.print("[cyan]Fixing drift with incremental updates...\n")
 
     # Load configuration for custom prompts
     config = load_config(module_path=module_path)
 
-    # Capture human intent (doc-type-specific)
-    human_intent = ask_human_intent(
-        intent_model=doc_config.intent_model, questions=doc_config.intent_questions
-    )
-
-    # Build generation configuration
-    gen_config = GenerationConfig(
-        custom_prompts=config.custom_prompts,
-        doc_type=doc_type,
-        human_intent=human_intent,
-        drift_rationale=drift_rationale,
-    )
-
-    with console.status("[cyan]Generating documentation..."):
-        new_doc_data = generate_doc(
+    # Generate incremental fixes (no human intent questionnaire)
+    with console.status("[cyan]Generating targeted fixes..."):
+        fixes = fix_doc_incrementally(
             llm=llm_client,
             context=code_context,
-            config=gen_config,
-            output_model=doc_config.model,
-            prompt_template=doc_config.prompt,
+            current_doc=current_doc,
+            drift_rationale=drift_rationale,
+            custom_prompts=config.custom_prompts,
+            doc_type=doc_type,
         )
 
-    final_markdown = doc_config.formatter(doc_data=new_doc_data)
-
-    # Ensure parent directory exists before writing
-    ensure_output_directory(output_path)
-
-    with open(output_path, "w") as f:
-        f.write(final_markdown)
-
-    console.print(
-        f"[green]✓[/green] Documentation updated and saved to: "
-        f"[bold]{output_path}[/bold]\n"
+    # Apply fixes to existing documentation
+    updated_doc = apply_incremental_fixes(
+        current_doc=current_doc,
+        fixes=fixes,
     )
+
+    # Write updated documentation
+    ensure_output_directory(ctx.output_path)
+    with open(ctx.output_path, "w") as f:
+        f.write(updated_doc)
+
+    # Display change summary for transparency
+    console.print("[green]✓[/green] Documentation updated with incremental fixes\n")
+    console.print(f"[bold]Summary:[/bold] {fixes.summary}\n")
+    console.print("[bold]Changes made:[/bold]")
+    for change in fixes.changes:
+        console.print(f"  • {change.change_type.upper()}: {change.section}")
+        console.print(f"    {change.rationale}")
+
+    if fixes.preserved_sections:
+        console.print("\n[bold]Preserved sections:[/bold]")
+        for section in fixes.preserved_sections:
+            console.print(f"  • {section}")
+
+    console.print(f"\n[dim]Documentation saved to: {ctx.output_path}[/dim]\n")
 
 
 def _check_single_module_drift(
