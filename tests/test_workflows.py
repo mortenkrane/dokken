@@ -6,10 +6,17 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
+from src.config import DokkenConfig
+from src.config.models import CustomPrompts
 from src.doc_configs import DOC_CONFIGS
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
-from src.records import DocumentationDriftCheck, ModuleDocumentation
+from src.records import (
+    DocumentationChange,
+    DocumentationDriftCheck,
+    IncrementalDocumentationFix,
+    ModuleDocumentation,
+)
 from src.workflows import (
     check_documentation_drift,
     check_multiple_modules_drift,
@@ -305,36 +312,65 @@ def test_fix_documentation_drift_generates_and_writes(
     mock_llm_client,
     sample_component_documentation: ModuleDocumentation,
 ) -> None:
-    """Test fix_documentation_drift generates and writes updated documentation."""
+    """Test fix_documentation_drift uses incremental fixes to update documentation."""
+
     readme_path = tmp_path / "README.md"
-    readme_path.write_text("# Old Documentation")
+    current_doc_content = """# Old Documentation
+
+## Purpose & Scope
+
+Old purpose description."""
+    readme_path.write_text(current_doc_content)
 
     mocker.patch("src.workflows.console")
-    mocker.patch("src.workflows.ask_human_intent", return_value=None)
-    mocker.patch("src.workflows.load_config")
-    mocker.patch(
-        "src.workflows.generate_doc", return_value=sample_component_documentation
-    )
 
-    # Create a custom doc_config with mocked formatter
-    mock_formatter = mocker.Mock(return_value="# Updated Docs")
-    test_doc_config = replace(
-        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
+    # Mock config with custom_prompts
+
+    mock_config = mocker.Mock()
+    mock_config.custom_prompts = CustomPrompts()
+    mocker.patch("src.workflows.load_config", return_value=mock_config)
+
+    # Mock incremental fix response
+    mock_fixes = IncrementalDocumentationFix(
+        changes=[
+            DocumentationChange(
+                section="Purpose & Scope",
+                change_type="update",
+                rationale="Updated to reflect new features",
+                updated_content="New purpose description.",
+            )
+        ],
+        summary="Updated purpose section",
+        preserved_sections=[],
+    )
+    mocker.patch("src.workflows.fix_doc_incrementally", return_value=mock_fixes)
+
+    # Create a documentation context
+    from src.records import DocumentationContext
+
+    test_doc_config = DOC_CONFIGS[DocType.MODULE_README]
+    ctx = DocumentationContext(
+        doc_config=test_doc_config,
+        output_path=str(readme_path),
+        analysis_path=str(tmp_path),
+        analysis_depth=0,
     )
 
     # When: Fixing documentation drift
     fix_documentation_drift(
         llm_client=mock_llm_client,
+        ctx=ctx,
         code_context="code context",
-        output_path=str(readme_path),
-        doc_config=test_doc_config,
         drift_rationale="Test drift rationale",
         doc_type=DocType.MODULE_README,
         module_path=str(tmp_path),
+        current_doc=current_doc_content,
     )
 
-    # Then: README should be updated with new content
-    assert readme_path.read_text() == "# Updated Docs"
+    # Then: README should be updated with incremental fixes
+    updated_content = readme_path.read_text()
+    assert "New purpose description" in updated_content
+    assert "Old purpose description" not in updated_content
 
 
 def test_check_documentation_drift_fix_with_drift(
@@ -469,7 +505,6 @@ def test_check_multiple_modules_drift_no_modules_configured(
     mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
 
     # Mock load_config to return empty modules list
-    from src.config import DokkenConfig
 
     mocker.patch("src.workflows.load_config", return_value=DokkenConfig(modules=[]))
 
@@ -502,7 +537,6 @@ def test_check_multiple_modules_drift_all_modules_pass(
     mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
 
     # Mock config with two modules
-    from src.config import DokkenConfig
 
     mocker.patch(
         "src.workflows.load_config",
@@ -540,7 +574,6 @@ def test_check_multiple_modules_drift_some_modules_fail(
     mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
 
     # Mock config with two modules
-    from src.config import DokkenConfig
 
     mocker.patch(
         "src.workflows.load_config",
@@ -588,7 +621,6 @@ def test_check_multiple_modules_drift_skips_nonexistent_modules(
     mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
 
     # Mock config with two modules (one nonexistent)
-    from src.config import DokkenConfig
 
     mocker.patch(
         "src.workflows.load_config",
@@ -619,7 +651,6 @@ def test_check_multiple_modules_drift_with_fix(
     mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
 
     # Mock config with one module
-    from src.config import DokkenConfig
 
     mocker.patch(
         "src.workflows.load_config",

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, Field
 
@@ -296,4 +296,76 @@ class StyleGuideIntent(BaseModel):
     patterns: str | None = Field(
         None,
         description="Are there specific patterns to follow or avoid?",
+    )
+
+
+class DocumentationChange(BaseModel):
+    """Represents a single change made to the documentation."""
+
+    section: str = Field(
+        ...,
+        description=(
+            "The section that was modified (e.g., 'Main Entry Points', "
+            "'Purpose & Scope'). Use the exact section header from the "
+            "existing documentation."
+        ),
+    )
+    change_type: Literal["update", "add", "remove"] = Field(
+        ...,
+        description=(
+            "Type of change: 'update' for modified content, 'add' for new "
+            "sections/content, 'remove' for deleted content."
+        ),
+    )
+    rationale: str = Field(
+        ...,
+        description=(
+            "Brief explanation of why this change was made, referencing "
+            "the specific drift issue it addresses."
+        ),
+    )
+    updated_content: str = Field(
+        ...,
+        description=(
+            "The new or updated content for this section. Include only "
+            "the section content, not the section header."
+        ),
+    )
+
+
+class IncrementalDocumentationFix(BaseModel):
+    """
+    Structured output for incremental documentation fixes.
+
+    Represents minimal, targeted changes to documentation rather than
+    complete regeneration. Preserves existing structure and only modifies
+    what's necessary to resolve detected drift.
+    """
+
+    changes: list[DocumentationChange] = Field(
+        ...,
+        description=(
+            "List of specific changes to make to the documentation. "
+            "Each change targets a specific section or adds new content. "
+            "Keep changes minimal and focused on addressing the detected "
+            "drift issues."
+        ),
+        min_length=1,
+    )
+
+    summary: str = Field(
+        ...,
+        description=(
+            "A concise summary (2-3 sentences) of what was fixed and why. "
+            "This helps users understand the nature of the changes without "
+            "reading through all modifications."
+        ),
+    )
+
+    preserved_sections: list[str] = Field(
+        default_factory=list,
+        description=(
+            "List of section headers that were kept unchanged. This provides "
+            "transparency about what was preserved from the original documentation."
+        ),
     )

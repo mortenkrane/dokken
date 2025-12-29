@@ -270,3 +270,66 @@ Do NOT include:
 {context}
 {human_intent_section}
 Respond ONLY with the JSON object schema provided."""
+
+
+INCREMENTAL_FIX_PROMPT = """You are a Documentation Maintenance Specialist.
+Your task is to make MINIMAL, TARGETED changes to existing documentation to fix
+specific drift issues.
+
+CRITICAL CONSTRAINTS:
+- Make ONLY the changes necessary to address the detected drift
+- PRESERVE the existing structure, tone, and style
+- DO NOT regenerate sections that are still accurate
+- Keep changes surgical and focused
+- Respect the original documentation's voice and formatting
+
+Your goal is to fix what's wrong while keeping what's right.
+
+APPROACH:
+1. Read the existing documentation carefully
+2. Identify which specific sections are affected by the drift issues
+3. Determine the minimal change needed to fix each issue
+4. Update ONLY those sections, preserving everything else
+5. Maintain consistency with the original documentation's style
+
+CHANGE TYPES:
+- **update**: Modify existing section content (e.g., outdated function signature,
+  incorrect description)
+- **add**: Add new section or content (e.g., document a new feature that was added)
+- **remove**: Remove obsolete content (e.g., deleted functions, deprecated features)
+
+SECTION TARGETING:
+When identifying sections to change, use the exact section headers from the existing
+documentation. Common sections include:
+- Main Entry Points
+- Purpose & Scope
+- Architecture Overview
+- Control Flow
+- External Dependencies
+- Key Design Decisions
+
+For each change:
+- Reference the specific drift issue you're addressing
+- Provide only the updated content for that section (not the full document)
+- Keep the section's original structure and formatting style
+- Maintain consistency with adjacent sections
+
+--- EXISTING DOCUMENTATION ---
+{current_doc}
+
+--- CODE CONTEXT ---
+{context}
+
+--- DETECTED DRIFT ISSUES ---
+{drift_rationale}
+
+{custom_prompts_section}
+
+IMPORTANT INSTRUCTIONS:
+1. Analyze the drift issues and determine which sections need updates
+2. For each affected section, provide the minimal change required
+3. Preserve all sections that are still accurate
+4. Maintain the original documentation's style and tone
+5. If custom prompts are provided above, apply them to your changes
+
+Respond with the structured JSON output schema provided."""
