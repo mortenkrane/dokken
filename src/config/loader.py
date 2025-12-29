@@ -7,7 +7,7 @@ from typing import Any, cast
 from pydantic import ValidationError
 
 from src.config.merger import merge_config
-from src.config.models import CustomPrompts, DokkenConfig, ExclusionConfig
+from src.config.models import CacheConfig, CustomPrompts, DokkenConfig, ExclusionConfig
 from src.config.types import ConfigDataDict
 from src.file_utils import find_repo_root
 
@@ -34,6 +34,7 @@ def load_config(*, module_path: str) -> DokkenConfig:
             "project_readme": None,
             "style_guide": None,
         },
+        "cache": {},
         "modules": [],
     }
 
@@ -45,7 +46,7 @@ def load_config(*, module_path: str) -> DokkenConfig:
     # Load module-specific config if it exists (extends global)
     _load_and_merge_config(Path(module_path) / ".dokken.toml", config_data)
 
-    # Construct ExclusionConfig and CustomPrompts from the merged dictionary
+    # Construct ExclusionConfig, CustomPrompts, and CacheConfig from merged dictionary
     try:
         exclusion_config = ExclusionConfig(**config_data.get("exclusions", {}))
     except ValidationError as e:
@@ -56,9 +57,15 @@ def load_config(*, module_path: str) -> DokkenConfig:
     except ValidationError as e:
         raise ValueError(f"Invalid custom prompts configuration: {e}") from e
 
+    try:
+        cache_config = CacheConfig(**config_data.get("cache", {}))
+    except ValidationError as e:
+        raise ValueError(f"Invalid cache configuration: {e}") from e
+
     return DokkenConfig(
         exclusions=exclusion_config,
         custom_prompts=custom_prompts,
+        cache=cache_config,
         modules=config_data.get("modules", []),
     )
 

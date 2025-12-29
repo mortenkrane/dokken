@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from src.constants import DEFAULT_CACHE_FILE, DRIFT_CACHE_SIZE
+
 
 class ExclusionConfig(BaseModel):
     """Configuration for excluding files and symbols from documentation."""
@@ -41,11 +43,26 @@ class CustomPrompts(BaseModel):
     )
 
 
+class CacheConfig(BaseModel):
+    """Configuration for drift detection caching."""
+
+    file: str = Field(
+        default=DEFAULT_CACHE_FILE,
+        description="Path to the cache file for persisting drift detection results",
+    )
+    max_size: int = Field(
+        default=DRIFT_CACHE_SIZE,
+        description="Maximum number of entries to keep in the cache",
+        gt=0,
+    )
+
+
 class DokkenConfig(BaseModel):
     """Root configuration for Dokken."""
 
     exclusions: ExclusionConfig = Field(default_factory=ExclusionConfig)
     custom_prompts: CustomPrompts = Field(default_factory=CustomPrompts)
+    cache: CacheConfig = Field(default_factory=CacheConfig)
     modules: list[str] = Field(
         default_factory=list,
         description="List of module paths to check for drift (relative to repo root)",

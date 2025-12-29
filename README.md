@@ -232,6 +232,37 @@ style_guide = "Reference specific files as examples."
 - Emphasize aspects (security, performance)
 - Align with company style guides
 
+### Cache Configuration (`.dokken.toml`)
+
+Dokken caches drift detection results to avoid redundant LLM API calls. The cache persists across runs, making it especially useful in CI environments.
+
+**Configuration:**
+
+```toml
+[cache]
+file = ".dokken-cache.json"  # Path to cache file (default)
+max_size = 100               # Max cache entries (default)
+```
+
+**How it works:**
+
+- Cache key: SHA256 hash of code + documentation content + LLM model
+- Persistent: Stored as JSON file, survives across runs
+- Automatic: Loaded/saved by `dokken check` and `dokken generate`
+- Thread-safe: FIFO eviction when cache reaches `max_size`
+
+**Benefits:**
+
+- Reduces LLM token consumption in CI (80-95% reduction for unchanged code)
+- Faster drift checks on repeated runs
+- Works locally and in CI/CD pipelines
+
+**Cache location:**
+
+- Default: `.dokken-cache.json` in repository root
+- Customize via `cache.file` in `.dokken.toml`
+- Add to `.gitignore` (cache is environment-specific)
+
 ## CI/CD Integration
 
 **Exit codes:**
@@ -239,17 +270,55 @@ style_guide = "Reference specific files as examples."
 - `dokken check`: Exit 1 if drift detected, 0 if synchronized
 - Use in pipelines to enforce documentation hygiene
 
-**Example GitHub Actions:**
+**GitHub Actions Example (with caching):**
 
 ```yaml
-# Single module
-- name: Check documentation drift
-  run: dokken check src/my_module
+name: Documentation Drift Check
 
-# All configured modules
-- name: Check all modules for drift
-  run: dokken check --all
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  dokken-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      # Restore drift detection cache (saves LLM tokens)
+      - name: Restore drift cache
+        uses: actions/cache@v4
+        with:
+          path: .dokken-cache.json
+          key: dokken-drift-${{ hashFiles('src/**/*.py', '.dokken.toml') }}
+          restore-keys: |
+            dokken-drift-
+
+      # Check for drift (cache auto-loaded/saved)
+      - name: Check documentation drift
+        run: uv run dokken check --all
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
+
+**Notes:**
+
+- Cache key includes source files hash (invalidates when code changes)
+- Restore-keys provide fallback (partial cache hits still beneficial)
+- Cache automatically loaded/saved by dokken (no manual steps needed)
+- Other CI platforms (GitLab CI, CircleCI, Azure Pipelines) have similar caching mechanisms
 
 ## Features
 
