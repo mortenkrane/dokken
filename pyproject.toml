@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.3.1", "wheel"]
+requires = ["setuptools>=80.9.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,18 +7,18 @@ name = "dokken"
 version = "0.1.0"
 description = "AI-powered documentation generation and drift detection tool"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.14.2"
 dependencies = [
     "click>=8.3.1",
-    "llama-index>=0.14.10",
-    "llama-index-llms-anthropic>=0.10.3",
-    "llama-index-llms-google-genai>=0.8.2",
+    "llama-index>=0.14.12",
+    "llama-index-llms-anthropic>=0.10.4",
+    "llama-index-llms-google-genai>=0.8.3",
     "llama-index-llms-openai>=0.6.12",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
-    "questionary>=2.0.0",
-    "rich>=13.9.4",
-    "tomli>=2.0.0; python_version < '3.11'",
+    "questionary>=2.1.1",
+    "rich>=14.2.0",
+    "tomli>=2.3.0; python_version < '3.11'",
 ]
 
 [project.scripts]
@@ -118,9 +118,9 @@ dev = [
     "mdformat>=0.7.22",
     "mdformat-gfm>=1.0.0",
     "mdformat-tables>=1.0.0",
-    "pre-commit>=4.0.0",
-    "pytest>=8.4.2",
-    "pytest-cov>=6.3.0",
+    "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
     "pytest-mock>=3.15.1",
     "ruff>=0.14.10",
 ]
