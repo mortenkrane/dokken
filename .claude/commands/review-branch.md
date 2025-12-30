@@ -45,6 +45,6 @@ You are an expert code reviewer for the Dokken project. Review the provided code
 
 ## Usage Examples
 
-- `/review` - Review all pending changes on current branch
-- `/review src/llm.py` - Review specific file(s)
-- `/review src/workflows.py src/prompts.py` - Review multiple files
+- `/review-branch` - Review all pending changes on current branch
+- `/review-branch src/llm.py` - Review specific file(s)
+- `/review-branch src/workflows.py src/prompts.py` - Review multiple files

@@ -7,9 +7,9 @@ This document defines how a code review agent should operate when reviewing code
 **To invoke this agent:**
 
 ```bash
-/review                    # Review all pending changes on current branch
-/review src/module.py      # Review specific file
-/review src/a.py src/b.py  # Review multiple files
+/review-branch                    # Review all pending changes on current branch
+/review-branch src/module.py      # Review specific file
+/review-branch src/a.py src/b.py  # Review multiple files
 ```
 
 **What to expect:**
