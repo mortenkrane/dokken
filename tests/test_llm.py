@@ -11,11 +11,18 @@ from src.llm import (
     TEMPERATURE,
     GenerationConfig,
     check_drift,
+    fix_doc_incrementally,
     generate_doc,
     initialize_llm,
 )
 from src.prompts import MODULE_GENERATION_PROMPT
-from src.records import DocumentationDriftCheck, ModuleDocumentation, ModuleIntent
+from src.records import (
+    DocumentationChange,
+    DocumentationDriftCheck,
+    IncrementalDocumentationFix,
+    ModuleDocumentation,
+    ModuleIntent,
+)
 
 # --- Tests for initialize_llm() ---
 
@@ -681,3 +688,197 @@ def test_generate_doc_with_partial_human_intent(
     assert isinstance(result, ModuleDocumentation)
     assert result.component_name
     assert result.purpose_and_scope
+
+
+# --- Tests for fix_doc_incrementally() ---
+
+
+def test_fix_doc_incrementally_returns_structured_fixes(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+) -> None:
+    """Test fix_doc_incrementally returns IncrementalDocumentationFix with changes."""
+    # Mock the LLM program to return incremental fix
+    incremental_fix = IncrementalDocumentationFix(
+        changes=[
+            DocumentationChange(
+                section="Purpose & Scope",
+                change_type="update",
+                rationale="Updated to reflect new payment processing capabilities",
+                updated_content="Handles payment processing and refunds.",
+            )
+        ],
+        summary="Updated purpose section to include refund functionality",
+        preserved_sections=["Architecture Overview", "Key Design Decisions"],
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = incremental_fix
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Given: Current documentation and code context
+    current_doc = "# Payment Module\n\n## Purpose\nHandles payment processing."
+    context = "def process_payment(): pass\ndef refund_payment(): pass"
+    drift_rationale = "New refund_payment function added but not documented"
+
+    # When: Fixing documentation incrementally
+    result = fix_doc_incrementally(
+        llm=mock_llm_client,
+        context=context,
+        current_doc=current_doc,
+        drift_rationale=drift_rationale,
+    )
+
+    # Then: Should return structured incremental fix
+    assert isinstance(result, IncrementalDocumentationFix)
+    assert len(result.changes) == 1
+    assert result.changes[0].section == "Purpose & Scope"
+    assert result.changes[0].change_type == "update"
+    assert "refund" in result.changes[0].updated_content.lower()
+    assert result.summary
+    assert "Architecture Overview" in result.preserved_sections
+
+
+def test_fix_doc_incrementally_with_custom_prompts(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+) -> None:
+    """Test fix_doc_incrementally includes custom prompts when provided."""
+    from src.config.models import CustomPrompts
+    from src.doc_types import DocType
+
+    # Mock the LLM program
+    incremental_fix = IncrementalDocumentationFix(
+        changes=[
+            DocumentationChange(
+                section="Functions",
+                change_type="add",
+                rationale="Added new function to documentation",
+                updated_content="- generate_token() - Generates auth tokens",
+            )
+        ],
+        summary="Added generate_token function",
+        preserved_sections=["Purpose & Scope"],
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = incremental_fix
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Given: Custom prompts configuration
+    custom_prompts = CustomPrompts(
+        module_readme="Focus on security aspects",
+    )
+
+    # When: Fixing documentation with custom prompts
+    result = fix_doc_incrementally(
+        llm=mock_llm_client,
+        context="def generate_token(): pass",
+        current_doc="# Auth Module",
+        drift_rationale="New function added",
+        custom_prompts=custom_prompts,
+        doc_type=DocType.MODULE_README,
+    )
+
+    # Then: Should return valid incremental fix
+    assert isinstance(result, IncrementalDocumentationFix)
+    assert len(result.changes) > 0
+    assert result.summary
+
+    # And: Should have called the program with custom prompts section
+    mock_program.assert_called_once()
+    call_kwargs = mock_program.call_args[1]
+    assert "custom_prompts_section" in call_kwargs
+
+
+def test_fix_doc_incrementally_without_optional_params(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+) -> None:
+    """Test fix_doc_incrementally works without optional parameters."""
+    # Mock the LLM program
+    incremental_fix = IncrementalDocumentationFix(
+        changes=[
+            DocumentationChange(
+                section="External Dependencies",
+                change_type="update",
+                rationale="Added Redis dependency",
+                updated_content="Redis, PostgreSQL",
+            )
+        ],
+        summary="Updated dependencies",
+        preserved_sections=[],
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = incremental_fix
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Given: No custom prompts or doc type (minimal parameters)
+    # When: Fixing documentation
+    result = fix_doc_incrementally(
+        llm=mock_llm_client,
+        context="import redis\nimport psycopg2",
+        current_doc="## Dependencies\nPostgreSQL",
+        drift_rationale="Added Redis caching layer",
+    )
+
+    # Then: Should return valid incremental fix
+    assert isinstance(result, IncrementalDocumentationFix)
+    assert len(result.changes) == 1
+    assert result.changes[0].section == "External Dependencies"
+
+
+def test_fix_doc_incrementally_multiple_changes(
+    mocker: MockerFixture,
+    mock_llm_client: Any,
+) -> None:
+    """Test fix_doc_incrementally handles multiple changes."""
+    # Mock the LLM program
+    incremental_fix = IncrementalDocumentationFix(
+        changes=[
+            DocumentationChange(
+                section="Purpose & Scope",
+                change_type="update",
+                rationale="Updated scope to include new feature",
+                updated_content="Handles user authentication and session management.",
+            ),
+            DocumentationChange(
+                section="Key Design Decisions",
+                change_type="add",
+                rationale="Document JWT decision",
+                updated_content="JWT tokens for stateless authentication.",
+            ),
+            DocumentationChange(
+                section="Deprecated Functions",
+                change_type="remove",
+                rationale="Function was removed from code",
+                updated_content="",
+            ),
+        ],
+        summary="Updated purpose, added design decision, removed deprecated section",
+        preserved_sections=["Architecture Overview", "Control Flow"],
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = incremental_fix
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # When: Fixing documentation with multiple drift issues
+    result = fix_doc_incrementally(
+        llm=mock_llm_client,
+        context="def authenticate(): pass\ndef manage_session(): pass",
+        current_doc="# Auth Module\n\n## Purpose\nHandles authentication.",
+        drift_rationale="Added session management, removed old functions",
+    )
+
+    # Then: Should return fix with multiple changes
+    assert isinstance(result, IncrementalDocumentationFix)
+    assert len(result.changes) == 3
+    assert result.changes[0].change_type == "update"
+    assert result.changes[1].change_type == "add"
+    assert result.changes[2].change_type == "remove"

@@ -439,6 +439,48 @@ def test_generate_documentation_project_readme_in_git_repo(
     assert readme_path.exists()
 
 
+def test_generate_documentation_project_readme_no_git_exits(
+    mocker: MockerFixture, temp_module_dir: Path
+) -> None:
+    """Test generate_documentation raises ValueError for PROJECT_README outside git."""
+    mocker.patch("src.workflows.console")
+
+    # When: Generating PROJECT_README outside git repository
+    # Then: Should raise ValueError
+    with pytest.raises(ValueError, match="not in a git repository"):
+        generate_documentation(
+            target_module_path=str(temp_module_dir), doc_type=DocType.PROJECT_README
+        )
+
+
+def test_prepare_documentation_context_analyze_repo_no_git_exits(
+    mocker: MockerFixture, temp_module_dir: Path
+) -> None:
+    """Test prepare_documentation_context exits for analyze_entire_repo without git."""
+    from src.workflows import prepare_documentation_context
+
+    mocker.patch("src.workflows.console")
+
+    # Mock resolve_output_path to return successfully (bypass early check)
+    mocker.patch(
+        "src.workflows.resolve_output_path", return_value="/fake/path/README.md"
+    )
+
+    # Mock find_repo_root to return None (simulating no git repo found)
+    mocker.patch("src.workflows.find_repo_root", return_value=None)
+
+    # When: Preparing context for doc type with analyze_entire_repo=True but no git
+    # Then: Should exit with code 1
+    with pytest.raises(SystemExit) as exc_info:
+        prepare_documentation_context(
+            target_module_path=str(temp_module_dir),
+            doc_type=DocType.PROJECT_README,
+            depth=None,
+        )
+
+    assert exc_info.value.code == 1
+
+
 def test_generate_documentation_style_guide_creates_docs_dir(
     mocker: MockerFixture,
     tmp_path: Path,
@@ -477,6 +519,101 @@ def test_generate_documentation_style_guide_creates_docs_dir(
     style_guide_path = repo_dir / "docs" / "style-guide.md"
     assert style_guide_path.exists()
     assert (repo_dir / "docs").is_dir()
+
+
+def test_generate_documentation_with_cli_depth_parameter(
+    mocker: MockerFixture,
+    tmp_path: Path,
+    sample_drift_check_with_drift: DocumentationDriftCheck,
+    sample_component_documentation: ModuleDocumentation,
+) -> None:
+    """Test generate_documentation uses CLI depth parameter when provided."""
+    # Create module dir with README
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "README.md").write_text("# Old Docs")
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.initialize_llm")
+
+    # Mock get_module_context to capture the depth parameter
+    mock_get_context = mocker.patch(
+        "src.workflows.get_module_context", return_value="code context"
+    )
+    mocker.patch(
+        "src.workflows.check_drift", return_value=sample_drift_check_with_drift
+    )
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
+    mocker.patch(
+        "src.workflows.generate_doc", return_value=sample_component_documentation
+    )
+
+    # Mock formatter
+    mock_formatter = mocker.Mock(return_value="# New Docs")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.MODULE_README: test_doc_config}
+    )
+
+    # When: Generating documentation with explicit depth parameter
+    generate_documentation(target_module_path=str(module_dir), depth=2)
+
+    # Then: get_module_context should be called with depth=2
+    mock_get_context.assert_called_once()
+    call_args = mock_get_context.call_args[1]
+    assert call_args["depth"] == 2
+
+
+def test_generate_documentation_with_config_file_depth(
+    mocker: MockerFixture,
+    tmp_path: Path,
+    sample_drift_check_with_drift: DocumentationDriftCheck,
+    sample_component_documentation: ModuleDocumentation,
+) -> None:
+    """Test generate_documentation uses config file_depth when CLI depth is None."""
+    # Create module dir with README
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "README.md").write_text("# Old Docs")
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.initialize_llm")
+
+    # Mock config with file_depth setting
+    mock_config = mocker.Mock()
+    mock_config.file_depth = 3
+    mocker.patch("src.workflows.load_config", return_value=mock_config)
+
+    # Mock get_module_context to capture the depth parameter
+    mock_get_context = mocker.patch(
+        "src.workflows.get_module_context", return_value="code context"
+    )
+    mocker.patch(
+        "src.workflows.check_drift", return_value=sample_drift_check_with_drift
+    )
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
+    mocker.patch(
+        "src.workflows.generate_doc", return_value=sample_component_documentation
+    )
+
+    # Mock formatter
+    mock_formatter = mocker.Mock(return_value="# New Docs")
+    test_doc_config = replace(
+        DOC_CONFIGS[DocType.MODULE_README], formatter=mock_formatter
+    )
+    mocker.patch.dict(
+        "src.workflows.DOC_CONFIGS", {DocType.MODULE_README: test_doc_config}
+    )
+
+    # When: Generating documentation without CLI depth (should use config)
+    generate_documentation(target_module_path=str(module_dir))
+
+    # Then: get_module_context should be called with depth=3 from config
+    mock_get_context.assert_called_once()
+    call_args = mock_get_context.call_args[1]
+    assert call_args["depth"] == 3
 
 
 def test_check_multiple_modules_drift_not_in_git_repo(

@@ -96,6 +96,16 @@ def test_resolve_output_path_style_guide_no_git(tmp_path: Path) -> None:
         resolve_output_path(doc_type=DocType.STYLE_GUIDE, module_path=str(module_dir))
 
 
+def test_resolve_output_path_style_guide_invalid_type(
+    git_repo_with_module: tuple[Path, Path],
+) -> None:
+    """Test resolve_output_path raises ValueError for invalid doc type."""
+    _, module_dir = git_repo_with_module
+
+    with pytest.raises(ValueError, match="Unknown doc type"):
+        resolve_output_path(doc_type="NOT-VALID", module_path=str(module_dir))  # type: ignore
+
+
 def test_ensure_output_directory_creates_directory(tmp_path: Path) -> None:
     """Test ensure_output_directory creates parent directory."""
     output_path = tmp_path / "new_dir" / "subdir" / "file.md"
