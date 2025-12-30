@@ -418,9 +418,7 @@ def test_find_python_files_depth_zero(tmp_path: Path) -> None:
     subdir.mkdir()
     (subdir / "nested.py").write_text("nested")
 
-    files = _find_source_files(
-        module_path=str(module_dir), depth=0, file_types=[".py"]
-    )
+    files = _find_source_files(module_path=str(module_dir), depth=0, file_types=[".py"])
 
     assert len(files) == 1
     assert any("root.py" in f for f in files)
@@ -443,9 +441,7 @@ def test_find_python_files_depth_one(tmp_path: Path) -> None:
     subsubdir.mkdir()
     (subsubdir / "level2.py").write_text("level2")
 
-    files = _find_source_files(
-        module_path=str(module_dir), depth=1, file_types=[".py"]
-    )
+    files = _find_source_files(module_path=str(module_dir), depth=1, file_types=[".py"])
 
     assert len(files) == 2
     assert any("root.py" in f for f in files)

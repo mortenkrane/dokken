@@ -39,7 +39,8 @@ def get_module_context(*, module_path: str, depth: int = 0) -> str:
         if not source_files:
             file_types_str = ", ".join(config.file_types)
             console.print(
-                f"[yellow]⚠[/yellow] No source files ({file_types_str}) found in {module_path}"
+                f"[yellow]⚠[/yellow] No source files ({file_types_str}) found in"
+                f"{module_path}"
             )
             return ""
 

@@ -3,7 +3,7 @@
 from typing import Any
 
 
-def merge_config(base: dict[str, Any], override: dict[str, Any]) -> None:
+def merge_config(base: dict[str, Any], override: dict[str, Any]) -> None:  # noqa: C901
     """
     Merge override config into base config (in-place).
 
