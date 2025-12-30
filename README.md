@@ -173,6 +173,7 @@ file_types = [".py"]           # Python only (default)
 ```
 
 **Notes:**
+
 - Extensions can be specified with or without leading dot (`.py` or `py`)
 - Applies to all modules in the repository
 - Can be overridden in module-specific `.dokken.toml` files
