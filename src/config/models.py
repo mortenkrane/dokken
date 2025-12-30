@@ -71,3 +71,11 @@ class DokkenConfig(BaseModel):
         default_factory=lambda: [".py"],
         description="List of file extensions to analyze (e.g., ['.py', '.js', '.ts'])",
     )
+    file_depth: int | None = Field(
+        default=None,
+        description=(
+            "Default directory depth to traverse (0=root only, 1=root+1 level, "
+            "-1=infinite). Overridden by CLI --depth parameter."
+        ),
+        ge=-1,
+    )

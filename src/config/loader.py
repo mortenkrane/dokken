@@ -42,6 +42,7 @@ def load_config(*, module_path: str) -> DokkenConfig:
         "cache": {},
         "modules": [],
         "file_types": [".py"],
+        "file_depth": None,
     }
 
     # Load global config from repo root if it exists
@@ -74,6 +75,7 @@ def load_config(*, module_path: str) -> DokkenConfig:
         cache=cache_config,
         modules=config_data.get("modules", []),
         file_types=config_data.get("file_types", [".py"]),
+        file_depth=config_data.get("file_depth"),
     )
 
 

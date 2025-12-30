@@ -34,3 +34,4 @@ class ConfigDataDict(TypedDict, total=False):
     cache: CacheDict
     modules: list[str]
     file_types: list[str]
+    file_depth: int | None

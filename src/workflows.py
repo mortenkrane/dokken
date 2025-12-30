@@ -46,7 +46,7 @@ def prepare_documentation_context(
     Args:
         target_module_path: Path to the module directory.
         doc_type: Type of documentation to process.
-        depth: Directory depth to traverse, or None to use doc type's default.
+        depth: Directory depth to traverse, or None to use config/doc type defaults.
 
     Returns:
         DocumentationContext with all necessary paths and configuration.
@@ -79,7 +79,19 @@ def prepare_documentation_context(
     else:
         analysis_path = target_module_path
 
-    analysis_depth = depth if depth is not None else doc_config.default_depth
+    # Determine depth with priority: CLI > TOML config > doc type default
+    if depth is not None:
+        # CLI parameter has highest priority
+        analysis_depth = depth
+    else:
+        # Load config to check for file_depth setting
+        config = load_config(module_path=target_module_path)
+        if config.file_depth is not None:
+            # Use TOML config value if specified
+            analysis_depth = config.file_depth
+        else:
+            # Fall back to doc type's default depth
+            analysis_depth = doc_config.default_depth
 
     # Print context information
     console.print(f"\n[dim]Doc type:[/dim] {doc_type.value}")

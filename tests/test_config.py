@@ -23,6 +23,7 @@ def test_dokken_config_defaults() -> None:
     assert config.exclusions.files == []
     assert config.exclusions.symbols == []
     assert config.file_types == [".py"]
+    assert config.file_depth is None
 
 
 def test_load_config_no_config_file(tmp_path: Path) -> None:
@@ -549,4 +550,135 @@ symbols = ["test_*"]
 
     # Check exclusions
     assert config.exclusions.files == ["*.test.js", "*.spec.ts"]
+    assert config.exclusions.symbols == ["test_*"]
+
+
+# --- Tests for File Depth ---
+
+
+def test_load_config_with_file_depth(tmp_path: Path) -> None:
+    """Test load_config loads file_depth from .dokken.toml."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+file_depth = 2
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    assert config.file_depth == 2
+
+
+def test_load_config_file_depth_default(tmp_path: Path) -> None:
+    """Test load_config defaults to None when file_depth not specified."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+[exclusions]
+files = ["__init__.py"]
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    assert config.file_depth is None
+
+
+def test_load_config_file_depth_zero(tmp_path: Path) -> None:
+    """Test load_config accepts file_depth of 0 (root only)."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+file_depth = 0
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    assert config.file_depth == 0
+
+
+def test_load_config_file_depth_infinite(tmp_path: Path) -> None:
+    """Test load_config accepts file_depth of -1 (infinite recursion)."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+file_depth = -1
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    assert config.file_depth == -1
+
+
+def test_load_config_file_depth_invalid(tmp_path: Path) -> None:
+    """Test load_config rejects invalid file_depth values (< -1)."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+file_depth = -2
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    # Should raise ValueError for invalid depth
+    with pytest.raises(ValueError):
+        load_config(module_path=str(module_dir))
+
+
+def test_load_config_merge_file_depth(tmp_path: Path) -> None:
+    """Test module-level file_depth overrides repo-level file_depth."""
+    # Create repo structure
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / ".git").mkdir()
+
+    module_dir = repo_root / "src" / "module"
+    module_dir.mkdir(parents=True)
+
+    # Create repo-level config
+    repo_config = """
+file_depth = 1
+"""
+    (repo_root / ".dokken.toml").write_text(repo_config)
+
+    # Create module-level config that overrides file_depth
+    module_config = """
+file_depth = 2
+"""
+    (module_dir / ".dokken.toml").write_text(module_config)
+
+    config = load_config(module_path=str(module_dir))
+
+    # Module config should override repo config for file_depth
+    assert config.file_depth == 2
+
+
+def test_load_config_file_depth_with_other_settings(tmp_path: Path) -> None:
+    """Test load_config handles file_depth with other configuration options."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+file_depth = 2
+file_types = [".js", ".ts"]
+
+[exclusions]
+files = ["*.test.js"]
+symbols = ["test_*"]
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    # Check all settings
+    assert config.file_depth == 2
+    assert config.file_types == [".js", ".ts"]
+    assert config.exclusions.files == ["*.test.js"]
     assert config.exclusions.symbols == ["test_*"]
