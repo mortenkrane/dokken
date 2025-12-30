@@ -16,36 +16,41 @@ console = Console()
 
 def get_module_context(*, module_path: str, depth: int = 0) -> str:
     """
-    Fetches the full code content for all Python files in a module directory.
+    Fetches the full code content for all source files in a module directory.
 
-    Respects exclusion rules from .dokken.toml configuration files.
+    Respects exclusion rules and file type configuration from .dokken.toml.
 
     Args:
         module_path: The path to the module directory to analyze.
         depth: Directory depth to traverse. 0=root only, 1=root+1 level, -1=infinite.
 
     Returns:
-        A formatted string containing all Python files' content.
+        A formatted string containing all source files' content.
     """
     try:
-        # Load configuration for exclusions
+        # Load configuration for exclusions and file types
         config = load_config(module_path=module_path)
 
-        # Find all Python files in the module directory
-        python_files = _find_python_files(module_path=module_path, depth=depth)
+        # Find all source files in the module directory
+        source_files = _find_source_files(
+            module_path=module_path, depth=depth, file_types=config.file_types
+        )
 
-        if not python_files:
-            console.print(f"[yellow]⚠[/yellow] No Python files found in {module_path}")
+        if not source_files:
+            file_types_str = ", ".join(config.file_types)
+            console.print(
+                f"[yellow]⚠[/yellow] No source files ({file_types_str}) found in {module_path}"
+            )
             return ""
 
         # Filter out excluded files
         filtered_files = _filter_excluded_files(
-            python_files, module_path, config.exclusions.files
+            source_files, module_path, config.exclusions.files
         )
 
         if not filtered_files:
             console.print(
-                f"[yellow]⚠[/yellow] All Python files in {module_path} are excluded"
+                f"[yellow]⚠[/yellow] All source files in {module_path} are excluded"
             )
             return ""
 
@@ -99,39 +104,51 @@ def _read_and_filter_file(
         return file_path, None
 
 
-def _find_python_files(*, module_path: str, depth: int) -> list[str]:
+def _find_source_files(
+    *, module_path: str, depth: int, file_types: list[str]
+) -> list[str]:
     """
-    Find Python files in a directory up to a specified depth.
+    Find source files with specified extensions in a directory up to a specified depth.
 
     Args:
         module_path: The root directory to search.
         depth: Directory depth to traverse. 0=root only, 1=root+1 level, -1=infinite.
+        file_types: List of file extensions to include (e.g., ['.py', '.js', '.ts']).
 
     Returns:
-        List of absolute paths to Python files.
+        List of absolute paths to matching source files.
     """
     root = Path(module_path)
-    python_files = []
+    source_files = []
 
-    if depth == -1:
-        # Infinite recursion using rglob (recursive glob)
-        python_files = [str(p) for p in root.rglob("*.py")]
-    elif depth == 0:
-        # Root level only - direct children with .py extension
-        python_files = [str(p) for p in root.glob("*.py")]
-    else:
-        # Limited depth recursion
-        # Start with root level files (*.py)
-        python_files = [str(p) for p in root.glob("*.py")]
+    # Normalize extensions to ensure they start with a dot
+    normalized_extensions = [
+        ext if ext.startswith(".") else f".{ext}" for ext in file_types
+    ]
 
-        # Add files from deeper levels
-        # depth=1 adds */*.py, depth=2 adds */*.py and */*/*.py, etc.
-        for current_depth in range(1, depth + 1):
-            # Build pattern: depth=1 → "*/*.py", depth=2 → "*/*/*.py"
-            pattern = "/".join(["*"] * current_depth) + "/*.py"
-            python_files.extend([str(p) for p in root.glob(pattern)])
+    for extension in normalized_extensions:
+        # Convert extension to glob pattern (e.g., '.py' -> '*.py')
+        glob_pattern = f"*{extension}"
 
-    return python_files
+        if depth == -1:
+            # Infinite recursion using rglob (recursive glob)
+            source_files.extend([str(p) for p in root.rglob(glob_pattern)])
+        elif depth == 0:
+            # Root level only - direct children
+            source_files.extend([str(p) for p in root.glob(glob_pattern)])
+        else:
+            # Limited depth recursion
+            # Start with root level files
+            source_files.extend([str(p) for p in root.glob(glob_pattern)])
+
+            # Add files from deeper levels
+            # depth=1 adds */*.ext, depth=2 adds */*.ext and */*/*.ext, etc.
+            for current_depth in range(1, depth + 1):
+                # Build pattern: depth=1 → "*/*.ext", depth=2 → "*/*/*.ext"
+                pattern = "/".join(["*"] * current_depth) + f"/{glob_pattern}"
+                source_files.extend([str(p) for p in root.glob(pattern)])
+
+    return source_files
 
 
 def _filter_excluded_files(

@@ -67,3 +67,7 @@ class DokkenConfig(BaseModel):
         default_factory=list,
         description="List of module paths to check for drift (relative to repo root)",
     )
+    file_types: list[str] = Field(
+        default_factory=lambda: [".py"],
+        description="List of file extensions to analyze (e.g., ['.py', '.js', '.ts'])",
+    )

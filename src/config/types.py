@@ -33,3 +33,4 @@ class ConfigDataDict(TypedDict, total=False):
     custom_prompts: CustomPromptsDict
     cache: CacheDict
     modules: list[str]
+    file_types: list[str]
