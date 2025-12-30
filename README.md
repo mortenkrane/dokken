@@ -142,6 +142,9 @@ modules = [
     "src/api",
     "src/database"
 ]
+
+# File types to analyze (optional, defaults to [".py"])
+file_types = [".py", ".js", ".ts"]
 ```
 
 **Usage:**
@@ -157,18 +160,39 @@ dokken check src/auth           # Check single module
 - Exit code 1 if any module has drift (CI/CD-friendly)
 - Summary report at end showing all modules
 
+### File Types (`.dokken.toml`)
+
+Configure which file types to analyze for documentation:
+
+```toml
+# File types to analyze (optional, defaults to [".py"])
+# Supports any programming language file extension
+file_types = [".py"]           # Python only (default)
+# file_types = [".js", ".ts"]  # JavaScript/TypeScript
+# file_types = [".py", ".js"]  # Multiple languages
+```
+
+**Notes:**
+
+- Extensions can be specified with or without leading dot (`.py` or `py`)
+- Applies to all modules in the repository
+- Can be overridden in module-specific `.dokken.toml` files
+
 ### Exclusion Patterns (`.dokken.toml`)
 
 **File locations:**
 
-- `/.dokken.toml` - Global exclusions and module list
-- `<module>/.dokken.toml` - Module-specific exclusions
+- `/.dokken.toml` - Global exclusions, module list, and file types
+- `<module>/.dokken.toml` - Module-specific exclusions and file types
 
 **Syntax:**
 
 ```toml
 # Configure modules to check (repo root only)
 modules = ["src/auth", "src/api"]
+
+# File types to analyze (optional, defaults to [".py"])
+file_types = [".py", ".js", ".ts"]
 
 [exclusions]
 # Exclude files (glob patterns supported)
@@ -186,12 +210,13 @@ symbols = [
 ]
 ```
 
-**Common patterns:**
+**Common file exclusion patterns:**
 
-- Test files: `"*_test.py"`, `"test_*.py"`
+- Test files: `"*_test.py"`, `"test_*.py"`, `"*.spec.js"`
 - Private code: `"_private_*"`, `"_internal_*"`
 - Boilerplate: `"__init__.py"`, `"conftest.py"`
 - Experimental: `"experimental_*"`, `"Temp*"`
+- Build artifacts: `"*.min.js"`, `"*.d.ts"`
 
 ### Custom Prompts (`.dokken.toml`)
 

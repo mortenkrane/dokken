@@ -22,6 +22,7 @@ def test_dokken_config_defaults() -> None:
     assert isinstance(config.exclusions, ExclusionConfig)
     assert config.exclusions.files == []
     assert config.exclusions.symbols == []
+    assert config.file_types == [".py"]
 
 
 def test_load_config_no_config_file(tmp_path: Path) -> None:
@@ -463,3 +464,89 @@ max_size = 0
     # Should raise ValueError with helpful message
     with pytest.raises(ValueError, match="Invalid cache configuration"):
         load_config(module_path=str(module_dir))
+
+
+# --- Tests for File Types ---
+
+
+def test_load_config_with_file_types(tmp_path: Path) -> None:
+    """Test load_config loads file_types from .dokken.toml."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+file_types = [".js", ".ts", ".jsx"]
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    assert config.file_types == [".js", ".ts", ".jsx"]
+
+
+def test_load_config_file_types_default(tmp_path: Path) -> None:
+    """Test load_config defaults to ['.py'] when file_types not specified."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+[exclusions]
+files = ["__init__.py"]
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    assert config.file_types == [".py"]
+
+
+def test_load_config_merge_file_types(tmp_path: Path) -> None:
+    """Test module-level file_types override repo-level file_types."""
+    # Create repo structure
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / ".git").mkdir()
+
+    module_dir = repo_root / "src" / "module"
+    module_dir.mkdir(parents=True)
+
+    # Create repo-level config
+    repo_config = """
+file_types = [".py"]
+"""
+    (repo_root / ".dokken.toml").write_text(repo_config)
+
+    # Create module-level config that overrides file_types
+    module_config = """
+file_types = [".js", ".ts"]
+"""
+    (module_dir / ".dokken.toml").write_text(module_config)
+
+    config = load_config(module_path=str(module_dir))
+
+    # Module config should override (not extend) repo config for file_types
+    assert set(config.file_types) == {".js", ".ts"}
+
+
+def test_load_config_file_types_and_exclusions(tmp_path: Path) -> None:
+    """Test load_config handles both file_types and exclusions."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    config_content = """
+file_types = [".js", ".ts"]
+
+[exclusions]
+files = ["*.test.js", "*.spec.ts"]
+symbols = ["test_*"]
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    config = load_config(module_path=str(module_dir))
+
+    # Check file_types
+    assert config.file_types == [".js", ".ts"]
+
+    # Check exclusions
+    assert config.exclusions.files == ["*.test.js", "*.spec.ts"]
+    assert config.exclusions.symbols == ["test_*"]

@@ -83,6 +83,9 @@ When working with this codebase, be aware of these key design decisions:
 
 - **Module Structure**: See [docs/style-guide.md](docs/style-guide.md#module-responsibilities) for separation of concerns
 - **Shallow Code Analysis**: `code_analyzer.py` only scans top-level Python files (non-recursive by design)
+- **Configurable File Types**: File types to analyze configured via `file_types` in `.dokken.toml` (defaults to `[".py"]` for backward compatibility)
+- **File Type Override Behavior**: Module-level `file_types` replace (not extend) repo-level settings, unlike `exclusions` and `modules` which extend
+- **Extension Normalization**: File extensions can be specified with or without leading dot (`.py` or `py` both accepted)
 - **Git Base Branch**: Configurable via `GIT_BASE_BRANCH = "main"` in `git.py`
 - **Alphabetically Sorted Decisions**: Formatters sort design decisions alphabetically to prevent diff noise
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists (saves LLM calls)

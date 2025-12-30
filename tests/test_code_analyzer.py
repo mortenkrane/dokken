@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 from src.code_analyzer import (
     _filter_excluded_files,
     _filter_excluded_symbols,
-    _find_python_files,
+    _find_source_files,
     get_module_context,
 )
 
@@ -48,7 +48,7 @@ def test_get_module_context_no_python_files(
 
     assert context == ""
     mock_console.print.assert_called_once()
-    assert "No Python files found" in str(mock_console.print.call_args)
+    assert "No source files" in str(mock_console.print.call_args)
 
 
 def test_get_module_context_includes_file_content(
@@ -399,7 +399,7 @@ files = ["test_*.py"]
     assert context == ""
     # Should print warning about all files excluded
     assert any(
-        "All Python files" in str(call) and "are excluded" in str(call)
+        "All source files" in str(call) and "are excluded" in str(call)
         for call in mock_console.print.call_args_list
     )
 
@@ -408,7 +408,7 @@ files = ["test_*.py"]
 
 
 def test_find_python_files_depth_zero(tmp_path: Path) -> None:
-    """Test _find_python_files with depth=0 finds only root level files."""
+    """Test _find_source_files with depth=0 finds only root level files."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
     (module_dir / "root.py").write_text("root")
@@ -418,7 +418,7 @@ def test_find_python_files_depth_zero(tmp_path: Path) -> None:
     subdir.mkdir()
     (subdir / "nested.py").write_text("nested")
 
-    files = _find_python_files(module_path=str(module_dir), depth=0)
+    files = _find_source_files(module_path=str(module_dir), depth=0, file_types=[".py"])
 
     assert len(files) == 1
     assert any("root.py" in f for f in files)
@@ -426,7 +426,7 @@ def test_find_python_files_depth_zero(tmp_path: Path) -> None:
 
 
 def test_find_python_files_depth_one(tmp_path: Path) -> None:
-    """Test _find_python_files with depth=1 finds root and one level deep."""
+    """Test _find_source_files with depth=1 finds root and one level deep."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
     (module_dir / "root.py").write_text("root")
@@ -441,7 +441,7 @@ def test_find_python_files_depth_one(tmp_path: Path) -> None:
     subsubdir.mkdir()
     (subsubdir / "level2.py").write_text("level2")
 
-    files = _find_python_files(module_path=str(module_dir), depth=1)
+    files = _find_source_files(module_path=str(module_dir), depth=1, file_types=[".py"])
 
     assert len(files) == 2
     assert any("root.py" in f for f in files)
@@ -450,7 +450,7 @@ def test_find_python_files_depth_one(tmp_path: Path) -> None:
 
 
 def test_find_python_files_depth_infinite(tmp_path: Path) -> None:
-    """Test _find_python_files with depth=-1 finds all files recursively."""
+    """Test _find_source_files with depth=-1 finds all files recursively."""
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
     (module_dir / "root.py").write_text("root")
@@ -464,7 +464,9 @@ def test_find_python_files_depth_infinite(tmp_path: Path) -> None:
     subsubdir.mkdir()
     (subsubdir / "level2.py").write_text("level2")
 
-    files = _find_python_files(module_path=str(module_dir), depth=-1)
+    files = _find_source_files(
+        module_path=str(module_dir), depth=-1, file_types=[".py"]
+    )
 
     assert len(files) == 3
     assert any("root.py" in f for f in files)
@@ -512,3 +514,96 @@ def test_get_module_context_oserror_on_module_path(mocker: MockerFixture) -> Non
         "Error accessing module path" in str(call)
         for call in mock_console.print.call_args_list
     )
+
+
+# Tests for multi-language file type support
+
+
+def test_find_source_files_multiple_extensions(tmp_path: Path) -> None:
+    """Test _find_source_files finds multiple file types."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "file1.py").write_text("python")
+    (module_dir / "file2.js").write_text("javascript")
+    (module_dir / "file3.ts").write_text("typescript")
+    (module_dir / "file4.txt").write_text("text")
+
+    files = _find_source_files(
+        module_path=str(module_dir), depth=0, file_types=[".py", ".js", ".ts"]
+    )
+
+    assert len(files) == 3
+    assert any("file1.py" in f for f in files)
+    assert any("file2.js" in f for f in files)
+    assert any("file3.ts" in f for f in files)
+    assert not any("file4.txt" in f for f in files)
+
+
+def test_find_source_files_extension_normalization(tmp_path: Path) -> None:
+    """Test _find_source_files normalizes extensions with/without dots."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "file1.py").write_text("python")
+    (module_dir / "file2.js").write_text("javascript")
+
+    # Test with and without leading dots
+    files = _find_source_files(
+        module_path=str(module_dir), depth=0, file_types=["py", ".js"]
+    )
+
+    assert len(files) == 2
+    assert any("file1.py" in f for f in files)
+    assert any("file2.js" in f for f in files)
+
+
+def test_get_module_context_with_custom_file_types(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Test get_module_context respects custom file types from config."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    # Create files of different types
+    (module_dir / "script.py").write_text("# Python")
+    (module_dir / "app.js").write_text("// JavaScript")
+    (module_dir / "component.ts").write_text("// TypeScript")
+
+    # Create config with custom file types
+    config_content = """
+file_types = [".js", ".ts"]
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    mocker.patch("src.code_analyzer.console")
+
+    context = get_module_context(module_path=str(module_dir))
+
+    # Should include JS and TS files
+    assert "app.js" in context
+    assert "component.ts" in context
+    assert "// JavaScript" in context
+    assert "// TypeScript" in context
+    # Should not include Python file
+    assert "script.py" not in context
+    assert "# Python" not in context
+
+
+def test_get_module_context_default_file_types(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Test get_module_context defaults to .py files when no config."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    (module_dir / "script.py").write_text("# Python")
+    (module_dir / "app.js").write_text("// JavaScript")
+
+    mocker.patch("src.code_analyzer.console")
+
+    context = get_module_context(module_path=str(module_dir))
+
+    # Should only include Python files by default
+    assert "script.py" in context
+    assert "# Python" in context
+    assert "app.js" not in context
+    assert "// JavaScript" not in context
