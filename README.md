@@ -1,6 +1,25 @@
 # Dokken - Documentation Drift Detection
 
-AI-powered documentation generation and drift detection. Detects when documentation is out of sync with code changes.
+## Why Dokken?
+
+In the era of AI coding assistants and agents, documentation matters more than ever—just not for the reasons you might think.
+
+Here's the paradox: your AI pair programmer can read every line of code in milliseconds, but it still needs docs to understand _why_ your system works the way it does. The architectural decisions. The boundaries between modules. The things you can't grep for. Without that context, even the best AI will suggest changes that technically work but architecturally regress your codebase.
+
+And let's be honest—documentation has always sucked at its job. Not because developers can't write, but because docs have a shelf life measured in commits. They rot. They lie. Nobody updates them because nobody trusts them, and nobody trusts them because nobody updates them. It's the software equivalent of heat death.
+
+**Dokken breaks this cycle.** It detects when your docs drift from reality and regenerates them automatically. No more archaeological digs through git history to figure out if that README is from 2019 or 2023. No more "the code is the documentation" excuses (we both know that's a cop-out).
+
+But here's what matters: **Dokken writes documentation for humans, not just machines.** Because at the end of the day, humans are the ones who need to understand the overall system architecture to make good decisions—whether they're coding manually or instructing an AI to do it for them. Your AI assistant might be able to implement a feature, but you need to decide if that feature belongs in the auth module or the API layer. That's a human judgment call, and it requires human-level understanding.
+
+**What Dokken does:**
+- Detects documentation drift automatically (new functions, changed signatures, architectural shifts)
+- Regenerates docs that are actually useful (architectural patterns, design decisions, module boundaries)
+- Works in CI/CD pipelines (exit code 1 if docs are stale)
+- Captures human intent through interactive questionnaires (the "why" that code can't express)
+- Generates search-optimized docs (because grep is how we all find things anyway)
+
+**The result?** Documentation you can trust. Documentation your AI can use. Documentation that doesn't make you cringe when you read it six months later.
 
 ## Quick Start
 
