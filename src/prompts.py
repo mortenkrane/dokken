@@ -45,9 +45,10 @@ Use this checklist to determine drift. Drift is detected if ANY of these are tru
    HIGH LEVEL, and these are NOT documented. Focus on architectural changes, NOT new
    functions or methods. Ask: "Would a developer be confused about the module's PURPOSE
    or ARCHITECTURE without knowing about this?" Only flag if YES. Examples that SHOULD
-   trigger drift: switching from sync to async architecture, adding authentication layer,
-   changing from REST to GraphQL. Examples that should NOT: new functions/methods, new
-   parameters, new fields/attributes, implementation optimizations.
+   trigger drift: switching from sync to async architecture, adding authentication
+   layer, changing from REST to GraphQL. Examples that should NOT: new
+   functions/methods, new parameters, new fields/attributes, implementation
+   optimizations.
 4. **Outdated Design Decisions**: The documentation explains design decisions that
    are no longer present in the code.
 5. **Incorrect Dependencies**: The documentation lists external dependencies (different
@@ -170,7 +171,8 @@ FORMATTING GUIDELINES:
 Analyze the code context and generate comprehensive documentation that covers:
 
 1. **How to Use**: Describe conceptually how developers interact with this module.
-   Focus on the general patterns and approaches, NOT specific function names. For example:
+   Focus on the general patterns and approaches, NOT specific function names.
+   For example:
    - "Developers access this module through CLI commands that..."
    - "This module provides factories that create..."
    - "Users configure behavior by..."
