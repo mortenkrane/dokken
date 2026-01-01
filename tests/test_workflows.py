@@ -799,3 +799,163 @@ def test_check_multiple_modules_drift_with_fix(
     # When: Checking all modules with fix=True
     # Then: Should complete without raising (auto-fix mode)
     check_multiple_modules_drift(fix=True)
+
+
+# Tests for error recovery and resilience
+
+
+def test_generate_documentation_handles_write_errors(
+    mocker: MockerFixture, temp_module_dir: Path
+) -> None:
+    """Test generate_documentation handles file write errors."""
+    import pytest
+
+    # Mock LLM
+    mocker.patch("src.workflows.initialize_llm")
+    mocker.patch("src.workflows.get_module_context", return_value="code")
+
+    mock_drift_check = DocumentationDriftCheck(
+        drift_detected=True, rationale="No docs"
+    )
+    mock_doc = ModuleDocumentation(
+        component_name="Test",
+        purpose_and_scope="Test",
+        architecture_overview="Test",
+        main_entry_points="Test",
+        control_flow="Test",
+        key_design_decisions="Test",
+        external_dependencies="None",
+    )
+
+    mocker.patch("src.workflows.check_drift", return_value=mock_drift_check)
+    mocker.patch("src.workflows.generate_doc", return_value=mock_doc)
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
+
+    # Simulate write failure (permission denied)
+    mocker.patch("builtins.open", side_effect=PermissionError("Permission denied"))
+
+    # When: Generating documentation
+    # Then: Should propagate the error
+    with pytest.raises(PermissionError, match="Permission denied"):
+        generate_documentation(target_module_path=str(temp_module_dir))
+
+
+def test_check_documentation_drift_handles_corrupted_readme(
+    mocker: MockerFixture, temp_module_dir: Path
+) -> None:
+    """Test check_documentation_drift handles corrupted README files."""
+    # Create a corrupted README (binary data)
+    readme = temp_module_dir / "README.md"
+    readme.write_bytes(b"\xff\xfe\x00\x01Invalid UTF-8")
+
+    mocker.patch("src.workflows.initialize_llm")
+    mocker.patch("src.workflows.get_module_context", return_value="code")
+    mocker.patch("src.workflows.console")
+
+    # When: Checking drift with corrupted README
+    # Then: Should raise an error during file read
+    import pytest
+
+    with pytest.raises(UnicodeDecodeError):
+        check_documentation_drift(target_module_path=str(temp_module_dir))
+
+
+def test_generate_documentation_handles_llm_init_failure(
+    mocker: MockerFixture, temp_module_dir: Path
+) -> None:
+    """Test generate_documentation handles LLM initialization failure."""
+    import pytest
+
+    # Mock LLM initialization to fail
+    mocker.patch(
+        "src.workflows.initialize_llm",
+        side_effect=ValueError("No API key found"),
+    )
+    mocker.patch("src.workflows.console")
+
+    # When: Generating documentation
+    # Then: Should propagate the error
+    with pytest.raises(ValueError, match="No API key found"):
+        generate_documentation(target_module_path=str(temp_module_dir))
+
+
+def test_check_multiple_modules_drift_partial_failures(
+    mocker: MockerFixture, tmp_path: Path
+) -> None:
+    """Test check_multiple_modules_drift handles partial failures correctly."""
+    import pytest
+
+    # Create a git repo with multiple modules
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
+
+    # Create three modules
+    for i in range(1, 4):
+        module = repo_dir / f"module{i}"
+        module.mkdir()
+        (module / "README.md").write_text(f"# Module {i}")
+
+    mocker.patch("src.workflows.console")
+    mocker.patch("src.workflows.find_repo_root", return_value=str(repo_dir))
+    mocker.patch(
+        "src.workflows.load_config",
+        return_value=DokkenConfig(modules=["module1", "module2", "module3"]),
+    )
+
+    # Simulate different failures
+    def check_side_effect(*args, **kwargs):
+        module_path = kwargs["target_module_path"]
+        if "module1" in module_path:
+            # Module 1 passes
+            return
+        elif "module2" in module_path:
+            # Module 2 has drift
+            raise DocumentationDriftError(rationale="Drift detected", module_path=module_path)
+        else:
+            # Module 3 has unexpected error
+            raise RuntimeError("Unexpected LLM error")
+
+    mocker.patch(
+        "src.workflows.check_documentation_drift", side_effect=check_side_effect
+    )
+
+    # When: Checking all modules with mixed results
+    # Then: Should stop at first unexpected error (not drift)
+    with pytest.raises(RuntimeError, match="Unexpected LLM error"):
+        check_multiple_modules_drift()
+
+
+def test_generate_documentation_disk_full_error(
+    mocker: MockerFixture, temp_module_dir: Path
+) -> None:
+    """Test generate_documentation handles disk full errors."""
+    import pytest
+
+    mocker.patch("src.workflows.initialize_llm")
+    mocker.patch("src.workflows.get_module_context", return_value="code")
+    mocker.patch("src.workflows.console")
+
+    mock_drift = DocumentationDriftCheck(drift_detected=True, rationale="No docs")
+    mock_doc = ModuleDocumentation(
+        component_name="Test",
+        purpose_and_scope="Test",
+        architecture_overview="Test",
+        main_entry_points="Test",
+        control_flow="Test",
+        key_design_decisions="Test",
+        external_dependencies="None",
+    )
+
+    mocker.patch("src.workflows.check_drift", return_value=mock_drift)
+    mocker.patch("src.workflows.generate_doc", return_value=mock_doc)
+    mocker.patch("src.workflows.ask_human_intent", return_value=None)
+
+    # Simulate disk full error
+    mocker.patch("builtins.open", side_effect=OSError(28, "No space left on device"))
+
+    # When: Generating documentation
+    # Then: Should propagate the OSError
+    with pytest.raises(OSError, match="No space left on device"):
+        generate_documentation(target_module_path=str(temp_module_dir))
