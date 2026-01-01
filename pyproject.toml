@@ -38,7 +38,6 @@ target-version = "py310"
 ignore = [
     "SIM103",  # Often makes the code hard to read,
     "A005",    # stdlib-module-shadowing,
-    "PLC0415", # Import outside top-level,
 ]
 select = [
     # Ruff rules
