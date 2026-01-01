@@ -26,6 +26,14 @@ But here's what matters: **Dokken writes documentation for humans, not just mach
 
 **The result?** Documentation you can trust. Documentation your AI can use. Documentation that doesn't make you cringe when you read it six months later.
 
+---
+
+**⚠️ Early Development Warning**
+
+Dokken is in early alpha development. Expect breaking changes, rough edges, and occasional surprises. If you're using it in production, pin your versions and test thoroughly. Bug reports and feedback are welcome!
+
+---
+
 ## Quick Start
 
 ```bash
