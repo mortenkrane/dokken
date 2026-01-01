@@ -12,6 +12,8 @@ And let's be honest—documentation has always sucked at its job. Not because de
 
 Here's how it works: Dokken captures the stuff code can't express through an **interactive questionnaire**, asking you about architectural decisions, design trade-offs, and why things are the way they are. Then it generates docs optimized for how both humans and AI agents actually consume them: **through grep and search**. Because let's face it, nobody reads docs cover-to-cover. We all jump straight to the section we need. Dokken's docs are structured so you (or your AI) can find what you're looking for in seconds.
 
+And here's the best part: **Dokken preserves manually written sections.** Write an intro by hand (like this one), add custom examples, or craft specific sections yourself. Dokken will leave them untouched and only regenerate the parts it manages. You get the control of manual documentation with the freshness of automated generation.
+
 But here's what matters: **Dokken writes documentation for humans, not just machines.** Because at the end of the day, humans are the ones who need to understand the overall system architecture to make good decisions, whether they're coding manually or instructing an AI to do it for them. Your AI assistant might be able to implement a feature, but you need to decide if that feature belongs in the auth module or the API layer. That's a human judgment call, and it requires human-level understanding.
 
 **What Dokken does:**
