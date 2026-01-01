@@ -6,9 +6,10 @@ import pytest
 from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
+from src.constants import DEFAULT_CACHE_FILE
 from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
-from src.main import check, cli, generate
+from src.main import _get_cache_file_path, _get_cache_module_path, check, cli, generate
 
 
 @pytest.fixture
@@ -394,15 +395,11 @@ def test_check_command_without_module_path_or_all_flag(runner: CliRunner) -> Non
 
 def test_get_cache_file_path_with_config_error(mocker: MockerFixture) -> None:
     """Test _get_cache_file_path falls back to default on config error."""
-    from src.main import _get_cache_file_path
-
     # Mock load_config to raise an error
     mocker.patch("src.main.load_config", side_effect=ValueError("Config error"))
 
     # Should return default cache file
     result = _get_cache_file_path("some/path")
-
-    from src.constants import DEFAULT_CACHE_FILE
 
     assert result == DEFAULT_CACHE_FILE
 
@@ -411,8 +408,6 @@ def test_get_cache_module_path_with_check_all_no_repo_root(
     mocker: MockerFixture,
 ) -> None:
     """Test _get_cache_module_path returns '.' when --all is used outside git repo."""
-    from src.main import _get_cache_module_path
-
     # Mock find_repo_root to return None (not in a git repo)
     mocker.patch("src.main.find_repo_root", return_value=None)
 

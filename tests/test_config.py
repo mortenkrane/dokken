@@ -329,8 +329,6 @@ module_readme = "Focus on patterns."
 
 def test_custom_prompts_max_length_validation(tmp_path: Path) -> None:
     """Test CustomPrompts rejects prompts exceeding max length."""
-    import pytest
-
     module_dir = tmp_path / "test_module"
     module_dir.mkdir()
 

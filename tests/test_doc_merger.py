@@ -1,6 +1,7 @@
 """Tests for src/doc_merger.py"""
 
 import pytest
+from pydantic import ValidationError
 
 from src.doc_merger import apply_incremental_fixes, parse_sections
 from src.records import DocumentationChange, IncrementalDocumentationFix
@@ -259,8 +260,6 @@ def test_apply_incremental_fixes_multiple_changes(simple_two_section_doc):
 
 def test_apply_incremental_fixes_empty_changes_raises_validation_error():
     """Test that empty changes list is rejected by Pydantic validation."""
-    from pydantic import ValidationError
-
     # Pydantic should reject empty changes list before apply_incremental_fixes is called
     with pytest.raises(ValidationError, match="at least 1 item"):
         IncrementalDocumentationFix(

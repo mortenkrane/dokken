@@ -16,6 +16,7 @@ from src.cache import (
     save_drift_cache_to_disk,
     set_cache_max_size,
 )
+from src.llm import check_drift
 from src.records import DocumentationDriftCheck
 
 
@@ -63,8 +64,6 @@ def test_clear_drift_cache_removes_all_entries(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test clear_drift_cache removes all cached entries."""
-    from src.llm import check_drift
-
     clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -99,8 +98,6 @@ def test_get_drift_cache_info_returns_correct_stats(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test get_drift_cache_info returns accurate cache statistics."""
-    from src.llm import check_drift
-
     clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -131,8 +128,6 @@ def test_save_drift_cache_to_disk(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test save_drift_cache_to_disk persists cache to JSON file."""
-    from src.llm import check_drift
-
     clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -250,8 +245,6 @@ def test_save_and_load_roundtrip(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test save and load cache roundtrip preserves data."""
-    from src.llm import check_drift
-
     clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -290,8 +283,6 @@ def test_set_cache_max_size(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test set_cache_max_size updates the maximum cache size."""
-    from src.llm import check_drift
-
     clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -326,8 +317,6 @@ def test_save_drift_cache_creates_parent_directory(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test save_drift_cache_to_disk creates parent directories."""
-    from src.llm import check_drift
-
     clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -356,8 +345,6 @@ def test_save_drift_cache_handles_permission_error(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test save_drift_cache_to_disk handles OSError gracefully."""
-    from src.llm import check_drift
-
     clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
@@ -387,8 +374,6 @@ def test_save_drift_cache_atomic_write(
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test save_drift_cache_to_disk uses atomic write."""
-    from src.llm import check_drift
-
     clear_drift_cache()
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
