@@ -2,11 +2,11 @@
 
 ## Why Dokken?
 
-In the era of AI coding assistants and agents, documentation matters more than ever—just not for the reasons you might think.
+In the era of AI coding assistants and agents, documentation matters more than ever, just not for the reasons you might think.
 
 Here's the paradox: your AI pair programmer can read every line of code in milliseconds, but it still needs docs to understand _why_ your system works the way it does. The architectural decisions. The boundaries between modules. The things you can't grep for. Without that context, even the best AI will suggest changes that technically work but architecturally regress your codebase.
 
-And let's be honest—documentation has always sucked at its job. Not because developers can't write, but because docs have a shelf life measured in commits. They rot. They lie. Nobody updates them because nobody trusts them, and nobody trusts them because nobody updates them. It's the software equivalent of heat death.
+And let's be honest: documentation has always sucked at its job. Not because developers can't write, but because docs have a shelf life measured in commits. They rot. They lie. Nobody updates them because nobody trusts them, and nobody trusts them because nobody updates them. It's the software equivalent of heat death.
 
 **Dokken breaks this cycle.** It detects when your docs drift from reality and regenerates them automatically. No more archaeological digs through git history to figure out if that README is from 2019 or 2023. No more "the code is the documentation" excuses (we both know that's a cop-out).
 
