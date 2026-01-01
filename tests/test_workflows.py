@@ -13,6 +13,7 @@ from src.doc_types import DocType
 from src.exceptions import DocumentationDriftError
 from src.records import (
     DocumentationChange,
+    DocumentationContext,
     DocumentationDriftCheck,
     IncrementalDocumentationFix,
     ModuleDocumentation,
@@ -22,6 +23,7 @@ from src.workflows import (
     check_multiple_modules_drift,
     fix_documentation_drift,
     generate_documentation,
+    prepare_documentation_context,
 )
 
 
@@ -346,8 +348,6 @@ Old purpose description."""
     mocker.patch("src.workflows.fix_doc_incrementally", return_value=mock_fixes)
 
     # Create a documentation context
-    from src.records import DocumentationContext
-
     test_doc_config = DOC_CONFIGS[DocType.MODULE_README]
     ctx = DocumentationContext(
         doc_config=test_doc_config,
@@ -457,8 +457,6 @@ def test_prepare_documentation_context_analyze_repo_no_git_exits(
     mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test prepare_documentation_context exits for analyze_entire_repo without git."""
-    from src.workflows import prepare_documentation_context
-
     mocker.patch("src.workflows.console")
 
     # Mock resolve_output_path to return successfully (bypass early check)
@@ -808,8 +806,6 @@ def test_generate_documentation_handles_write_errors(
     mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test generate_documentation handles file write errors."""
-    import pytest
-
     # Mock LLM
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code")
@@ -853,8 +849,6 @@ def test_check_documentation_drift_handles_corrupted_readme(
 
     # When: Checking drift with corrupted README
     # Then: Should raise an error during file read
-    import pytest
-
     with pytest.raises(UnicodeDecodeError):
         check_documentation_drift(target_module_path=str(temp_module_dir))
 
@@ -863,8 +857,6 @@ def test_generate_documentation_handles_llm_init_failure(
     mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test generate_documentation handles LLM initialization failure."""
-    import pytest
-
     # Mock LLM initialization to fail
     mocker.patch(
         "src.workflows.initialize_llm",
@@ -882,8 +874,6 @@ def test_check_multiple_modules_drift_partial_failures(
     mocker: MockerFixture, tmp_path: Path
 ) -> None:
     """Test check_multiple_modules_drift handles partial failures correctly."""
-    import pytest
-
     # Create a git repo with multiple modules
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
@@ -930,8 +920,6 @@ def test_generate_documentation_disk_full_error(
     mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
     """Test generate_documentation handles disk full errors."""
-    import pytest
-
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code")
     mocker.patch("src.workflows.console")

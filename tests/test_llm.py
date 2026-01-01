@@ -4,9 +4,12 @@ import os
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from src.cache import DRIFT_CACHE_SIZE, get_drift_cache_info, set_cache_max_size
+from src.config.models import CustomPrompts
+from src.doc_types import DocType
 from src.llm import (
     TEMPERATURE,
     GenerationConfig,
@@ -745,9 +748,6 @@ def test_fix_doc_incrementally_with_custom_prompts(
     mock_llm_client: Any,
 ) -> None:
     """Test fix_doc_incrementally includes custom prompts when provided."""
-    from src.config.models import CustomPrompts
-    from src.doc_types import DocType
-
     # Mock the LLM program
     incremental_fix = IncrementalDocumentationFix(
         changes=[
@@ -897,8 +897,6 @@ def test_check_drift_llm_api_error(mocker: MockerFixture, mock_llm_client: Any) 
 
     # When: Calling check_drift
     # Then: Should propagate the exception (caller should handle)
-    import pytest
-
     with pytest.raises(Exception, match="API rate limit exceeded"):
         check_drift(
             llm=mock_llm_client,
@@ -956,8 +954,6 @@ def test_check_drift_with_very_large_context(
 
 def test_generate_doc_llm_timeout(mocker: MockerFixture, mock_llm_client: Any) -> None:
     """Test generate_doc handles LLM timeout errors."""
-    import pytest
-
     # Mock LLM program to simulate timeout
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -979,9 +975,6 @@ def test_generate_doc_invalid_response_structure(
     mocker: MockerFixture, mock_llm_client: Any
 ) -> None:
     """Test generate_doc handles invalid LLM response structure."""
-    import pytest
-    from pydantic import ValidationError
-
     # Mock LLM program to return invalid data
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -1007,8 +1000,6 @@ def test_fix_doc_incrementally_llm_error(
     mocker: MockerFixture, mock_llm_client: Any
 ) -> None:
     """Test fix_doc_incrementally handles LLM errors."""
-    import pytest
-
     # Mock LLM program to raise error
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -1042,8 +1033,6 @@ def test_initialize_llm_with_multiple_api_keys(mocker: MockerFixture) -> None:
     mock_anthropic = mocker.patch("src.llm.Anthropic")
 
     # When: Initializing LLM
-    from src.llm import initialize_llm
-
     initialize_llm()
 
     # Then: Should use Anthropic (highest priority)
@@ -1065,8 +1054,6 @@ def test_initialize_llm_fallback_to_openai(mocker: MockerFixture) -> None:
     mock_openai = mocker.patch("src.llm.OpenAI")
 
     # When: Initializing LLM
-    from src.llm import initialize_llm
-
     initialize_llm()
 
     # Then: Should use OpenAI
@@ -1088,8 +1075,6 @@ def test_initialize_llm_fallback_to_google(mocker: MockerFixture) -> None:
     mock_google = mocker.patch("src.llm.GoogleGenAI")
 
     # When: Initializing LLM
-    from src.llm import initialize_llm
-
     initialize_llm()
 
     # Then: Should use Google

@@ -11,7 +11,12 @@ from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
 from src.main import cli
-from src.records import DocumentationDriftCheck, ModuleDocumentation
+from src.records import (
+    DocumentationChange,
+    DocumentationDriftCheck,
+    IncrementalDocumentationFix,
+    ModuleDocumentation,
+)
 
 # --- Test Data Constants ---
 
@@ -280,11 +285,6 @@ def test_integration_check_fix_workflow(tmp_path: Path, mocker: MockerFixture) -
 
     Tests detecting drift, then fixing it with --fix flag.
     """
-    from src.records import (
-        DocumentationChange,
-        IncrementalDocumentationFix,
-    )
-
     # Create module with outdated docs
     module_dir = tmp_path / "module"
     module_dir.mkdir()
@@ -345,10 +345,6 @@ def new_function():
     mocker.patch("src.workflows.console")
 
     # Run check with --fix
-    from click.testing import CliRunner
-
-    from src.main import cli
-
     runner = CliRunner()
     result = runner.invoke(cli, ["check", str(module_dir), "--fix"])
 
@@ -388,10 +384,6 @@ def test_integration_cache_persistence(tmp_path: Path, mocker: MockerFixture) ->
     mocker.patch("src.workflows.console")
 
     # First run
-    from click.testing import CliRunner
-
-    from src.main import cli
-
     runner = CliRunner()
     result1 = runner.invoke(cli, ["check", str(module_dir)])
     assert result1.exit_code == 0

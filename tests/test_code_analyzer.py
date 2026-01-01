@@ -1,5 +1,6 @@
 """Tests for src/code_analyzer.py"""
 
+import time
 from pathlib import Path
 
 from pytest_mock import MockerFixture
@@ -728,8 +729,6 @@ class Class{i}:
     mocker.patch("src.code_analyzer.console")
 
     # This should complete without timing out
-    import time
-
     start = time.time()
     context = get_module_context(module_path=str(module_dir))
     elapsed = time.time() - start
