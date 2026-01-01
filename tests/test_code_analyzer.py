@@ -741,7 +741,7 @@ class Class{i}:
     # Verify content is present
     assert len(context) > 0
     assert "module_000.py" in context
-    assert f"module_{num_files-1:03d}.py" in context
+    assert f"module_{num_files - 1:03d}.py" in context
 
 
 def test_get_module_context_mixed_success_and_failure(

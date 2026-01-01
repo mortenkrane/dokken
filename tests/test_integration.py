@@ -274,9 +274,7 @@ def test_integration_check_documentation_drift(
     assert "create_session()" in current_doc
 
 
-def test_integration_check_fix_workflow(
-    tmp_path: Path, mocker: MockerFixture
-) -> None:
+def test_integration_check_fix_workflow(tmp_path: Path, mocker: MockerFixture) -> None:
     """
     Integration test for check → fix workflow.
 
@@ -326,7 +324,10 @@ def new_function():
             DocumentationChange(
                 section="Main Functions",
                 change_type="update",
-                updated_content="- authenticate() - Authenticates users\n- new_function() - New functionality",
+                updated_content=(
+                    "- authenticate() - Authenticates users\n"
+                    "- new_function() - New functionality"
+                ),
                 rationale="Added new_function",
             )
         ],
@@ -359,9 +360,7 @@ def new_function():
     assert "new_function" in updated_readme
 
 
-def test_integration_cache_persistence(
-    tmp_path: Path, mocker: MockerFixture
-) -> None:
+def test_integration_cache_persistence(tmp_path: Path, mocker: MockerFixture) -> None:
     """
     Integration test for cache persistence across runs.
 
@@ -377,9 +376,7 @@ def test_integration_cache_persistence(
     mock_llm_client = mocker.MagicMock()
     mocker.patch("src.workflows.initialize_llm", return_value=mock_llm_client)
 
-    drift_check = DocumentationDriftCheck(
-        drift_detected=False, rationale="Up to date"
-    )
+    drift_check = DocumentationDriftCheck(drift_detected=False, rationale="Up to date")
 
     mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -410,5 +407,3 @@ def test_integration_cache_persistence(
     # LLM should not be called again (cache hit)
     second_call_count = mock_program.call_count
     assert second_call_count == first_call_count  # No new calls
-
-

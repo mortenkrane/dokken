@@ -980,7 +980,6 @@ def test_generate_doc_invalid_response_structure(
 ) -> None:
     """Test generate_doc handles invalid LLM response structure."""
     import pytest
-
     from pydantic import ValidationError
 
     # Mock LLM program to return invalid data
@@ -988,7 +987,8 @@ def test_generate_doc_invalid_response_structure(
     mock_program = mocker.MagicMock()
     # Simulate Pydantic validation error
     mock_program.side_effect = ValidationError.from_exception_data(
-        "ModuleDocumentation", [{"type": "missing", "loc": ("purpose_and_scope",)}]
+        "ModuleDocumentation",
+        [{"type": "missing", "loc": ("purpose_and_scope",), "input": {}}],
     )
     mock_program_class.from_defaults.return_value = mock_program
 
@@ -1044,7 +1044,7 @@ def test_initialize_llm_with_multiple_api_keys(mocker: MockerFixture) -> None:
     # When: Initializing LLM
     from src.llm import initialize_llm
 
-    llm = initialize_llm()
+    initialize_llm()
 
     # Then: Should use Anthropic (highest priority)
     mock_anthropic.assert_called_once()
@@ -1067,7 +1067,7 @@ def test_initialize_llm_fallback_to_openai(mocker: MockerFixture) -> None:
     # When: Initializing LLM
     from src.llm import initialize_llm
 
-    llm = initialize_llm()
+    initialize_llm()
 
     # Then: Should use OpenAI
     mock_openai.assert_called_once()
@@ -1090,7 +1090,7 @@ def test_initialize_llm_fallback_to_google(mocker: MockerFixture) -> None:
     # When: Initializing LLM
     from src.llm import initialize_llm
 
-    llm = initialize_llm()
+    initialize_llm()
 
     # Then: Should use Google
     mock_google.assert_called_once()

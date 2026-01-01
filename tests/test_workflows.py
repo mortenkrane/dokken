@@ -814,9 +814,7 @@ def test_generate_documentation_handles_write_errors(
     mocker.patch("src.workflows.initialize_llm")
     mocker.patch("src.workflows.get_module_context", return_value="code")
 
-    mock_drift_check = DocumentationDriftCheck(
-        drift_detected=True, rationale="No docs"
-    )
+    mock_drift_check = DocumentationDriftCheck(drift_detected=True, rationale="No docs")
     mock_doc = ModuleDocumentation(
         component_name="Test",
         purpose_and_scope="Test",
@@ -910,12 +908,13 @@ def test_check_multiple_modules_drift_partial_failures(
         if "module1" in module_path:
             # Module 1 passes
             return
-        elif "module2" in module_path:
+        if "module2" in module_path:
             # Module 2 has drift
-            raise DocumentationDriftError(rationale="Drift detected", module_path=module_path)
-        else:
-            # Module 3 has unexpected error
-            raise RuntimeError("Unexpected LLM error")
+            raise DocumentationDriftError(
+                rationale="Drift detected", module_path=module_path
+            )
+        # Module 3 has unexpected error
+        raise RuntimeError("Unexpected LLM error")
 
     mocker.patch(
         "src.workflows.check_documentation_drift", side_effect=check_side_effect
