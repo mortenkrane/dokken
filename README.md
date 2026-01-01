@@ -15,6 +15,7 @@ Here's how it works: Dokken captures the stuff code can't express through an **i
 But here's what matters: **Dokken writes documentation for humans, not just machines.** Because at the end of the day, humans are the ones who need to understand the overall system architecture to make good decisions—whether they're coding manually or instructing an AI to do it for them. Your AI assistant might be able to implement a feature, but you need to decide if that feature belongs in the auth module or the API layer. That's a human judgment call, and it requires human-level understanding.
 
 **What Dokken does:**
+
 - Detects documentation drift automatically (new functions, changed signatures, architectural shifts)
 - Regenerates docs that are actually useful (architectural patterns, design decisions, module boundaries)
 - Works in CI/CD pipelines (exit code 1 if docs are stale)
