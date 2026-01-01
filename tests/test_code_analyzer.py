@@ -1,5 +1,6 @@
 """Tests for src/code_analyzer.py"""
 
+import time
 from pathlib import Path
 
 from pytest_mock import MockerFixture
@@ -607,3 +608,181 @@ def test_get_module_context_default_file_types(
     assert "# Python" in context
     assert "app.js" not in context
     assert "// JavaScript" not in context
+
+
+# Tests for concurrency and parallel file reading
+
+
+def test_get_module_context_concurrent_file_reading(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Test get_module_context reads multiple files concurrently."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    # Create many files to trigger concurrent reading
+    num_files = 20
+    for i in range(num_files):
+        (module_dir / f"file_{i:02d}.py").write_text(f"# File {i}")
+
+    mocker.patch("src.code_analyzer.console")
+
+    context = get_module_context(module_path=str(module_dir))
+
+    # All files should be included
+    for i in range(num_files):
+        assert f"file_{i:02d}.py" in context
+        assert f"# File {i}" in context
+
+
+def test_get_module_context_concurrent_errors_dont_block(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Test that errors in some files don't block reading other files."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    # Create multiple files
+    (module_dir / "good1.py").write_text("# Good 1")
+    (module_dir / "bad.py").write_text("# Bad")
+    (module_dir / "good2.py").write_text("# Good 2")
+
+    mock_console = mocker.patch("src.code_analyzer.console")
+
+    # Mock open to fail for bad.py but work for others
+    original_open = open
+
+    def selective_open(path, *args, **kwargs):
+        if "bad.py" in str(path):
+            raise OSError("Simulated read error")
+        return original_open(path, *args, **kwargs)
+
+    mocker.patch("builtins.open", side_effect=selective_open)
+
+    context = get_module_context(module_path=str(module_dir))
+
+    # Good files should still be readable
+    assert "good1.py" in context
+    assert "good2.py" in context
+    assert "# Good 1" in context
+    assert "# Good 2" in context
+
+    # Should have logged the error for bad.py
+    assert any(
+        "bad.py" in str(call) and "Could not read" in str(call)
+        for call in mock_console.print.call_args_list
+    )
+
+
+def test_get_module_context_parallel_reading_maintains_order(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Test that parallel file reading still maintains sorted file order."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    # Create files in non-alphabetical order
+    files = ["zebra.py", "apple.py", "middle.py", "banana.py"]
+    for filename in files:
+        (module_dir / filename).write_text(f"# {filename}")
+
+    mocker.patch("src.code_analyzer.console")
+
+    context = get_module_context(module_path=str(module_dir))
+
+    # Files should appear in alphabetical order despite concurrent reading
+    apple_pos = context.find("apple.py")
+    banana_pos = context.find("banana.py")
+    middle_pos = context.find("middle.py")
+    zebra_pos = context.find("zebra.py")
+
+    assert apple_pos < banana_pos < middle_pos < zebra_pos
+
+
+def test_get_module_context_large_codebase_performance(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Test get_module_context handles large codebases efficiently."""
+    module_dir = tmp_path / "large_module"
+    module_dir.mkdir()
+
+    # Create a moderately large codebase
+    num_files = 50
+    for i in range(num_files):
+        # Create files with realistic content
+        content = f"""
+def function_{i}_a():
+    '''Function {i}a documentation.'''
+    return {i}
+
+def function_{i}_b():
+    '''Function {i}b documentation.'''
+    return {i} * 2
+
+class Class{i}:
+    '''Class {i} documentation.'''
+    def method(self):
+        return {i}
+"""
+        (module_dir / f"module_{i:03d}.py").write_text(content)
+
+    mocker.patch("src.code_analyzer.console")
+
+    # This should complete without timing out
+    start = time.time()
+    context = get_module_context(module_path=str(module_dir))
+    elapsed = time.time() - start
+
+    # Should complete reasonably quickly (parallel reading should help)
+    # Allow generous time for CI environments
+    assert elapsed < 10.0, f"Took {elapsed}s, expected < 10s"
+
+    # Verify content is present
+    assert len(context) > 0
+    assert "module_000.py" in context
+    assert f"module_{num_files - 1:03d}.py" in context
+
+
+def test_get_module_context_mixed_success_and_failure(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Test concurrent reading handles mix of successful and failed reads."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    # Create multiple files
+    for i in range(10):
+        (module_dir / f"file_{i}.py").write_text(f"# File {i}")
+
+    mock_console = mocker.patch("src.code_analyzer.console")
+
+    # Simulate failures on files 3, 5, and 7
+    original_open = open
+    failing_files = {"file_3.py", "file_5.py", "file_7.py"}
+
+    def selective_open(path, *args, **kwargs):
+        if any(fail_name in str(path) for fail_name in failing_files):
+            raise OSError("Simulated error")
+        return original_open(path, *args, **kwargs)
+
+    mocker.patch("builtins.open", side_effect=selective_open)
+
+    context = get_module_context(module_path=str(module_dir))
+
+    # Successful files should be present
+    for i in [0, 1, 2, 4, 6, 8, 9]:
+        assert f"file_{i}.py" in context
+        assert f"# File {i}" in context
+
+    # Failed files should not be present
+    for i in [3, 5, 7]:
+        # The file name appears in the error message, but not content
+        assert f"# File {i}" not in context
+
+    # Should have 3 error messages
+    error_calls = [
+        call
+        for call in mock_console.print.call_args_list
+        if "Could not read" in str(call)
+    ]
+    assert len(error_calls) == 3

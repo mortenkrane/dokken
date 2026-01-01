@@ -11,7 +11,12 @@ from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
 from src.main import cli
-from src.records import DocumentationDriftCheck, ModuleDocumentation
+from src.records import (
+    DocumentationChange,
+    DocumentationDriftCheck,
+    IncrementalDocumentationFix,
+    ModuleDocumentation,
+)
 
 # --- Test Data Constants ---
 
@@ -272,3 +277,125 @@ def test_integration_check_documentation_drift(
     current_doc = call_args.kwargs["current_doc"]
     assert "Authentication Service" in current_doc
     assert "create_session()" in current_doc
+
+
+def test_integration_check_fix_workflow(tmp_path: Path, mocker: MockerFixture) -> None:
+    """
+    Integration test for check → fix workflow.
+
+    Tests detecting drift, then fixing it with --fix flag.
+    """
+    # Create module with outdated docs
+    module_dir = tmp_path / "module"
+    module_dir.mkdir()
+    (module_dir / "__init__.py").write_text("")
+    (module_dir / "auth.py").write_text(
+        """
+def authenticate(username: str, password: str) -> bool:
+    '''Authenticate user.'''
+    return True
+
+def new_function():
+    '''This is new and not documented.'''
+    pass
+"""
+    )
+    (module_dir / "README.md").write_text(
+        """# Auth Module
+
+## Main Functions
+- authenticate() - Authenticates users
+"""
+    )
+
+    # Mock LLM
+    mock_llm_client = mocker.MagicMock()
+    mocker.patch("src.workflows.initialize_llm", return_value=mock_llm_client)
+
+    # First call: detect drift
+    drift_check = DocumentationDriftCheck(
+        drift_detected=True,
+        rationale="new_function is not documented",
+    )
+
+    # Second call: generate fix
+    fix = IncrementalDocumentationFix(
+        changes=[
+            DocumentationChange(
+                section="Main Functions",
+                change_type="update",
+                updated_content=(
+                    "- authenticate() - Authenticates users\n"
+                    "- new_function() - New functionality"
+                ),
+                rationale="Added new_function",
+            )
+        ],
+        summary="Added new_function to documentation",
+        preserved_sections=["Auth Module"],
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.side_effect = [drift_check, fix]
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Mock console
+    mocker.patch("src.main.console")
+    mocker.patch("src.workflows.console")
+
+    # Run check with --fix
+    runner = CliRunner()
+    result = runner.invoke(cli, ["check", str(module_dir), "--fix"])
+
+    # Should succeed
+    assert result.exit_code == 0
+
+    # README should be updated
+    updated_readme = (module_dir / "README.md").read_text()
+    assert "new_function" in updated_readme
+
+
+def test_integration_cache_persistence(tmp_path: Path, mocker: MockerFixture) -> None:
+    """
+    Integration test for cache persistence across runs.
+
+    Tests that drift check results are cached and reused.
+    """
+    module_dir = tmp_path / "module"
+    module_dir.mkdir()
+    (module_dir / "__init__.py").write_text("")
+    (module_dir / "code.py").write_text("def func(): pass")
+    (module_dir / "README.md").write_text("# Module\nDocs here")
+
+    # Mock LLM
+    mock_llm_client = mocker.MagicMock()
+    mocker.patch("src.workflows.initialize_llm", return_value=mock_llm_client)
+
+    drift_check = DocumentationDriftCheck(drift_detected=False, rationale="Up to date")
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = drift_check
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # Mock console
+    mocker.patch("src.main.console")
+    mocker.patch("src.workflows.console")
+
+    # First run
+    runner = CliRunner()
+    result1 = runner.invoke(cli, ["check", str(module_dir)])
+    assert result1.exit_code == 0
+
+    # LLM should have been called once
+    first_call_count = mock_program.call_count
+    assert first_call_count == 1
+
+    # Second run with same code (cache should be used)
+    result2 = runner.invoke(cli, ["check", str(module_dir)])
+    assert result2.exit_code == 0
+
+    # LLM should not be called again (cache hit)
+    second_call_count = mock_program.call_count
+    assert second_call_count == first_call_count  # No new calls

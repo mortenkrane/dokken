@@ -4,9 +4,12 @@ import os
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from src.cache import DRIFT_CACHE_SIZE, get_drift_cache_info, set_cache_max_size
+from src.config.models import CustomPrompts
+from src.doc_types import DocType
 from src.llm import (
     TEMPERATURE,
     GenerationConfig,
@@ -745,9 +748,6 @@ def test_fix_doc_incrementally_with_custom_prompts(
     mock_llm_client: Any,
 ) -> None:
     """Test fix_doc_incrementally includes custom prompts when provided."""
-    from src.config.models import CustomPrompts
-    from src.doc_types import DocType
-
     # Mock the LLM program
     incremental_fix = IncrementalDocumentationFix(
         changes=[
@@ -882,3 +882,200 @@ def test_fix_doc_incrementally_multiple_changes(
     assert result.changes[0].change_type == "update"
     assert result.changes[1].change_type == "add"
     assert result.changes[2].change_type == "remove"
+
+
+# Tests for error recovery and resilience
+
+
+def test_check_drift_llm_api_error(mocker: MockerFixture, mock_llm_client: Any) -> None:
+    """Test check_drift handles LLM API errors gracefully."""
+    # Mock LLM program to raise an exception
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.side_effect = Exception("API rate limit exceeded")
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # When: Calling check_drift
+    # Then: Should propagate the exception (caller should handle)
+    with pytest.raises(Exception, match="API rate limit exceeded"):
+        check_drift(
+            llm=mock_llm_client,
+            context="def func(): pass",
+            current_doc="# Docs",
+        )
+
+
+def test_check_drift_with_empty_context(
+    mocker: MockerFixture, mock_llm_client: Any
+) -> None:
+    """Test check_drift handles empty context."""
+    drift_check = DocumentationDriftCheck(
+        drift_detected=False, rationale="No code to check"
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = drift_check
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # When: Checking drift with empty context
+    result = check_drift(llm=mock_llm_client, context="", current_doc="# Docs")
+
+    # Then: Should still work
+    assert isinstance(result, DocumentationDriftCheck)
+
+
+def test_check_drift_with_very_large_context(
+    mocker: MockerFixture, mock_llm_client: Any
+) -> None:
+    """Test check_drift handles very large code context."""
+    # Create a large context (simulate large codebase)
+    large_context = "\n".join([f"def function_{i}(): pass" for i in range(1000)])
+
+    drift_check = DocumentationDriftCheck(
+        drift_detected=True, rationale="Many new functions"
+    )
+
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.return_value = drift_check
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # When: Checking drift with large context
+    result = check_drift(
+        llm=mock_llm_client, context=large_context, current_doc="# Docs"
+    )
+
+    # Then: Should handle it
+    assert isinstance(result, DocumentationDriftCheck)
+    # Verify the context was passed
+    assert mock_program.call_count == 1
+
+
+def test_generate_doc_llm_timeout(mocker: MockerFixture, mock_llm_client: Any) -> None:
+    """Test generate_doc handles LLM timeout errors."""
+    # Mock LLM program to simulate timeout
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.side_effect = TimeoutError("Request timeout")
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # When: Generating documentation
+    # Then: Should propagate timeout error
+    with pytest.raises(TimeoutError, match="Request timeout"):
+        generate_doc(
+            llm=mock_llm_client,
+            context="def func(): pass",
+            output_model=ModuleDocumentation,
+            prompt_template="Generate docs: {context}",
+        )
+
+
+def test_generate_doc_invalid_response_structure(
+    mocker: MockerFixture, mock_llm_client: Any
+) -> None:
+    """Test generate_doc handles invalid LLM response structure."""
+    # Mock LLM program to return invalid data
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    # Simulate Pydantic validation error
+    mock_program.side_effect = ValidationError.from_exception_data(
+        "ModuleDocumentation",
+        [{"type": "missing", "loc": ("purpose_and_scope",), "input": {}}],
+    )
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # When: Generating documentation with invalid response
+    # Then: Should propagate validation error
+    with pytest.raises(ValidationError):
+        generate_doc(
+            llm=mock_llm_client,
+            context="def func(): pass",
+            output_model=ModuleDocumentation,
+            prompt_template="Generate docs: {context}",
+        )
+
+
+def test_fix_doc_incrementally_llm_error(
+    mocker: MockerFixture, mock_llm_client: Any
+) -> None:
+    """Test fix_doc_incrementally handles LLM errors."""
+    # Mock LLM program to raise error
+    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program = mocker.MagicMock()
+    mock_program.side_effect = RuntimeError("LLM service unavailable")
+    mock_program_class.from_defaults.return_value = mock_program
+
+    # When: Fixing documentation
+    # Then: Should propagate the error
+    with pytest.raises(RuntimeError, match="LLM service unavailable"):
+        fix_doc_incrementally(
+            llm=mock_llm_client,
+            context="def func(): pass",
+            current_doc="# Docs",
+            drift_rationale="New function",
+        )
+
+
+def test_initialize_llm_with_multiple_api_keys(mocker: MockerFixture) -> None:
+    """Test initialize_llm fallback behavior with multiple API keys."""
+    # Set multiple API keys (Anthropic has priority)
+    mocker.patch.dict(
+        "os.environ",
+        {
+            "ANTHROPIC_API_KEY": "test-anthropic-key",
+            "OPENAI_API_KEY": "test-openai-key",
+            "GOOGLE_API_KEY": "test-google-key",
+        },
+    )
+
+    # Mock the Anthropic client
+    mock_anthropic = mocker.patch("src.llm.Anthropic")
+
+    # When: Initializing LLM
+    initialize_llm()
+
+    # Then: Should use Anthropic (highest priority)
+    mock_anthropic.assert_called_once()
+
+
+def test_initialize_llm_fallback_to_openai(mocker: MockerFixture) -> None:
+    """Test initialize_llm falls back to OpenAI if Anthropic not available."""
+    # Only set OpenAI key
+    mocker.patch.dict(
+        "os.environ",
+        {
+            "OPENAI_API_KEY": "test-openai-key",
+        },
+        clear=True,
+    )
+
+    # Mock the OpenAI client
+    mock_openai = mocker.patch("src.llm.OpenAI")
+
+    # When: Initializing LLM
+    initialize_llm()
+
+    # Then: Should use OpenAI
+    mock_openai.assert_called_once()
+
+
+def test_initialize_llm_fallback_to_google(mocker: MockerFixture) -> None:
+    """Test initialize_llm falls back to Google if others not available."""
+    # Only set Google key
+    mocker.patch.dict(
+        "os.environ",
+        {
+            "GOOGLE_API_KEY": "test-google-key",
+        },
+        clear=True,
+    )
+
+    # Mock the Google client
+    mock_google = mocker.patch("src.llm.GoogleGenAI")
+
+    # When: Initializing LLM
+    initialize_llm()
+
+    # Then: Should use Google
+    mock_google.assert_called_once()
