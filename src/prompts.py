@@ -7,19 +7,21 @@ DRIFT_CHECK_PROMPT = """You are a Documentation Drift Detector. Your task is to
 analyze if the current documentation accurately reflects the code context.
 
 DOCUMENTATION PHILOSOPHY:
-Documentation is a HIGH-LEVEL OVERVIEW for developers, NOT an exhaustive catalog of
-every function, class, or implementation detail. Good documentation captures:
-- The module's core purpose and architecture
-- Key entry points and how to use them
+Documentation is a HIGH-LEVEL CONCEPTUAL OVERVIEW, NOT a detailed catalog of
+implementation specifics. Good documentation captures:
+- The module's core purpose and architectural approach
+- How developers interact with the module (conceptually)
 - Important design decisions and why they were made
-- Major dependencies and data flows
+- Major dependencies and data flow patterns
 
-Good documentation OMITS:
+Good documentation OMITS (and drift detection should IGNORE changes to):
+- Specific function names, class names, method signatures
+- Variable names, field names, attribute names
 - Helper functions and internal utilities
-- Implementation details that don't affect the public interface
+- Implementation details of any kind
+- Parameter lists, return types, configuration options
 - Minor refactorings and code organization changes
-- Detailed parameter lists (those belong in docstrings)
-- Every possible configuration option or edge case
+- Every specific detail that doesn't affect the high-level architecture
 
 CRITICAL: Only flag drift for changes that would materially impact a developer's
 ability to understand, use, or modify this module. Minor undocumented details are
@@ -38,45 +40,53 @@ Use this checklist to determine drift. Drift is detected if ANY of these are tru
    only does logging; docs describe REST API but code implements CLI tool. NOT: minor
    scope expansions, additional use cases, or refined descriptions.
 
-3. **Missing Critical Features**: The code implements MAJOR NEW user-facing features
-   that FUNDAMENTALLY change what the module does or how users interact with it, and
-   these are NOT documented. Ask: "Would a developer be confused or unable to use
-   this module without knowing about this feature?" Only flag if YES. Examples that
-   SHOULD trigger drift: switching from sync to async API, adding required
-   authentication, changing data formats. Examples that should NOT: new helper
-   methods, additional optional parameters, internal optimization features.
+3. **Missing Critical Features**: The code implements MAJOR NEW conceptual capabilities
+   that FUNDAMENTALLY change what the module does or how users interact with it at a
+   HIGH LEVEL, and these are NOT documented. Focus on architectural changes, NOT new
+   functions or methods. Ask: "Would a developer be confused about the module's PURPOSE
+   or ARCHITECTURE without knowing about this?" Only flag if YES. Examples that SHOULD
+   trigger drift: switching from sync to async architecture, adding authentication layer,
+   changing from REST to GraphQL. Examples that should NOT: new functions/methods, new
+   parameters, new fields/attributes, implementation optimizations.
 4. **Outdated Design Decisions**: The documentation explains design decisions that
    are no longer present in the code.
 5. **Incorrect Dependencies**: The documentation lists external dependencies (different
    libraries, not just different versions) that don't match what's in the code.
 
 IMPORTANT: Do NOT flag drift for:
+- Changes to specific function names, class names, or method signatures
+- Changes to variable names, field names, or attribute names
+- New or modified function parameters or return types
 - Minor code changes (refactoring, variable renames, formatting, code organization)
 - New helper functions, utility methods, or internal implementation details
 - Code comments or docstring updates
-- Implementation details not typically in high-level docs (these should NEVER be in
-  module documentation)
-- Additions that don't change the core purpose/architecture
+- Implementation details of any kind (these should NEVER be in module documentation)
+- Additions that don't change the core conceptual purpose/architecture
 - Internal helper functions or utilities that support existing features
 - Type hint additions or updates that don't change function behavior
 - Dependency version updates (same library, different version)
-- Error handling improvements that don't fundamentally change the API contract
+- Error handling improvements that don't fundamentally change the conceptual contract
 - New optional parameters or configuration options
-- Performance optimizations that don't change the API
+- Performance optimizations that don't change the conceptual approach
 - Bug fixes that restore documented behavior
 - Additional logging, debugging, or diagnostic features
 - Test utilities or test helper functions
 - Documentation or comment improvements in the code itself
+- Specific implementation choices that don't change the architectural approach
 
 EXAMPLES OF NON-DRIFT (do NOT flag these):
 - Code refactored from classes to functions, but purpose remains unchanged
 - New private/helper function added, but core documented functionality is the same
 - Variable renamed from `data` to `payload`, but logic is identical
 - Function renamed from `authenticate_user` to `verify_user`, but logic unchanged
+- New field added to a class (e.g., `self.cache_size = 100`)
+- Function signature changed (e.g., new parameter added, return type changed)
+- Attribute added or removed from a data structure
 - Docstrings or inline comments updated, but architectural decisions unchanged
 - Type hints added: `def foo(x)` → `def foo(x: int) -> str`
 - Minor bug fixes that don't change the documented behavior
 - Dependency upgraded: `requests==2.28.0` → `requests==2.31.0`
+- Implementation detail changed (e.g., using dict instead of list internally)
 
 --- CODE CONTEXT ---
 {context}
@@ -124,28 +134,30 @@ developer-focused documentation. Your goal is to help developers quickly underst
 work with this codebase.
 
 DOCUMENTATION PHILOSOPHY - CRITICAL:
-Create a CONCISE, HIGH-LEVEL overview that focuses on architecture and design, NOT an
-exhaustive catalog of every function and detail. Good documentation is selective and
-emphasizes what matters most:
+Create a CONCISE, HIGH-LEVEL overview that focuses on architecture and concepts, NOT
+implementation details. Good documentation helps developers understand the "what" and
+"why" at a conceptual level:
 
-INCLUDE (the most important concepts):
+INCLUDE (high-level concepts only):
 - Core purpose and primary responsibilities
-- Main entry points that users/developers interact with (2-5 key functions/classes)
+- How developers interact with this module (conceptually, not specific APIs)
 - Architectural patterns and structure
 - Critical design decisions and their rationale
 - Key external dependencies that define what the module does
 
-OMIT (less important details):
+OMIT (all implementation details):
+- Specific function names, class names, or method signatures
 - Helper functions and internal utilities
-- Implementation details that don't affect the public interface
-- Every possible parameter or configuration option (those belong in docstrings)
+- Implementation details, parameters, or configuration options
 - Minor edge cases and error handling specifics
-- Exhaustive lists of every function in the module
+- Exhaustive lists of any kind
 - Low-level algorithmic details
+- Specific fields, attributes, or variables
 
-GUIDING PRINCIPLE: If removing this information wouldn't prevent a developer from
-understanding, using, or modifying the module effectively, leave it out. Prefer
-brevity and clarity over completeness.
+GUIDING PRINCIPLE: Documentation should describe the forest, not the trees. Focus on
+concepts, patterns, and architecture. If it's a specific implementation detail (like a
+function name or field), leave it out. Prefer high-level understanding over technical
+specifics.
 
 FORMATTING GUIDELINES:
 - Use scannable bullet lists instead of dense paragraphs where appropriate
@@ -157,40 +169,40 @@ FORMATTING GUIDELINES:
 
 Analyze the code context and generate comprehensive documentation that covers:
 
-1. **Main Entry Points**: The 2-5 MOST IMPORTANT functions, classes, or CLI commands
-   developers use to interact with this component. Focus on the main public API, not
-   every function. Format as a bulleted or structured list. For each entry point:
-   - Function/class name
-   - What it does (one line)
-   - When to use it
-   Omit: helper functions, internal utilities, minor convenience methods
+1. **How to Use**: Describe conceptually how developers interact with this module.
+   Focus on the general patterns and approaches, NOT specific function names. For example:
+   - "Developers access this module through CLI commands that..."
+   - "This module provides factories that create..."
+   - "Users configure behavior by..."
+   Keep this section brief (3-5 sentences) and conceptual.
 
 2. **Purpose & Scope**: What this component does and its boundaries (2-3 paragraphs).
    Start with a keyword-rich first sentence that defines the module's role.
 
-3. **Architecture Overview**: How the component is structured. Use lists or subsections:
-   - Key modules/files and their responsibilities
-   - How components interact
+3. **Architecture Overview**: How the component is structured at a high level. Focus on
+   the conceptual organization, NOT specific files or functions:
+   - Main architectural layers or components (e.g., "parser layer", "execution engine")
+   - How components interact conceptually
    - Data flow patterns
-   - Overall structure
+   - Overall structural approach
 
-4. **Control Flow**: How requests or operations flow through the system. Use numbered
-   steps or bullet points to trace execution paths. Include:
-   - Entry points and triggers
-   - Key decision points
-   - Data transformations
-   - Exit conditions
+4. **Control Flow**: How operations flow through the system conceptually. Describe the
+   general pattern, NOT specific function calls:
+   - What triggers operations (e.g., "user commands", "file changes")
+   - High-level processing stages
+   - Key decision points (conceptual, not if-statements)
+   - How data flows from input to output
 
 5. **Control Flow Diagram** (optional): If the control flow has meaningful decision
-   points or branching logic, create a Mermaid flowchart diagram to visualize it. Use
-   Mermaid flowchart syntax (```mermaid flowchart TD```). Create butterfly-style
-   diagrams where appropriate, showing how execution branches and reconverges. Include:
-   - Entry points (use rounded rectangles)
-   - Decision points (use diamonds for conditionals)
-   - Process steps (use rectangles)
-   - Data flow arrows with labels
-   - Exit points or return paths
-   Example structure: Entry → Decision → Branch A/B → Processing → Converge → Exit
+   points or branching logic, create a Mermaid flowchart diagram to visualize it at a
+   HIGH LEVEL. Use conceptual stages, NOT function names. Use Mermaid flowchart syntax
+   (```mermaid flowchart TD```). Include:
+   - Conceptual entry points (e.g., "User Request", not function names)
+   - High-level decision points (e.g., "Valid Input?", not variable checks)
+   - Processing stages (e.g., "Transform Data", not specific operations)
+   - Data flow arrows with conceptual labels
+   - Exit points or outcomes
+   Example: "Input Received → Validate → Process → Transform → Output"
    Skip this if the flow is purely linear with no meaningful branches
 
 6. **Key External Dependencies**: Core third-party libraries that are essential to this
@@ -212,27 +224,33 @@ Analyze the code context and generate comprehensive documentation that covers:
    If there are no key external dependencies, omit this section entirely
 
 7. **Key Design Decisions**: The 2-4 MOST IMPORTANT architectural choices and WHY they
-   were made. Focus on decisions that significantly impact how developers work with the
-   code. Write this as flowing prose, not bullet points. Explain patterns, technologies,
-   and approaches in a cohesive narrative that helps developers understand the
-   rationale. Omit: minor implementation choices, routine patterns, standard practices
+   were made. Focus on conceptual decisions that define the module's approach. Write
+   this as flowing prose, not bullet points. Explain patterns, technologies, and
+   philosophies in a cohesive narrative. Examples:
+   - "Uses immutable data structures to ensure thread safety"
+   - "Adopts event-driven architecture for scalability"
+   - "Separates concerns using layered architecture"
+   Omit: implementation details, specific function choices, routine patterns
 
 Focus on information that helps developers:
-- Understand the system's architecture quickly
-- Know where to start when making changes
-- Trace how data and control flow through the code
-- Understand why certain design choices were made
+- Understand the system's conceptual architecture
+- Grasp the high-level design philosophy
+- Understand why certain approaches were chosen
+- See the big picture of how things fit together
 
 Do NOT include:
-- Function signature details (those belong in docstrings)
+- Specific function names, class names, or method signatures
+- Variable names, field names, or attribute names
+- Function parameters or return types (those belong in docstrings)
 - Line-by-line code explanations
 - Installation or setup instructions
 - Helper functions and internal utilities
-- Exhaustive lists of every function or class
-- Minor implementation details
-- Every possible configuration option
-- Detailed error handling specifics
-- Low-level algorithmic details
+- Exhaustive lists of any kind
+- Implementation details of any kind
+- Configuration options or settings
+- Error handling specifics
+- Algorithmic details
+- Code snippets or examples
 
 Remember: Less is more. Focus on architecture and design, not implementation minutiae.
 
@@ -390,10 +408,14 @@ Your task is to make MINIMAL, TARGETED changes to existing documentation to fix
 specific drift issues.
 
 DOCUMENTATION PHILOSOPHY:
-Documentation is a HIGH-LEVEL OVERVIEW, not an exhaustive catalog. Only address drift
-issues that relate to architecturally significant changes. Do NOT add documentation for
-helper functions, internal utilities, or minor implementation details. Keep the
-documentation concise and focused on what matters most for developers.
+Documentation is a HIGH-LEVEL CONCEPTUAL OVERVIEW, not a catalog of implementation
+details. Only address drift issues that relate to major architectural or conceptual
+changes. Do NOT add:
+- Specific function names, class names, or method signatures
+- Variable names, field names, or attribute names
+- Implementation details of any kind
+- Helper functions, internal utilities, or minor features
+Keep the documentation concise, conceptual, and focused on architecture.
 
 CRITICAL CONSTRAINTS:
 - Make ONLY the changes necessary to address the detected drift
