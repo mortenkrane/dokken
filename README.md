@@ -18,6 +18,7 @@ But here's what matters: **Dokken writes documentation for humans, not just mach
 
 **What Dokken does:**
 
+- Generates documentation from scratch when you don't have any (or when you're starting fresh)
 - Detects documentation drift automatically (new functions, changed signatures, architectural shifts)
 - Regenerates docs that are actually useful (architectural patterns, design decisions, module boundaries)
 - Works in CI/CD pipelines (exit code 1 if docs are stale)
