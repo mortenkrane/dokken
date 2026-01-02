@@ -38,10 +38,10 @@ analyzing such documents:
 - If documentation explicitly states "X happens" or "the system does Y" and the code
   contradicts this, flag drift
 
-Example: A README might have a philosophical "Why?" section (stable) AND a "Key
-Concepts" section claiming "Drift is detected when function signatures change" when
-the code actually ignores signature changes. This IS drift - the technical claim is
-wrong.
+Example: A README might have a philosophical "Why?" section (stable) AND a "How It
+Works" section claiming "All requests are validated against a schema" when the code
+actually skips validation for certain request types. This IS drift - the technical
+claim is wrong.
 
 Use this checklist to determine drift. Drift is detected if ANY of these are true:
 
@@ -70,10 +70,10 @@ Use this checklist to determine drift. Drift is detected if ANY of these are tru
 5. **Incorrect Technical Claims**: The documentation makes SPECIFIC, CONCRETE claims
    about implementation behavior that contradict the code. This applies even to
    high-level/philosophical documents that include technical sections. Examples: docs
-   claim "drift detected when function signatures change" but code ignores signature
-   changes; docs state "uses synchronous API calls" but code uses async/await; docs
-   describe a multi-step process that doesn't match actual control flow. NOT: vague
-   descriptions, conceptual explanations, or statements that are approximately correct.
+   claim "uses Redis for caching" but code uses in-memory cache; docs state "validates
+   all user input" but code skips validation for certain fields; docs describe "three-
+   stage processing pipeline" but code only has two stages. NOT: vague descriptions,
+   conceptual explanations, or statements that are approximately correct.
 6. **Incorrect Dependencies**: The documentation lists external dependencies (different
    libraries, not just different versions) that don't match what's in the code.
 
@@ -159,23 +159,22 @@ RATIONALE REQUIREMENTS:
 - If drift_detected=false: Briefly confirm the documentation accurately reflects
   the code
 
-CRITICAL FINAL CHECK - Detection Criteria Documentation:
-If the documentation describes what the system detects, monitors, or checks for
-(e.g., "Drift detected when...", "The system identifies...", "Checks for..."),
-CAREFULLY verify these claims against the actual detection logic in the code.
+CRITICAL FINAL CHECK - System Behavior Claims:
+If the documentation makes specific claims about what the system does, detects,
+validates, or processes (e.g., "Validates X", "Caches Y", "Processes Z"),
+CAREFULLY verify these claims against the actual implementation in the code.
 
 Look for contradictions like:
-- Doc: "Detected when: X" but Code: "Do NOT flag/detect X" = DRIFT
-- Doc: "Checks for X" but Code: "Ignore/skip X" = DRIFT
-- Doc: "Monitors X" but Code: "Exclude X" = DRIFT
+- Doc: "Validates X" but Code: "Skip validation for X" = DRIFT
+- Doc: "Caches using X" but Code: "Uses Y for caching" = DRIFT
+- Doc: "Processes X in three stages" but Code: "Two-stage process" = DRIFT
 
-This applies to SPECIFIC conditions, not vague concepts. If the documentation lists
-a specific thing (like "function signatures", "class names", "parameter changes")
-as being detected, and the code explicitly lists that same thing in exclusions or
-non-detection examples, this IS Item 5 drift.
+This applies to SPECIFIC behaviors, not vague concepts. If the documentation makes
+concrete claims about implementation details and the code contradicts those claims,
+this IS Item 5 drift.
 
-Be precise: Compare the actual terms used. "Function signatures" vs "function signature
-changed" are the SAME thing with different phrasing.
+Be precise: Compare the actual mechanisms used. Claims about specific technologies,
+processes, or behaviors must match the implementation.
 
 Respond ONLY with the JSON object schema provided."""
 
