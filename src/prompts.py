@@ -27,6 +27,22 @@ CRITICAL: Only flag drift for changes that would materially impact a developer's
 ability to understand, use, or modify this module. Minor undocumented details are
 EXPECTED and CORRECT - they keep documentation concise and maintainable.
 
+MIXED-CONTENT DOCUMENTATION:
+Some documentation mixes high-level philosophy with specific technical claims. When
+analyzing such documents:
+- Treat philosophical/conceptual content conservatively (don't flag minor changes)
+- VERIFY specific technical claims about implementation behavior, even in otherwise
+  philosophical documents
+- Look for sections like "Key Concepts", "How It Works", "Technical Details" that
+  make concrete claims about code behavior
+- If documentation explicitly states "X happens" or "the system does Y" and the code
+  contradicts this, flag drift
+
+Example: A README might have a philosophical "Why?" section (stable) AND a "How It
+Works" section claiming "All requests are validated against a schema" when the code
+actually skips validation for certain request types. This IS drift - the technical
+claim is wrong.
+
 Use this checklist to determine drift. Drift is detected if ANY of these are true:
 
 1. **Structural Changes**: The code shows MAJOR architectural changes not reflected
@@ -51,7 +67,14 @@ Use this checklist to determine drift. Drift is detected if ANY of these are tru
    optimizations.
 4. **Outdated Design Decisions**: The documentation explains design decisions that
    are no longer present in the code.
-5. **Incorrect Dependencies**: The documentation lists external dependencies (different
+5. **Incorrect Technical Claims**: The documentation makes SPECIFIC, CONCRETE claims
+   about implementation behavior that contradict the code. This applies even to
+   high-level/philosophical documents that include technical sections. Examples: docs
+   claim "uses Redis for caching" but code uses in-memory cache; docs state "validates
+   all user input" but code skips validation for certain fields; docs describe "three-
+   stage processing pipeline" but code only has two stages. NOT: vague descriptions,
+   conceptual explanations, or statements that are approximately correct.
+6. **Incorrect Dependencies**: The documentation lists external dependencies (different
    libraries, not just different versions) that don't match what's in the code.
 
 IMPORTANT: Do NOT flag drift for:
@@ -97,10 +120,12 @@ EXAMPLES OF NON-DRIFT (do NOT flag these):
 
 Analyze methodically:
 1. Read the documentation's claims about purpose and architecture
-2. Check if the code context contradicts or significantly extends those claims
-3. Apply the checklist above strictly
-4. If at least one checklist item unambiguously matches, set drift_detected=true
-5. If ZERO checklist items match, you MUST set drift_detected=false
+2. Identify any specific technical claims (in sections like "Key Concepts", "How It
+   Works", etc.)
+3. Check if the code context contradicts those architectural OR technical claims
+4. Apply the checklist above strictly
+5. If at least one checklist item unambiguously matches, set drift_detected=true
+6. If ZERO checklist items match, you MUST set drift_detected=false
 
 CONSERVATIVE BIAS - VERY IMPORTANT:
 When in doubt, prefer drift_detected=false. Documentation is meant to be a concise
@@ -121,11 +146,35 @@ If you're uncertain whether a checklist item applies, it doesn't apply. If you'r
 thinking "it would be nice to document this," that's NOT drift. Err heavily on the
 side of NO DRIFT.
 
+EXCEPTION - Incorrect Technical Claims:
+The conservative bias does NOT apply to Item 5 (Incorrect Technical Claims). If the
+documentation makes specific, concrete statements about implementation behavior that
+are factually wrong based on the code, this IS drift regardless of whether the
+document is otherwise high-level. A developer who reads and believes an incorrect
+technical claim will have wrong expectations about how the system works.
+
 RATIONALE REQUIREMENTS:
 - If drift_detected=true: Cite the specific checklist item number(s) that apply
   (e.g., "Item 3: Missing Key Features - ...") and provide concrete evidence
 - If drift_detected=false: Briefly confirm the documentation accurately reflects
   the code
+
+CRITICAL FINAL CHECK - System Behavior Claims:
+If the documentation makes specific claims about what the system does, detects,
+validates, or processes (e.g., "Validates X", "Caches Y", "Processes Z"),
+CAREFULLY verify these claims against the actual implementation in the code.
+
+Look for contradictions like:
+- Doc: "Validates X" but Code: "Skip validation for X" = DRIFT
+- Doc: "Caches using X" but Code: "Uses Y for caching" = DRIFT
+- Doc: "Processes X in three stages" but Code: "Two-stage process" = DRIFT
+
+This applies to SPECIFIC behaviors, not vague concepts. If the documentation makes
+concrete claims about implementation details and the code contradicts those claims,
+this IS Item 5 drift.
+
+Be precise: Compare the actual mechanisms used. Claims about specific technologies,
+processes, or behaviors must match the implementation.
 
 Respond ONLY with the JSON object schema provided."""
 
