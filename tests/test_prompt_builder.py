@@ -2,7 +2,7 @@
 
 from src.config import CustomPrompts
 from src.doc_types import DocType
-from src.prompt_builder import (
+from src.llm import (
     build_custom_prompt_section,
     build_drift_context_section,
     build_generation_prompt,

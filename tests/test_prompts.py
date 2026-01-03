@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from src.prompts import (
+from src.llm import (
     DRIFT_CHECK_PROMPT,
     MODULE_GENERATION_PROMPT,
     PROJECT_README_GENERATION_PROMPT,
