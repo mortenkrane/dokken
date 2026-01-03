@@ -56,9 +56,10 @@ Use this checklist to determine drift. Drift is detected if ANY of these are tru
    only does logging; docs describe REST API but code implements CLI tool. NOT: minor
    scope expansions, additional use cases, or refined descriptions.
 
-3. **Missing Critical Features or Components**: The code implements MAJOR NEW capabilities,
-   submodules, or components that change what the module does, how it's organized, or how
-   users interact with it, and these are NOT documented. This includes:
+3. **Missing Critical Features or Components**: The code implements MAJOR NEW
+   capabilities, submodules, or components that change what the module does, how
+   it's organized, or how users interact with it, and these are NOT documented.
+   This includes:
 
    SHOULD trigger drift:
    - New submodules added (e.g., adding "validation/" subdirectory)
@@ -151,8 +152,10 @@ Set drift_detected=true when:
   the module's organization, or make incorrect assumptions
 
 Set drift_detected=false when:
-- Changes are purely implementation details (refactoring, renames, internal optimization)
-- New additions are minor utilities that don't change the module's role or structure
+- Changes are purely implementation details (refactoring, renames, internal
+  optimization)
+- New additions are minor utilities that don't change the module's role or
+  structure
 - The documentation remains substantially accurate despite the change
 - The change is a detail that belongs in code comments, not module-level docs
 
@@ -208,8 +211,10 @@ implementation details. Good documentation helps developers understand the "what
 INCLUDE (high-level concepts AND structural overview):
 - Core purpose and primary responsibilities
 - How developers interact with this module (conceptually, not specific APIs)
-- **Key submodules and their primary roles** (e.g., "config/ handles configuration")
-- **Major files and what they're responsible for** (e.g., "cache.py provides LLM caching")
+- **Key submodules and their primary roles** (e.g., "config/ handles
+  configuration")
+- **Major files and what they're responsible for** (e.g., "cache.py provides
+  LLM caching")
 - **Important data structures/models** (e.g., "Pydantic models for structured output")
 - Architectural patterns and structure
 - Critical design decisions and their rationale
