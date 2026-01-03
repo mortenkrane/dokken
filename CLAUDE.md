@@ -12,58 +12,24 @@ Dokken is an AI-powered documentation generation and drift detection tool. Comma
 - `dokken check --all` - Check all modules configured in `.dokken.toml`
 - `dokken generate <module>` - Generates/updates documentation
 
-## Code Quality Commands
+## CRITICAL: Pre-Commit Requirements
 
-**Automated checks via pre-commit hooks:**
-
-Pre-commit hooks are configured to automatically run checks on changed files:
-
-- On commit: `ruff format`, `ruff check --fix`, `mdformat`, and `ty check`
-- On push: full test suite with coverage
-
-To install hooks (already done if you ran `uv sync --all-groups`):
+**BEFORE EVERY COMMIT, you MUST run:**
 
 ```bash
-uv run pre-commit install
-uv run pre-commit install --hook-type pre-push
-```
-
-To run hooks manually on all files:
-
-```bash
-uv run pre-commit run --all-files
-```
-
-**Manual commands (if needed):**
-
-```bash
-# Format and lint
 uv run ruff format
 uv run ruff check --fix
-
-# Type checking
 uvx ty check
-
-# Format markdown
 uvx mdformat *.md docs/ src/
+```
 
-# Run tests with coverage
+**Then run tests:**
+
+```bash
 uv run pytest tests/ --cov=src --cov-report=term-missing
 ```
 
-**Claude Code hooks (automated for AI sessions):**
-
-Claude Code hooks are configured in `.claude/settings.json` to automatically run quality checks:
-
-- **After file changes** (PostToolUse): Runs `ruff format`, `ruff check --fix`, `mdformat`, and `ty check` on changed files only
-- **At session end** (SessionEnd): Runs full test suite with coverage
-
-Hook scripts are in `.claude/hooks/`:
-
-- `format-and-lint.sh` - Code quality checks on changed files
-- `run-tests.sh` - Full test suite
-
-These hooks run automatically when Claude Code edits files. No setup required!
+These checks ensure code quality and will be automatically verified by pre-commit hooks. If hooks make changes, stage them and amend your commit.
 
 ## Git Commits
 
@@ -79,19 +45,11 @@ These hooks run automatically when Claude Code edits files. No setup required!
 
 ## Important Implementation Details
 
-When working with this codebase, be aware of these key design decisions:
+Key design decisions to keep in mind:
 
 - **Module Structure**: See [docs/style-guide.md](docs/style-guide.md#module-responsibilities) for separation of concerns
-- **Shallow Code Analysis**: `code_analyzer.py` only scans top-level Python files (non-recursive by design)
-- **Configurable File Types**: File types to analyze configured via `file_types` in `.dokken.toml` (defaults to `[".py"]` for backward compatibility)
-- **File Type Override Behavior**: Module-level `file_types` replace (not extend) repo-level settings, unlike `exclusions` and `modules` which extend
-- **Extension Normalization**: File extensions can be specified with or without leading dot (`.py` or `py` both accepted)
-- **Git Base Branch**: Configurable via `GIT_BASE_BRANCH = "main"` in `git.py`
-- **Alphabetically Sorted Decisions**: Formatters sort design decisions alphabetically to prevent diff noise
-- **Drift-Based Generation**: Only generates docs when drift detected or no doc exists (saves LLM calls)
-- **Stabilized Drift Detection**: Uses criteria-based checklist (see `DRIFT_CHECK_PROMPT` in `src/prompts.py`)
-- **Search/Reference-Optimized Docs**: Documentation templates and LLM prompts optimized for grep/search (see `src/formatters.py` and `src/prompts.py` - includes formatting guidelines)
-- **Multi-Module Support**: Can check all modules via `dokken check --all` (configured in `.dokken.toml`)
-- **Custom Prompts**: Users can inject preferences via `.dokken.toml` `[custom_prompts]` section (appended as "USER PREFERENCES")
-- **Exclusion Rules**: Respects `.dokken.toml` config for files/symbols (see README.md for syntax)
-- **Testing**: Always use function-based tests (never class-based), mock all external dependencies, use fixtures from `conftest.py`
+- **Shallow Code Analysis**: `code_analyzer.py` only scans top-level files (non-recursive by design)
+- **File Type Overrides**: Module-level `file_types` replace (not extend) repo-level settings in `.dokken.toml`
+- **Drift-Based Generation**: Only generates docs when drift detected or no doc exists
+- **Search-Optimized Docs**: Templates optimized for grep/search (see `src/formatters.py` and `src/prompts.py`)
+- **Testing**: Use function-based tests, mock external dependencies, use fixtures from `conftest.py`
