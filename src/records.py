@@ -103,6 +103,15 @@ class ModuleDocumentation(BaseModel):
             "prose, not bullet points or lists with prefixes."
         ),
     )
+    module_structure: str | None = Field(
+        None,
+        description=(
+            "Key submodules (subdirectories) and major files with their primary "
+            "responsibilities. List only architectural components that help developers "
+            "navigate the codebase. Format as bullet list with brief (one-line) "
+            "descriptions. Omit if the module is a single file."
+        ),
+    )
     external_dependencies: str | None = Field(
         None,
         description=(

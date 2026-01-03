@@ -50,7 +50,11 @@ def initialize_llm() -> LLM:
     # Check for Anthropic/Claude API key
     if os.getenv("ANTHROPIC_API_KEY"):
         # Using Claude 3.5 Haiku for fast, cost-effective structured output
-        return Anthropic(model="claude-3-5-haiku-20241022", temperature=TEMPERATURE)
+        return Anthropic(
+            model="claude-3-5-haiku-20241022",
+            temperature=TEMPERATURE,
+            max_tokens=8192,
+        )
 
     # Check for OpenAI API key
     if os.getenv("OPENAI_API_KEY"):

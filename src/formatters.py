@@ -32,6 +32,10 @@ def format_module_documentation(*, doc_data: ModuleDocumentation) -> str:
     # Purpose and scope - what this module does
     md += f"## Purpose & Scope\n\n{doc_data.purpose_and_scope}\n\n"
 
+    # Module structure - key files and submodules (if present)
+    if doc_data.module_structure:
+        md += f"## Module Structure\n\n{doc_data.module_structure}\n\n"
+
     # Architecture - how it's structured
     md += f"## Architecture Overview\n\n{doc_data.architecture_overview}\n\n"
 

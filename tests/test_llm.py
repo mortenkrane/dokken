@@ -38,7 +38,7 @@ def test_initialize_llm_with_anthropic_key(mocker: MockerFixture) -> None:
     llm = initialize_llm()
 
     mock_anthropic.assert_called_once_with(
-        model="claude-3-5-haiku-20241022", temperature=TEMPERATURE
+        model="claude-3-5-haiku-20241022", temperature=TEMPERATURE, max_tokens=8192
     )
     assert llm == mock_anthropic.return_value
 
