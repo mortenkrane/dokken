@@ -49,4 +49,3 @@ flowchart TD
 ## Key Design Decisions
 
 Dokken was designed with several critical architectural choices to ensure robust and intelligent documentation generation. The system uses a content-based caching mechanism to reduce redundant LLM API calls, improving performance and cost-efficiency. By leveraging AI and structured Pydantic models, Dokken can generate high-level, conceptual documentation that focuses on architectural patterns rather than implementation details. The modular architecture allows easy extension to support different documentation types and customization through configuration files.
-
