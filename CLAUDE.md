@@ -48,7 +48,6 @@ These checks ensure code quality and will be automatically verified by pre-commi
 Key design decisions to keep in mind:
 
 - **Module Structure**: See [docs/style-guide.md](docs/style-guide.md#module-responsibilities) for separation of concerns
-- **Shallow Code Analysis**: `code_analyzer.py` only scans top-level files (non-recursive by design)
 - **File Type Overrides**: Module-level `file_types` replace (not extend) repo-level settings in `.dokken.toml`
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists
 - **Search-Optimized Docs**: Templates optimized for grep/search (see `src/formatters.py` and `src/prompts.py`)
