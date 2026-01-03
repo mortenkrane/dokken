@@ -7,7 +7,7 @@ from src.formatters import (
     format_project_documentation,
     format_style_guide,
 )
-from src.prompts import (
+from src.llm import (
     MODULE_GENERATION_PROMPT,
     PROJECT_README_GENERATION_PROMPT,
     STYLE_GUIDE_GENERATION_PROMPT,

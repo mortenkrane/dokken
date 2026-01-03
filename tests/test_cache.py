@@ -66,7 +66,7 @@ def test_clear_drift_cache_removes_all_entries(
     """Test clear_drift_cache removes all cached entries."""
     clear_drift_cache()
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -100,7 +100,7 @@ def test_get_drift_cache_info_returns_correct_stats(
     """Test get_drift_cache_info returns accurate cache statistics."""
     clear_drift_cache()
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -130,7 +130,7 @@ def test_save_drift_cache_to_disk(
     """Test save_drift_cache_to_disk persists cache to JSON file."""
     clear_drift_cache()
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -247,7 +247,7 @@ def test_save_and_load_roundtrip(
     """Test save and load cache roundtrip preserves data."""
     clear_drift_cache()
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -285,7 +285,7 @@ def test_set_cache_max_size(
     """Test set_cache_max_size updates the maximum cache size."""
     clear_drift_cache()
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -319,7 +319,7 @@ def test_save_drift_cache_creates_parent_directory(
     """Test save_drift_cache_to_disk creates parent directories."""
     clear_drift_cache()
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -347,7 +347,7 @@ def test_save_drift_cache_handles_permission_error(
     """Test save_drift_cache_to_disk handles OSError gracefully."""
     clear_drift_cache()
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -376,7 +376,7 @@ def test_save_drift_cache_atomic_write(
     """Test save_drift_cache_to_disk uses atomic write."""
     clear_drift_cache()
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program

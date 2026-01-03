@@ -14,8 +14,8 @@ from src.cache import _generate_cache_key, content_based_cache
 from src.config import CustomPrompts
 from src.constants import ERROR_NO_API_KEY
 from src.doc_types import DocType
-from src.prompt_builder import build_custom_prompt_section, build_generation_prompt
-from src.prompts import DRIFT_CHECK_PROMPT, INCREMENTAL_FIX_PROMPT
+from src.llm.prompt_builder import build_custom_prompt_section, build_generation_prompt
+from src.llm.prompts import DRIFT_CHECK_PROMPT, INCREMENTAL_FIX_PROMPT
 from src.records import DocumentationDriftCheck, IncrementalDocumentationFix
 
 # Temperature setting for deterministic, reproducible documentation output

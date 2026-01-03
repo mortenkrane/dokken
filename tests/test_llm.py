@@ -11,6 +11,7 @@ from src.cache import DRIFT_CACHE_SIZE, get_drift_cache_info, set_cache_max_size
 from src.config.models import CustomPrompts
 from src.doc_types import DocType
 from src.llm import (
+    MODULE_GENERATION_PROMPT,
     TEMPERATURE,
     GenerationConfig,
     check_drift,
@@ -18,7 +19,6 @@ from src.llm import (
     generate_doc,
     initialize_llm,
 )
-from src.prompts import MODULE_GENERATION_PROMPT
 from src.records import (
     DocumentationChange,
     DocumentationDriftCheck,
@@ -33,7 +33,7 @@ from src.records import (
 def test_initialize_llm_with_anthropic_key(mocker: MockerFixture) -> None:
     """Test initialize_llm creates Anthropic client when ANTHROPIC_API_KEY is set."""
     mocker.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test_api_key"}, clear=True)
-    mock_anthropic = mocker.patch("src.llm.Anthropic")
+    mock_anthropic = mocker.patch("src.llm.llm.Anthropic")
 
     llm = initialize_llm()
 
@@ -46,7 +46,7 @@ def test_initialize_llm_with_anthropic_key(mocker: MockerFixture) -> None:
 def test_initialize_llm_with_openai_key(mocker: MockerFixture) -> None:
     """Test initialize_llm creates OpenAI client when OPENAI_API_KEY is set."""
     mocker.patch.dict(os.environ, {"OPENAI_API_KEY": "test_api_key"}, clear=True)
-    mock_openai = mocker.patch("src.llm.OpenAI")
+    mock_openai = mocker.patch("src.llm.llm.OpenAI")
 
     llm = initialize_llm()
 
@@ -57,7 +57,7 @@ def test_initialize_llm_with_openai_key(mocker: MockerFixture) -> None:
 def test_initialize_llm_with_google_key(mocker: MockerFixture) -> None:
     """Test initialize_llm creates GoogleGenAI client when GOOGLE_API_KEY is set."""
     mocker.patch.dict(os.environ, {"GOOGLE_API_KEY": "test_api_key"}, clear=True)
-    mock_genai = mocker.patch("src.llm.GoogleGenAI")
+    mock_genai = mocker.patch("src.llm.llm.GoogleGenAI")
 
     llm = initialize_llm()
 
@@ -79,9 +79,9 @@ def test_initialize_llm_priority_order(mocker: MockerFixture) -> None:
         },
         clear=True,
     )
-    mock_anthropic = mocker.patch("src.llm.Anthropic")
-    mock_openai = mocker.patch("src.llm.OpenAI")
-    mock_genai = mocker.patch("src.llm.GoogleGenAI")
+    mock_anthropic = mocker.patch("src.llm.llm.Anthropic")
+    mock_openai = mocker.patch("src.llm.llm.OpenAI")
+    mock_genai = mocker.patch("src.llm.llm.GoogleGenAI")
 
     llm = initialize_llm()
 
@@ -99,8 +99,8 @@ def test_initialize_llm_openai_priority_over_google(mocker: MockerFixture) -> No
         {"OPENAI_API_KEY": "openai_key", "GOOGLE_API_KEY": "google_key"},
         clear=True,
     )
-    mock_openai = mocker.patch("src.llm.OpenAI")
-    mock_genai = mocker.patch("src.llm.GoogleGenAI")
+    mock_openai = mocker.patch("src.llm.llm.OpenAI")
+    mock_genai = mocker.patch("src.llm.llm.GoogleGenAI")
 
     llm = initialize_llm()
 
@@ -136,11 +136,11 @@ def test_initialize_llm_with_various_key_formats(
     mocker.patch.dict(os.environ, {env_var: api_key}, clear=True)
 
     if env_var == "ANTHROPIC_API_KEY":
-        mocker.patch("src.llm.Anthropic")
+        mocker.patch("src.llm.llm.Anthropic")
     elif env_var == "OPENAI_API_KEY":
-        mocker.patch("src.llm.OpenAI")
+        mocker.patch("src.llm.llm.OpenAI")
     else:
-        mocker.patch("src.llm.GoogleGenAI")
+        mocker.patch("src.llm.llm.GoogleGenAI")
 
     llm = initialize_llm()
     assert llm is not None
@@ -162,7 +162,7 @@ def test_check_drift_detects_drift_when_functions_removed(
         ),
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = drift_result
     mock_program_class.from_defaults.return_value = mock_program
@@ -190,7 +190,7 @@ def test_check_drift_no_drift_when_code_matches_docs(
         drift_detected=False, rationale="Documentation is up-to-date."
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = no_drift_result
     mock_program_class.from_defaults.return_value = mock_program
@@ -220,7 +220,7 @@ def test_check_drift_detects_new_functions_added(
         ),
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = drift_result
     mock_program_class.from_defaults.return_value = mock_program
@@ -248,7 +248,7 @@ def test_check_drift_cache_hit(
 ) -> None:
     """Test check_drift returns cached result on cache hit."""
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -279,7 +279,7 @@ def test_check_drift_cache_miss_on_different_context(
 ) -> None:
     """Test check_drift triggers new LLM call when context changes."""
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -300,7 +300,7 @@ def test_check_drift_cache_miss_on_different_doc(
 ) -> None:
     """Test check_drift triggers new LLM call when documentation changes."""
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -321,7 +321,7 @@ def test_check_drift_cache_evicts_oldest_when_full(
 ) -> None:
     """Test cache evicts oldest entry when maxsize is reached."""
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -369,7 +369,7 @@ def test_generate_doc_returns_structured_documentation(
     sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc returns structured ModuleDocumentation."""
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
@@ -399,7 +399,7 @@ def test_generate_doc_without_human_intent(
     sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc works without human intent provided."""
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
@@ -438,7 +438,7 @@ def test_check_drift_handles_various_inputs(
     current_doc: str,
 ) -> None:
     """Test check_drift handles various context and documentation inputs."""
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_no_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -458,7 +458,7 @@ def test_check_drift_handles_none_documentation(
     sample_drift_check_with_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift handles None for current_doc (no documentation)."""
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_drift_check_with_drift
     mock_program_class.from_defaults.return_value = mock_program
@@ -493,7 +493,7 @@ def test_check_drift_no_drift_for_helper_function_addition(
         "_validate_input supports existing authenticate_user functionality.",
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = no_drift_result
     mock_program_class.from_defaults.return_value = mock_program
@@ -531,7 +531,7 @@ def test_check_drift_no_drift_for_refactoring(
         "class to functions maintains the same purpose and functionality.",
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = no_drift_result
     mock_program_class.from_defaults.return_value = mock_program
@@ -568,7 +568,7 @@ def test_check_drift_requires_checklist_citation_when_drift_detected(
         "is implemented but not documented.",
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = drift_result
     mock_program_class.from_defaults.return_value = mock_program
@@ -605,7 +605,7 @@ def test_generate_doc_handles_various_contexts(
     context: str,
 ) -> None:
     """Test generate_doc handles various code contexts."""
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
@@ -631,7 +631,7 @@ def test_generate_doc_with_human_intent(
 ) -> None:
     """Test generate_doc includes human intent when provided."""
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
@@ -667,7 +667,7 @@ def test_generate_doc_with_partial_human_intent(
 ) -> None:
     """Test generate_doc handles partial human intent."""
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = sample_component_documentation
     mock_program_class.from_defaults.return_value = mock_program
@@ -715,7 +715,7 @@ def test_fix_doc_incrementally_returns_structured_fixes(
         preserved_sections=["Architecture Overview", "Key Design Decisions"],
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = incremental_fix
     mock_program_class.from_defaults.return_value = mock_program
@@ -762,7 +762,7 @@ def test_fix_doc_incrementally_with_custom_prompts(
         preserved_sections=["Purpose & Scope"],
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = incremental_fix
     mock_program_class.from_defaults.return_value = mock_program
@@ -812,7 +812,7 @@ def test_fix_doc_incrementally_without_optional_params(
         preserved_sections=[],
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = incremental_fix
     mock_program_class.from_defaults.return_value = mock_program
@@ -863,7 +863,7 @@ def test_fix_doc_incrementally_multiple_changes(
         preserved_sections=["Architecture Overview", "Control Flow"],
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = incremental_fix
     mock_program_class.from_defaults.return_value = mock_program
@@ -890,7 +890,7 @@ def test_fix_doc_incrementally_multiple_changes(
 def test_check_drift_llm_api_error(mocker: MockerFixture, mock_llm_client: Any) -> None:
     """Test check_drift handles LLM API errors gracefully."""
     # Mock LLM program to raise an exception
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.side_effect = Exception("API rate limit exceeded")
     mock_program_class.from_defaults.return_value = mock_program
@@ -913,7 +913,7 @@ def test_check_drift_with_empty_context(
         drift_detected=False, rationale="No code to check"
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = drift_check
     mock_program_class.from_defaults.return_value = mock_program
@@ -936,7 +936,7 @@ def test_check_drift_with_very_large_context(
         drift_detected=True, rationale="Many new functions"
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = drift_check
     mock_program_class.from_defaults.return_value = mock_program
@@ -955,7 +955,7 @@ def test_check_drift_with_very_large_context(
 def test_generate_doc_llm_timeout(mocker: MockerFixture, mock_llm_client: Any) -> None:
     """Test generate_doc handles LLM timeout errors."""
     # Mock LLM program to simulate timeout
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.side_effect = TimeoutError("Request timeout")
     mock_program_class.from_defaults.return_value = mock_program
@@ -976,7 +976,7 @@ def test_generate_doc_invalid_response_structure(
 ) -> None:
     """Test generate_doc handles invalid LLM response structure."""
     # Mock LLM program to return invalid data
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     # Simulate Pydantic validation error
     mock_program.side_effect = ValidationError.from_exception_data(
@@ -1001,7 +1001,7 @@ def test_fix_doc_incrementally_llm_error(
 ) -> None:
     """Test fix_doc_incrementally handles LLM errors."""
     # Mock LLM program to raise error
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.side_effect = RuntimeError("LLM service unavailable")
     mock_program_class.from_defaults.return_value = mock_program
@@ -1030,7 +1030,7 @@ def test_initialize_llm_with_multiple_api_keys(mocker: MockerFixture) -> None:
     )
 
     # Mock the Anthropic client
-    mock_anthropic = mocker.patch("src.llm.Anthropic")
+    mock_anthropic = mocker.patch("src.llm.llm.Anthropic")
 
     # When: Initializing LLM
     initialize_llm()
@@ -1051,7 +1051,7 @@ def test_initialize_llm_fallback_to_openai(mocker: MockerFixture) -> None:
     )
 
     # Mock the OpenAI client
-    mock_openai = mocker.patch("src.llm.OpenAI")
+    mock_openai = mocker.patch("src.llm.llm.OpenAI")
 
     # When: Initializing LLM
     initialize_llm()
@@ -1072,7 +1072,7 @@ def test_initialize_llm_fallback_to_google(mocker: MockerFixture) -> None:
     )
 
     # Mock the Google client
-    mock_google = mocker.patch("src.llm.GoogleGenAI")
+    mock_google = mocker.patch("src.llm.llm.GoogleGenAI")
 
     # When: Initializing LLM
     initialize_llm()

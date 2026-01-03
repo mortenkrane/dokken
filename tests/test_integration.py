@@ -174,9 +174,9 @@ def test_integration_generate_documentation(
     # Mock the LLM initialization and program
     mock_llm_client = mocker.MagicMock()
     mocker.patch("src.workflows.initialize_llm", return_value=mock_llm_client)
-    mocker.patch("src.llm.initialize_llm", return_value=mock_llm_client)
+    mocker.patch("src.llm.llm.initialize_llm", return_value=mock_llm_client)
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.side_effect = [
         payment_service_drift_check,
@@ -236,9 +236,9 @@ def test_integration_check_documentation_drift(
     # Mock the LLM initialization and program
     mock_llm_client = mocker.MagicMock()
     mocker.patch("src.workflows.initialize_llm", return_value=mock_llm_client)
-    mocker.patch("src.llm.initialize_llm", return_value=mock_llm_client)
+    mocker.patch("src.llm.llm.initialize_llm", return_value=mock_llm_client)
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = auth_service_drift_check
     mock_program_class.from_defaults.return_value = mock_program
@@ -335,7 +335,7 @@ def new_function():
         preserved_sections=["Auth Module"],
     )
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.side_effect = [drift_check, fix]
     mock_program_class.from_defaults.return_value = mock_program
@@ -374,7 +374,7 @@ def test_integration_cache_persistence(tmp_path: Path, mocker: MockerFixture) ->
 
     drift_check = DocumentationDriftCheck(drift_detected=False, rationale="Up to date")
 
-    mock_program_class = mocker.patch("src.llm.LLMTextCompletionProgram")
+    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
     mock_program.return_value = drift_check
     mock_program_class.from_defaults.return_value = mock_program
