@@ -56,15 +56,26 @@ Use this checklist to determine drift. Drift is detected if ANY of these are tru
    only does logging; docs describe REST API but code implements CLI tool. NOT: minor
    scope expansions, additional use cases, or refined descriptions.
 
-3. **Missing Critical Features**: The code implements MAJOR NEW conceptual capabilities
-   that FUNDAMENTALLY change what the module does or how users interact with it at a
-   HIGH LEVEL, and these are NOT documented. Focus on architectural changes, NOT new
-   functions or methods. Ask: "Would a developer be confused about the module's PURPOSE
-   or ARCHITECTURE without knowing about this?" Only flag if YES. Examples that SHOULD
-   trigger drift: switching from sync to async architecture, adding authentication
-   layer, changing from REST to GraphQL. Examples that should NOT: new
-   functions/methods, new parameters, new fields/attributes, implementation
-   optimizations.
+3. **Missing Critical Features or Components**: The code implements MAJOR NEW capabilities,
+   submodules, or components that change what the module does, how it's organized, or how
+   users interact with it, and these are NOT documented. This includes:
+
+   SHOULD trigger drift:
+   - New submodules added (e.g., adding "validation/" subdirectory)
+   - New CLI commands or major entry points
+   - New major files representing new capabilities (e.g., "cache.py" for caching)
+   - Switching from sync to async architecture
+   - Adding new core functionality layers (authentication, validation, etc.)
+   - New data models or structures central to the module's operation
+
+   Should NOT trigger drift:
+   - New helper functions/methods within existing modules
+   - New utility files that support existing features
+   - Implementation optimizations or refactoring
+   - New parameters or configuration options
+
+   Ask: "Does this change what a developer can DO with this module or how they would
+   NAVIGATE it?" If YES, flag drift.
 4. **Outdated Design Decisions**: The documentation explains design decisions that
    are no longer present in the code.
 5. **Incorrect Technical Claims**: The documentation makes SPECIFIC, CONCRETE claims
@@ -127,27 +138,33 @@ Analyze methodically:
 5. If at least one checklist item unambiguously matches, set drift_detected=true
 6. If ZERO checklist items match, you MUST set drift_detected=false
 
-CONSERVATIVE BIAS - VERY IMPORTANT:
-When in doubt, prefer drift_detected=false. Documentation is meant to be a concise
-overview, NOT a comprehensive catalog. The bar for drift should be HIGH.
+BALANCED APPROACH - IMPORTANT:
+Documentation should remain stable for minor changes but be updated for meaningful
+additions or changes. Apply these principles:
 
-Only set drift_detected=true when ALL of these are true:
-- A specific checklist item UNAMBIGUOUSLY applies
+Set drift_detected=true when:
+- A specific checklist item clearly applies
 - You have concrete evidence from the code
-- The change would MATERIALLY impact a developer's ability to understand or use the
-  module (not just add "nice to know" details)
-- A developer would be confused, blocked, or make incorrect assumptions without this
-  information in the docs
+- The change represents a meaningful addition, shift, or structural change in what
+  the module does or how it's organized
+- A developer relying on the docs would miss important capabilities, be confused about
+  the module's organization, or make incorrect assumptions
 
-Ask yourself: "If I were reading this documentation, would I be misled or unable to
-work with this module effectively?" If the answer is NO, then drift_detected=false.
+Set drift_detected=false when:
+- Changes are purely implementation details (refactoring, renames, internal optimization)
+- New additions are minor utilities that don't change the module's role or structure
+- The documentation remains substantially accurate despite the change
+- The change is a detail that belongs in code comments, not module-level docs
 
-If you're uncertain whether a checklist item applies, it doesn't apply. If you're
-thinking "it would be nice to document this," that's NOT drift. Err heavily on the
-side of NO DRIFT.
+Ask yourself: "Would a developer find meaningful value in knowing about this change
+for understanding or navigating this module?" If YES and it's architectural/structural,
+flag drift.
 
-EXCEPTION - Incorrect Technical Claims:
-The conservative bias does NOT apply to Item 5 (Incorrect Technical Claims). If the
+Balance: Avoid false positives for trivial changes, but DO flag meaningful structural
+additions or changes that help developers understand what the module does or contains.
+
+IMPORTANT - Incorrect Technical Claims:
+Item 5 (Incorrect Technical Claims) should always be taken seriously. If the
 documentation makes specific, concrete statements about implementation behavior that
 are factually wrong based on the code, this IS drift regardless of whether the
 document is otherwise high-level. A developer who reads and believes an incorrect
@@ -188,21 +205,29 @@ Create a CONCISE, HIGH-LEVEL overview that focuses on architecture and concepts,
 implementation details. Good documentation helps developers understand the "what" and
 "why" at a conceptual level:
 
-INCLUDE (high-level concepts only):
+INCLUDE (high-level concepts AND structural overview):
 - Core purpose and primary responsibilities
 - How developers interact with this module (conceptually, not specific APIs)
+- **Key submodules and their primary roles** (e.g., "config/ handles configuration")
+- **Major files and what they're responsible for** (e.g., "cache.py provides LLM caching")
+- **Important data structures/models** (e.g., "Pydantic models for structured output")
 - Architectural patterns and structure
 - Critical design decisions and their rationale
 - Key external dependencies that define what the module does
 
-OMIT (all implementation details):
+OMIT (implementation specifics, but DO mention structure):
 - Specific function names, class names, or method signatures
-- Helper functions and internal utilities
+- Helper functions and minor internal utilities
 - Implementation details, parameters, or configuration options
 - Minor edge cases and error handling specifics
 - Exhaustive lists of any kind
 - Low-level algorithmic details
 - Specific fields, attributes, or variables
+
+BUT DO INCLUDE (structural overview):
+- Key submodules (directories) and their roles
+- Major files and their primary responsibilities
+- Important data structures or models (by type, not specific fields)
 
 GUIDING PRINCIPLE: Documentation should describe the forest, not the trees. Focus on
 concepts, patterns, and architecture. If it's a specific implementation detail (like a
@@ -230,21 +255,37 @@ Analyze the code context and generate comprehensive documentation that covers:
 2. **Purpose & Scope**: What this component does and its boundaries (2-3 paragraphs).
    Start with a keyword-rich first sentence that defines the module's role.
 
-3. **Architecture Overview**: How the component is structured at a high level. Focus on
+3. **Module Structure** (if applicable): List key submodules and major files with their
+   primary responsibilities. This helps developers navigate the codebase. Format as:
+   - **submodule_name/**: Brief description of role (1 line)
+   - **key_file.py**: What it's responsible for (1 line)
+
+   Focus on architectural organization. Include:
+   - Submodules (directories with distinct responsibilities)
+   - Core files that represent major capabilities
+   - Important data models or structures used
+   OMIT: Test files, helper utilities, __init__.py files, minor helpers
+
+   Keep descriptions conceptual (e.g., "handles configuration loading" not
+   "contains ConfigLoader class with load_config() method").
+
+   Skip this section if the module is a single file with no internal structure.
+
+4. **Architecture Overview**: How the component is structured at a high level. Focus on
    the conceptual organization, NOT specific files or functions:
    - Main architectural layers or components (e.g., "parser layer", "execution engine")
    - How components interact conceptually
    - Data flow patterns
    - Overall structural approach
 
-4. **Control Flow**: How operations flow through the system conceptually. Describe the
+5. **Control Flow**: How operations flow through the system conceptually. Describe the
    general pattern, NOT specific function calls:
    - What triggers operations (e.g., "user commands", "file changes")
    - High-level processing stages
    - Key decision points (conceptual, not if-statements)
    - How data flows from input to output
 
-5. **Control Flow Diagram** (optional): If the control flow has meaningful decision
+6. **Control Flow Diagram** (optional): If the control flow has meaningful decision
    points or branching logic, create a Mermaid flowchart diagram to visualize it at a
    HIGH LEVEL. Use conceptual stages, NOT function names. Use Mermaid flowchart syntax
    (```mermaid flowchart TD```). Include:
@@ -256,7 +297,7 @@ Analyze the code context and generate comprehensive documentation that covers:
    Example: "Input Received → Validate → Process → Transform → Output"
    Skip this if the flow is purely linear with no meaningful branches
 
-6. **Key External Dependencies**: Core third-party libraries that are essential to this
+7. **Key External Dependencies**: Core third-party libraries that are essential to this
    module's functionality. Focus ONLY on dependencies that:
    - Define what the module does (e.g., LLM SDKs for AI features, web frameworks for
    APIs)
@@ -274,7 +315,7 @@ Analyze the code context and generate comprehensive documentation that covers:
 
    If there are no key external dependencies, omit this section entirely
 
-7. **Key Design Decisions**: The 2-4 MOST IMPORTANT architectural choices and WHY they
+8. **Key Design Decisions**: The 2-4 MOST IMPORTANT architectural choices and WHY they
    were made. Focus on conceptual decisions that define the module's approach. Write
    this as flowing prose, not bullet points. Explain patterns, technologies, and
    philosophies in a cohesive narrative. Examples:

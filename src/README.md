@@ -2,37 +2,51 @@
 
 ## Main Entry Points
 
-Developers interact with Dokken through two primary CLI commands: 'generate' and 'check'. The 'generate' command creates new documentation by analyzing code context, while the 'check' command detects and optionally fixes documentation drift. Users can specify module paths, documentation types (module README, project README, style guide), and additional parameters like analysis depth.
+Developers interact with Dokken through two primary CLI commands: `dokken generate` for creating new documentation and `dokken check` for detecting documentation drift. These commands support various documentation types like module READMEs, project READMEs, and style guides, and can be configured through `.dokken.toml` configuration files.
 
 ## Purpose & Scope
 
-Dokken is an AI-powered documentation generation and drift detection tool designed to help developers maintain accurate and up-to-date documentation for their software projects. The tool analyzes code context, generates high-level architectural documentation, and detects when documentation becomes misaligned with the actual codebase.
+Dokken is an AI-powered documentation generation and drift detection tool designed to help developers maintain accurate and up-to-date documentation for their software projects. The tool analyzes code context, generates structured documentation, and detects when documentation becomes misaligned with the actual codebase.
+
+## Module Structure
+
+- **src/**: Root directory containing core implementation
+- **src/llm/**: LLM interaction and prompt management
+- **src/config/**: Configuration loading and management
+- **src/cache.py**: Caching utilities for expensive operations
+- **src/code_analyzer.py**: Code context extraction and analysis
+- **src/main.py**: CLI interface and workflow orchestration
 
 ## Architecture Overview
 
-The system is structured around several key modules that work together to provide comprehensive documentation support. The core architecture includes a code analysis module for extracting context, an LLM (Large Language Model) interaction layer for generating documentation, a configuration management system, and workflow orchestration components. Each module has a specific responsibility: code analysis extracts meaningful context, LLM interaction generates and refines documentation, and workflow modules coordinate the overall documentation generation and drift detection process.
+Dokken is structured as a modular system with distinct components responsible for different aspects of documentation generation and drift detection. The architecture is designed to be flexible, extensible, and leverage AI for intelligent documentation maintenance. Key architectural components include code analysis, configuration management, LLM interaction, documentation generation, and drift detection workflows.
 
 ## Control Flow
 
-The documentation generation workflow follows a multi-stage process. It begins with code context analysis, where the system extracts relevant code information. Next, it checks for existing documentation and potential drift. A human intent capture step allows developers to provide additional context. The LLM then generates structured documentation based on the code context and human input. Finally, the documentation is formatted and written to the appropriate output file.
+The documentation generation workflow follows a multi-stage process: 1) Initialize LLM client, 2) Analyze code context, 3) Check for existing documentation drift, 4) Capture human intent through an interactive questionnaire, 5) Generate structured documentation using AI, and 6) Write documentation to the appropriate output path. The drift detection workflow similarly checks for discrepancies between code and documentation, with optional automatic fixing capabilities.
 
 ```mermaid
 flowchart TD
-    A[Code Context Analysis] --> B[Drift Detection]
-    B --> C{Drift Detected?}
-    C -->|Yes| D[Human Intent Capture]
-    C -->|No| E[Optional Regeneration]
-    D --> F[LLM Documentation Generation]
-    E --> F
-    F --> G[Markdown Formatting]
-    G --> H[Write Documentation]
+    A[Start] --> B[Initialize LLM]
+    B --> C[Analyze Code Context]
+    C --> D{Existing Documentation?}
+    D -->|Yes| E[Check Documentation Drift]
+    D -->|No| F[Capture Human Intent]
+    E --> G{Drift Detected?}
+    G -->|Yes| F
+    F --> H[Generate Documentation]
+    H --> I[Write Documentation]
+    I --> J[End]
 ```
 
 ## External Dependencies
 
-**LLM Libraries**: Dokken relies on llama-index for LLM interactions, supporting multiple providers like Anthropic Claude, OpenAI GPT, and Google Gemini. **Rich**: Used for creating beautiful, informative CLI output. **Click**: Provides a robust framework for building the command-line interface.
+- **llama_index**: Provides LLM client abstractions and text completion programs for structured AI generation
+- **pydantic**: Used for creating strongly-typed models and configuration validation
+- **click**: Enables rich, composable CLI interface development
+- **rich**: Provides advanced console output formatting and status indicators
 
 ## Key Design Decisions
 
-Dokken adopts a modular, extensible architecture that prioritizes conceptual documentation over implementation details. By using an LLM with carefully crafted prompts, the tool generates high-level, developer-friendly documentation that focuses on architectural patterns and system design. The use of content-based caching for expensive LLM operations ensures efficiency, while the incremental drift fixing approach maintains documentation consistency and minimizes unnecessary regeneration.
+Dokken was designed with several critical architectural choices to ensure robust and intelligent documentation generation. The system uses a content-based caching mechanism to reduce redundant LLM API calls, improving performance and cost-efficiency. By leveraging AI and structured Pydantic models, Dokken can generate high-level, conceptual documentation that focuses on architectural patterns rather than implementation details. The modular architecture allows easy extension to support different documentation types and customization through configuration files.
 
