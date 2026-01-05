@@ -15,6 +15,7 @@ from src.config.merger import merge_config
 from src.config.models import CacheConfig, CustomPrompts, DokkenConfig, ExclusionConfig
 from src.config.types import ConfigDataDict
 from src.file_utils import find_repo_root
+from src.security.input_validation import validate_custom_prompt
 
 
 def load_config(*, module_path: str) -> DokkenConfig:
@@ -64,6 +65,9 @@ def load_config(*, module_path: str) -> DokkenConfig:
     except ValidationError as e:
         raise ValueError(f"Invalid custom prompts configuration: {e}") from e
 
+    # Validate custom prompts for suspicious patterns
+    _validate_custom_prompts(custom_prompts)
+
     try:
         cache_config = CacheConfig(**config_data.get("cache", {}))
     except ValidationError as e:
@@ -93,3 +97,41 @@ def _load_and_merge_config(config_path: Path, base_config: ConfigDataDict) -> No
             # TypedDict is compatible with dict[str, Any] at runtime
             # Cast for type checker compatibility
             merge_config(cast(dict[str, Any], base_config), config_data)
+
+
+def _validate_custom_prompts(custom_prompts: CustomPrompts) -> None:
+    """
+    Validate custom prompts for suspicious patterns indicating prompt injection.
+
+    Prints warnings to stderr if suspicious patterns are detected, but does not
+    prevent the prompts from being used (warning system, not a hard block).
+
+    Args:
+        custom_prompts: The custom prompts configuration to validate.
+    """
+    prompt_fields = [
+        ("global_prompt", custom_prompts.global_prompt),
+        ("module_readme", custom_prompts.module_readme),
+        ("project_readme", custom_prompts.project_readme),
+        ("style_guide", custom_prompts.style_guide),
+    ]
+
+    for prompt_type, prompt_text in prompt_fields:
+        if prompt_text:
+            result = validate_custom_prompt(prompt_text)
+            if result.is_suspicious:
+                print(
+                    f"\n⚠️  WARNING: Suspicious pattern detected in "
+                    f"custom_prompts.{prompt_type}",
+                    file=sys.stderr,
+                )
+                for warning in result.warnings:
+                    print(f"   - {warning}", file=sys.stderr)
+                if result.severity == "high":
+                    print(f"   Severity: {result.severity.upper()}", file=sys.stderr)
+                    print(
+                        "   This prompt may attempt to manipulate "
+                        "documentation generation.",
+                        file=sys.stderr,
+                    )
+                    print("   Review .dokken.toml carefully.\n", file=sys.stderr)
