@@ -2,6 +2,7 @@
 
 import re
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass
@@ -10,7 +11,7 @@ class ValidationResult:
 
     is_suspicious: bool
     warnings: list[str]
-    severity: str  # "low", "medium", "high"
+    severity: Literal["low", "medium", "high"]
 
 
 # Patterns that suggest prompt injection attempts
@@ -120,5 +121,5 @@ def validate_code_context(
     return ValidationResult(
         is_suspicious=len(warnings) > 0,
         warnings=warnings,
-        severity="low" if warnings else "low",  # Code comments are lower risk
+        severity="low",  # Code comments are always lower risk than custom prompts
     )
