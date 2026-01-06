@@ -6,15 +6,11 @@ from src.constants import DEFAULT_CACHE_FILE, DRIFT_CACHE_SIZE
 
 
 class ExclusionConfig(BaseModel):
-    """Configuration for excluding files and symbols from documentation."""
+    """Configuration for excluding files from documentation."""
 
     files: list[str] = Field(
         default_factory=list,
         description="List of file patterns to exclude (supports glob patterns)",
-    )
-    symbols: list[str] = Field(
-        default_factory=list,
-        description="List of symbol names to exclude (supports wildcards)",
     )
 
 

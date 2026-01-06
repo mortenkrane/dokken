@@ -1,10 +1,8 @@
 """Code analysis and context extraction for documentation generation."""
 
-import ast
 import fnmatch
 import os
 from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 from pathlib import Path
 
 from rich.console import Console
@@ -59,20 +57,12 @@ def get_module_context(*, module_path: str, depth: int = 0) -> str:
 
         # Read files in parallel for better I/O performance on large codebases
         with ThreadPoolExecutor() as executor:
-            file_results = list(
-                executor.map(
-                    partial(
-                        _read_and_filter_file,
-                        exclusion_symbols=config.exclusions.symbols,
-                    ),
-                    sorted(filtered_files),
-                )
-            )
+            file_results = list(executor.map(_read_file, sorted(filtered_files)))
 
         # Combine results in sorted order
-        for file_path, filtered_content in file_results:
-            if filtered_content is not None:
-                context += f"--- FILE: {file_path} ---\n{filtered_content}\n\n"
+        for file_path, file_content in file_results:
+            if file_content is not None:
+                context += f"--- FILE: {file_path} ---\n{file_content}\n\n"
 
         return context
     except OSError as e:
@@ -80,26 +70,20 @@ def get_module_context(*, module_path: str, depth: int = 0) -> str:
         return ""
 
 
-def _read_and_filter_file(
-    file_path: str, exclusion_symbols: list[str]
-) -> tuple[str, str] | tuple[str, None]:
+def _read_file(file_path: str) -> tuple[str, str] | tuple[str, None]:
     """
-    Read and filter a single file for parallel execution.
+    Read a single file for parallel execution.
 
     Args:
-        file_path: Path to the Python file to read.
-        exclusion_symbols: List of symbol name patterns to exclude.
+        file_path: Path to the file to read.
 
     Returns:
-        Tuple of (file_path, filtered_content) on success, or
-        (file_path, None) on error.
+        Tuple of (file_path, content) on success, or (file_path, None) on error.
     """
     try:
         with open(file_path) as f:
-            code_content = f.read()
-
-        filtered_content = _filter_excluded_symbols(code_content, exclusion_symbols)
-        return file_path, filtered_content
+            content = f.read()
+        return file_path, content
     except OSError as e:
         console.print(f"[yellow]⚠[/yellow] Could not read {file_path}: {e}")
         return file_path, None
@@ -183,86 +167,3 @@ def _filter_excluded_files(
             filtered.append(file_path)
 
     return filtered
-
-
-def _filter_excluded_symbols(source_code: str, exclusion_patterns: list[str]) -> str:
-    """
-    Filter out top-level functions and classes matching exclusion patterns.
-
-    Args:
-        source_code: Python source code to filter.
-        exclusion_patterns: List of symbol name patterns to exclude.
-
-    Returns:
-        Filtered source code with excluded symbols removed.
-    """
-    if not exclusion_patterns:
-        return source_code
-
-    try:
-        tree = ast.parse(source_code)
-    except SyntaxError:
-        # If we can't parse, return original code
-        return source_code
-
-    symbols_to_exclude = _find_excluded_symbols(tree, exclusion_patterns)
-
-    if not symbols_to_exclude:
-        return source_code
-
-    return _remove_excluded_lines(source_code, symbols_to_exclude)
-
-
-def _find_excluded_symbols(
-    tree: ast.Module, exclusion_patterns: list[str]
-) -> list[tuple[int, int]]:
-    """
-    Find line ranges for top-level symbols matching exclusion patterns.
-
-    Args:
-        tree: Parsed AST of the source code.
-        exclusion_patterns: List of symbol name patterns to exclude.
-
-    Returns:
-        List of (start_line, end_line) tuples for excluded symbols.
-    """
-    symbols_to_exclude = []
-    symbol_types = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
-
-    for node in tree.body:
-        if not isinstance(node, symbol_types):
-            continue
-
-        matches_pattern = any(
-            fnmatch.fnmatch(node.name, pattern) for pattern in exclusion_patterns
-        )
-
-        if matches_pattern:
-            symbols_to_exclude.append((node.lineno, node.end_lineno or node.lineno))
-
-    return symbols_to_exclude
-
-
-def _remove_excluded_lines(
-    source_code: str, excluded_ranges: list[tuple[int, int]]
-) -> str:
-    """
-    Remove lines from source code that fall within excluded ranges.
-
-    Args:
-        source_code: The source code to filter.
-        excluded_ranges: List of (start_line, end_line) tuples to remove.
-
-    Returns:
-        Filtered source code.
-    """
-    lines = source_code.splitlines(keepends=True)
-    filtered_lines = []
-
-    for line_num, line in enumerate(lines, start=1):
-        excluded = any(start <= line_num <= end for start, end in excluded_ranges)
-
-        if not excluded:
-            filtered_lines.append(line)
-
-    return "".join(filtered_lines)

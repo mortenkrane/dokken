@@ -536,14 +536,6 @@ def test_drift_check_never_crashes(code: str, doc: str) -> None:
     assert isinstance(result.drift_detected, bool)
     assert isinstance(result.rationale, str)
     assert len(result.rationale) > 0
-
-@given(st.lists(st.text(min_size=1), min_size=1))
-def test_filter_excluded_symbols_preserves_structure(symbols: list[str]) -> None:
-    """Symbol filtering should never corrupt valid Python syntax."""
-    code = "\n".join(f"def {symbol}(): pass" for symbol in symbols)
-    filtered = _filter_excluded_symbols(code, symbols[:1])
-    # Should still be valid Python
-    ast.parse(filtered)
 ```
 
 **Benefits:**

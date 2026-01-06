@@ -33,7 +33,7 @@ def load_config(*, module_path: str) -> DokkenConfig:
         DokkenConfig with merged configuration from all sources.
     """
     config_data: ConfigDataDict = {
-        "exclusions": {"files": [], "symbols": []},
+        "exclusions": {"files": []},
         "custom_prompts": {
             "global_prompt": None,
             "module_readme": None,
