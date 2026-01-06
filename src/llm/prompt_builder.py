@@ -40,11 +40,7 @@ def build_human_intent_section(
     if not intent_lines:
         return ""
 
-    return (
-        "\n<user_intent>\n"
-        + "\n".join(intent_lines)
-        + "\n</user_intent>\n"
-    )
+    return "\n<user_intent>\n" + "\n".join(intent_lines) + "\n</user_intent>\n"
 
 
 def get_doc_type_prompt(custom_prompts: CustomPrompts, doc_type: DocType) -> str | None:

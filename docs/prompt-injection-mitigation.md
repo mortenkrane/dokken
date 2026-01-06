@@ -5,6 +5,7 @@
 This document outlines mitigation strategies for prompt injection vulnerabilities in Dokken's LLM-based documentation generation system.
 
 **Threat Model:**
+
 - **Primary risk**: Malicious code comments or config files causing false/misleading documentation
 - **Attack vectors**: Code comments, `.dokken.toml` custom prompts, interactive questionnaire input
 - **Impact**: Documentation integrity compromise, reduced trust in AI-generated docs
@@ -13,11 +14,12 @@ This document outlines mitigation strategies for prompt injection vulnerabilitie
 
 Mitigations are ordered by priority (high impact, reasonable effort first).
 
----
+______________________________________________________________________
 
 ## 1. XML Delimiter Protection (HIGH PRIORITY)
 
 ### Goal
+
 Clearly separate LLM instructions from user-provided data using XML-style tags with explicit anti-injection directives.
 
 ### Implementation
@@ -102,15 +104,17 @@ Respond ONLY with the JSON object schema provided."""
 ```
 
 **Apply similar changes to:**
+
 - `PROJECT_README_GENERATION_PROMPT`
 - `STYLE_GUIDE_GENERATION_PROMPT`
 - `INCREMENTAL_FIX_PROMPT`
 
----
+______________________________________________________________________
 
 ## 2. Reduce Priority Inversion (HIGH PRIORITY)
 
 ### Goal
+
 Stop explicitly telling the LLM to prioritize user-provided content over its primary task.
 
 ### Implementation
@@ -118,6 +122,7 @@ Stop explicitly telling the LLM to prioritize user-provided content over its pri
 **File: `src/llm/prompt_builder.py:86-93`**
 
 **Current (vulnerable):**
+
 ```python
 header = (
     "\n--- USER PREFERENCES (IMPORTANT) ---\n"
@@ -129,6 +134,7 @@ header = (
 ```
 
 **Proposed (safer):**
+
 ```python
 header = (
     "\n<custom_prompts>\n"
@@ -142,17 +148,19 @@ return header + "\n\n".join(prompt_parts) + footer
 ```
 
 **Changes:**
+
 - ❌ Remove "HIGHEST PRIORITY" language
 - ❌ Remove instruction to prefer user preferences over guidelines
 - ✅ Add XML tags for clear data boundaries
 - ✅ Reframe as "preferences" not "instructions"
 - ✅ Emphasize alignment with accuracy goals
 
----
+______________________________________________________________________
 
 ## 3. Input Validation & Warnings (MEDIUM PRIORITY)
 
 ### Goal
+
 Detect and warn users about potentially malicious patterns in custom prompts and code comments.
 
 ### Implementation
@@ -336,11 +344,12 @@ def check_module_drift(
     # ... rest of function ...
 ```
 
----
+______________________________________________________________________
 
 ## 4. Enhanced XML Tags for All Data Sections (MEDIUM PRIORITY)
 
 ### Goal
+
 Use consistent XML tagging throughout the prompt building pipeline.
 
 ### Implementation
@@ -400,11 +409,12 @@ def build_drift_context_section(drift_rationale: str) -> str:
     )
 ```
 
----
+______________________________________________________________________
 
 ## 5. Content Watermarking (LOW PRIORITY - Future Enhancement)
 
 ### Goal
+
 Make it visible when documentation was influenced by custom prompts or suspicious inputs.
 
 ### Implementation
@@ -427,16 +437,18 @@ def format_module_readme(result: ModuleReadme, metadata: GenerationMetadata | No
     # ... rest of formatting ...
 ```
 
----
+______________________________________________________________________
 
 ## 6. Review Workflow Enhancements (LOW PRIORITY)
 
 ### Goal
+
 Make prompt injection attempts visible in code review.
 
 ### Implementation Ideas
 
 1. **Git Hook**: Add pre-commit hook that warns about suspicious `.dokken.toml` changes
+
    ```bash
    # .git/hooks/pre-commit
    if git diff --cached .dokken.toml | grep -i "ignore previous\|system override"; then
@@ -445,19 +457,21 @@ Make prompt injection attempts visible in code review.
    fi
    ```
 
-2. **CI Check**: Add CI validation step
+1. **CI Check**: Add CI validation step
+
    ```bash
    # In CI pipeline
    dokken validate-config --check-injection
    ```
 
-3. **Dokken Command**: Add validation command
+1. **Dokken Command**: Add validation command
+
    ```bash
    dokken validate .dokken.toml
    # Output: ⚠️ Found 2 suspicious patterns in custom_prompts.global_prompt
    ```
 
----
+______________________________________________________________________
 
 ## Testing
 
@@ -551,26 +565,29 @@ def test_custom_prompt_injection_contained(llm):
     assert hasattr(result, 'how_to_use')
 ```
 
----
+______________________________________________________________________
 
 ## Implementation Priority
 
 1. **Phase 1 (Immediate - 1-2 days)**:
+
    - Add XML delimiter protection to all prompts
    - Remove "HIGHEST PRIORITY" language from custom prompt section
    - Add basic validation with warnings
 
-2. **Phase 2 (Short term - 1 week)**:
+1. **Phase 2 (Short term - 1 week)**:
+
    - Implement comprehensive input validation
    - Add security tests
    - Update documentation
 
-3. **Phase 3 (Medium term - 2-4 weeks)**:
+1. **Phase 3 (Medium term - 2-4 weeks)**:
+
    - Add content watermarking
    - Implement review workflow enhancements
    - Add `dokken validate` command
 
----
+______________________________________________________________________
 
 ## Effectiveness Assessment
 
@@ -584,26 +601,26 @@ def test_custom_prompt_injection_contained(llm):
 
 **Recommended minimal viable protection**: Phase 1 (XML delimiters + priority fix)
 
----
+______________________________________________________________________
 
 ## Limitations
 
 Even with these mitigations:
 
 1. **LLMs can still be influenced** - No delimiter system is 100% effective
-2. **Legitimate use cases may trigger warnings** - e.g., documenting security features
-3. **Determined attackers can find workarounds** - Defense in depth required
-4. **Performance impact** - Validation adds processing time
+1. **Legitimate use cases may trigger warnings** - e.g., documenting security features
+1. **Determined attackers can find workarounds** - Defense in depth required
+1. **Performance impact** - Validation adds processing time
 
 **Defense philosophy**: Make attacks harder and more obvious, but acknowledge that perfect protection is impossible with current LLM architectures.
 
----
+______________________________________________________________________
 
 ## Future Considerations
 
 1. **Model-level protections**: Anthropic, OpenAI, and Google are improving prompt injection resistance at the model level
-2. **Structured prompting APIs**: Some providers are adding APIs that separate instructions from data
-3. **Content filtering**: Third-party services that detect prompt injection attempts
-4. **Signed configs**: Cryptographically sign `.dokken.toml` files to detect tampering
+1. **Structured prompting APIs**: Some providers are adding APIs that separate instructions from data
+1. **Content filtering**: Third-party services that detect prompt injection attempts
+1. **Signed configs**: Cryptographically sign `.dokken.toml` files to detect tampering
 
 Monitor LLM security research for new mitigation techniques.
