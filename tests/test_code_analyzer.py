@@ -7,7 +7,6 @@ from pytest_mock import MockerFixture
 
 from src.code_analyzer import (
     _filter_excluded_files,
-    _filter_excluded_symbols,
     _find_source_files,
     get_module_context,
 )
@@ -189,124 +188,6 @@ def test_filter_excluded_files_multiple_patterns() -> None:
     assert set(result) == {"/path/to/main.py", "/path/to/helper.py"}
 
 
-def test_filter_excluded_symbols_no_patterns() -> None:
-    """Test _filter_excluded_symbols returns original code when no patterns."""
-    code = """
-def public_function():
-    pass
-
-class PublicClass:
-    pass
-"""
-
-    result = _filter_excluded_symbols(code, [])
-
-    assert result == code
-
-
-def test_filter_excluded_symbols_exact_match() -> None:
-    """Test _filter_excluded_symbols excludes exact symbol matches."""
-    code = """def public_function():
-    pass
-
-def _private_helper():
-    pass
-
-class MyClass:
-    pass
-"""
-
-    result = _filter_excluded_symbols(code, ["_private_helper"])
-
-    assert "public_function" in result
-    assert "MyClass" in result
-    assert "_private_helper" not in result
-
-
-def test_filter_excluded_symbols_wildcard_pattern() -> None:
-    """Test _filter_excluded_symbols handles wildcard patterns."""
-    code = """def _private_one():
-    pass
-
-def _private_two():
-    pass
-
-def public_function():
-    pass
-"""
-
-    result = _filter_excluded_symbols(code, ["_private_*"])
-
-    assert "public_function" in result
-    assert "_private_one" not in result
-    assert "_private_two" not in result
-
-
-def test_filter_excluded_symbols_class_exclusion() -> None:
-    """Test _filter_excluded_symbols can exclude classes."""
-    code = """class PublicClass:
-    def method(self):
-        pass
-
-class _PrivateClass:
-    def method(self):
-        pass
-"""
-
-    result = _filter_excluded_symbols(code, ["_Private*"])
-
-    assert "PublicClass" in result
-    assert "_PrivateClass" not in result
-    assert "def method" in result  # PublicClass method should remain
-
-
-def test_filter_excluded_symbols_preserves_non_toplevel() -> None:
-    """Test _filter_excluded_symbols only excludes top-level symbols."""
-    code = """def outer():
-    def _private_inner():
-        pass
-    return _private_inner
-
-class MyClass:
-    def _private_method(self):
-        pass
-"""
-
-    # Even though pattern matches _private_*, only top-level should be excluded
-    result = _filter_excluded_symbols(code, ["_private_*"])
-
-    # outer() and MyClass should remain with their inner _private_* symbols
-    assert "def outer():" in result
-    assert "def _private_inner():" in result
-    assert "class MyClass:" in result
-    assert "def _private_method(self):" in result
-
-
-def test_filter_excluded_symbols_invalid_syntax() -> None:
-    """Test _filter_excluded_symbols returns original code if syntax invalid."""
-    invalid_code = "def incomplete("
-
-    result = _filter_excluded_symbols(invalid_code, ["test_*"])
-
-    # Should return original code without crashing
-    assert result == invalid_code
-
-
-def test_filter_excluded_symbols_async_functions() -> None:
-    """Test _filter_excluded_symbols handles async functions."""
-    code = """async def async_public():
-    pass
-
-async def _async_private():
-    pass
-"""
-
-    result = _filter_excluded_symbols(code, ["_async_*"])
-
-    assert "async_public" in result
-    assert "_async_private" not in result
-
-
 def test_get_module_context_with_file_exclusions(
     tmp_path: Path, mocker: MockerFixture
 ) -> None:
@@ -335,45 +216,6 @@ files = ["__init__.py", "test_*.py"]
     assert "# main" in context
     assert "__init__.py" not in context
     assert "test_utils.py" not in context
-
-
-def test_get_module_context_with_symbol_exclusions(
-    tmp_path: Path, mocker: MockerFixture
-) -> None:
-    """Test get_module_context respects symbol exclusions from config."""
-    module_dir = tmp_path / "test_module"
-    module_dir.mkdir()
-
-    # Create file with mixed symbols
-    code = """def public_api():
-    '''Public API function.'''
-    pass
-
-def _private_helper():
-    '''Private helper.'''
-    pass
-
-class MyClass:
-    pass
-"""
-    (module_dir / "module.py").write_text(code)
-
-    # Create config excluding _private_*
-    config_content = """
-[exclusions]
-symbols = ["_private_*"]
-"""
-    (module_dir / ".dokken.toml").write_text(config_content)
-
-    mocker.patch("src.code_analyzer.console")
-
-    context = get_module_context(module_path=str(module_dir))
-
-    # public_api and MyClass should be included
-    assert "def public_api():" in context
-    assert "class MyClass:" in context
-    # _private_helper should be excluded
-    assert "_private_helper" not in context
 
 
 def test_get_module_context_all_files_excluded(

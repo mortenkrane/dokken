@@ -12,7 +12,6 @@ def test_exclusion_config_defaults() -> None:
     config = ExclusionConfig()
 
     assert config.files == []
-    assert config.symbols == []
 
 
 def test_dokken_config_defaults() -> None:
@@ -21,7 +20,6 @@ def test_dokken_config_defaults() -> None:
 
     assert isinstance(config.exclusions, ExclusionConfig)
     assert config.exclusions.files == []
-    assert config.exclusions.symbols == []
     assert config.file_types == [".py"]
     assert config.file_depth is None
 
@@ -34,7 +32,6 @@ def test_load_config_no_config_file(tmp_path: Path) -> None:
     config = load_config(module_path=str(module_dir))
 
     assert config.exclusions.files == []
-    assert config.exclusions.symbols == []
 
 
 def test_load_config_module_level_config(tmp_path: Path) -> None:
@@ -45,14 +42,12 @@ def test_load_config_module_level_config(tmp_path: Path) -> None:
     config_content = """
 [exclusions]
 files = ["__init__.py", "*_test.py"]
-symbols = ["_private_*", "setup"]
 """
     (module_dir / ".dokken.toml").write_text(config_content)
 
     config = load_config(module_path=str(module_dir))
 
     assert config.exclusions.files == ["__init__.py", "*_test.py"]
-    assert config.exclusions.symbols == ["_private_*", "setup"]
 
 
 def test_load_config_repo_level_config(tmp_path: Path) -> None:
@@ -69,14 +64,12 @@ def test_load_config_repo_level_config(tmp_path: Path) -> None:
     repo_config = """
 [exclusions]
 files = ["conftest.py"]
-symbols = ["test_*"]
 """
     (repo_root / ".dokken.toml").write_text(repo_config)
 
     config = load_config(module_path=str(module_dir))
 
     assert config.exclusions.files == ["conftest.py"]
-    assert config.exclusions.symbols == ["test_*"]
 
 
 def test_load_config_merge_module_and_repo(tmp_path: Path) -> None:
@@ -93,7 +86,6 @@ def test_load_config_merge_module_and_repo(tmp_path: Path) -> None:
     repo_config = """
 [exclusions]
 files = ["conftest.py"]
-symbols = ["test_*"]
 """
     (repo_root / ".dokken.toml").write_text(repo_config)
 
@@ -101,7 +93,6 @@ symbols = ["test_*"]
     module_config = """
 [exclusions]
 files = ["__init__.py"]
-symbols = ["_private_*"]
 """
     (module_dir / ".dokken.toml").write_text(module_config)
 
@@ -109,7 +100,6 @@ symbols = ["_private_*"]
 
     # Both configs should be merged (no duplicates)
     assert set(config.exclusions.files) == {"conftest.py", "__init__.py"}
-    assert set(config.exclusions.symbols) == {"test_*", "_private_*"}
 
 
 def test_load_config_no_duplicates(tmp_path: Path) -> None:
@@ -125,14 +115,12 @@ def test_load_config_no_duplicates(tmp_path: Path) -> None:
     repo_config = """
 [exclusions]
 files = ["__init__.py", "conftest.py"]
-symbols = ["test_*"]
 """
     (repo_root / ".dokken.toml").write_text(repo_config)
 
     module_config = """
 [exclusions]
 files = ["__init__.py"]
-symbols = ["test_*", "_private_*"]
 """
     (module_dir / ".dokken.toml").write_text(module_config)
 
@@ -140,9 +128,7 @@ symbols = ["test_*", "_private_*"]
 
     # Check no duplicates
     assert config.exclusions.files.count("__init__.py") == 1
-    assert config.exclusions.symbols.count("test_*") == 1
     assert set(config.exclusions.files) == {"__init__.py", "conftest.py"}
-    assert set(config.exclusions.symbols) == {"test_*", "_private_*"}
 
 
 def test_load_config_empty_exclusions(tmp_path: Path) -> None:
@@ -158,7 +144,6 @@ def test_load_config_empty_exclusions(tmp_path: Path) -> None:
     config = load_config(module_path=str(module_dir))
 
     assert config.exclusions.files == []
-    assert config.exclusions.symbols == []
 
 
 def test_load_config_no_exclusions_section(tmp_path: Path) -> None:
@@ -177,7 +162,6 @@ key = "value"
 
     # Should use defaults
     assert config.exclusions.files == []
-    assert config.exclusions.symbols == []
 
 
 # --- Tests for CustomPrompts ---
@@ -308,7 +292,6 @@ def test_load_config_custom_prompts_and_exclusions(tmp_path: Path) -> None:
     config_content = """
 [exclusions]
 files = ["__init__.py"]
-symbols = ["test_*"]
 
 [custom_prompts]
 global_prompt = "Be concise."
@@ -320,7 +303,6 @@ module_readme = "Focus on patterns."
 
     # Check exclusions
     assert config.exclusions.files == ["__init__.py"]
-    assert config.exclusions.symbols == ["test_*"]
 
     # Check custom prompts
     assert config.custom_prompts.global_prompt == "Be concise."
@@ -537,7 +519,6 @@ file_types = [".js", ".ts"]
 
 [exclusions]
 files = ["*.test.js", "*.spec.ts"]
-symbols = ["test_*"]
 """
     (module_dir / ".dokken.toml").write_text(config_content)
 
@@ -548,7 +529,6 @@ symbols = ["test_*"]
 
     # Check exclusions
     assert config.exclusions.files == ["*.test.js", "*.spec.ts"]
-    assert config.exclusions.symbols == ["test_*"]
 
 
 # --- Tests for File Depth ---
@@ -669,7 +649,6 @@ file_types = [".js", ".ts"]
 
 [exclusions]
 files = ["*.test.js"]
-symbols = ["test_*"]
 """
     (module_dir / ".dokken.toml").write_text(config_content)
 
@@ -679,7 +658,6 @@ symbols = ["test_*"]
     assert config.file_depth == 2
     assert config.file_types == [".js", ".ts"]
     assert config.exclusions.files == ["*.test.js"]
-    assert config.exclusions.symbols == ["test_*"]
 
 
 def test_load_config_validates_suspicious_custom_prompts(

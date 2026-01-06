@@ -234,13 +234,6 @@ files = [
     "*_test.py",
     "conftest.py"
 ]
-
-# Exclude symbols (functions/classes with wildcard support)
-symbols = [
-    "_private_*",    # Private functions
-    "setup_*",       # Setup functions
-    "Temporary*"     # Temporary classes
-]
 ```
 
 **Common file exclusion patterns:**
@@ -385,7 +378,7 @@ jobs:
 - **Drift Detection**: Criteria-based detection (see `src/prompts.py`)
 - **Multi-Module Check**: Check all modules with `--all` flag
 - **Custom Prompts**: Inject preferences into generation (see Configuration)
-- **Exclusion Rules**: Filter files and symbols via `.dokken.toml`
+- **Exclusion Rules**: Filter files via `.dokken.toml`
 - **Multi-Provider LLM**: Claude (Haiku), OpenAI (GPT-4o-mini), Google (Gemini Flash)
 - **Cost-Optimized**: Fast, budget-friendly models
 - **Human-in-the-Loop**: Interactive questionnaire for context AI can't infer
