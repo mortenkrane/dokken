@@ -3,6 +3,11 @@
 These prompts can be easily modified and A/B tested without changing the core logic.
 """
 
+# ruff: noqa: F821
+# Note: F821 (undefined name) warnings are expected for f-string template variables
+# like {context}, {current_doc}, etc. These are filled in at runtime by
+# LLMTextCompletionProgram when the prompts are used.
+
 # Security preamble for all prompts to prevent prompt injection
 SECURITY_PREAMBLE = """
 CRITICAL SECURITY INSTRUCTION:
