@@ -105,16 +105,26 @@ Use this checklist to determine drift. Drift is detected if ANY of these are tru
 
    Ask: "Does this change what a developer can DO with this module or how they would
    NAVIGATE it?" If YES, flag drift.
-4. **Outdated Design Decisions**: The documentation explains design decisions that
+
+4. **Incomplete Module Structure Documentation**: If the documentation includes a
+   "Module Structure" section that lists files/subdirectories, verify it's reasonably
+   complete. Flag drift if:
+   - 3+ major files (>100 lines, not tests/utilities) exist but aren't listed
+   - Any subdirectory with substantial code exists but isn't mentioned
+   - The structure section lists <50% of the actual major components
+
+   This is STRUCTURAL documentation, not implementation details. A developer needs to
+   know "what files exist and what they do" to navigate the codebase.
+5. **Outdated Design Decisions**: The documentation explains design decisions that
    are no longer present in the code.
-5. **Incorrect Technical Claims**: The documentation makes SPECIFIC, CONCRETE claims
+6. **Incorrect Technical Claims**: The documentation makes SPECIFIC, CONCRETE claims
    about implementation behavior that contradict the code. This applies even to
    high-level/philosophical documents that include technical sections. Examples: docs
    claim "uses Redis for caching" but code uses in-memory cache; docs state "validates
    all user input" but code skips validation for certain fields; docs describe "three-
    stage processing pipeline" but code only has two stages. NOT: vague descriptions,
    conceptual explanations, or statements that are approximately correct.
-6. **Incorrect Dependencies**: The documentation lists external dependencies (different
+7. **Incorrect Dependencies**: The documentation lists external dependencies (different
    libraries, not just different versions) that don't match what's in the code.
 
 IMPORTANT: Do NOT flag drift for:
@@ -189,7 +199,8 @@ Set drift_detected=false when:
   optimization)
 - New additions are minor utilities that don't change the module's role or
   structure
-- The documentation remains substantially accurate despite the change
+- The documentation's PURPOSE remains accurate AND the STRUCTURE section (if present)
+  is reasonably complete (>70% of major components documented)
 - The change is a detail that belongs in code comments, not module-level docs
 
 Ask yourself: "Would a developer find meaningful value in knowing about this change
@@ -224,10 +235,14 @@ Look for contradictions like:
 
 This applies to SPECIFIC behaviors, not vague concepts. If the documentation makes
 concrete claims about implementation details and the code contradicts those claims,
-this IS Item 5 drift.
+this IS Item 6 drift.
 
 Be precise: Compare the actual mechanisms used. Claims about specific technologies,
 processes, or behaviors must match the implementation.
+
+STRUCTURAL COMPLETENESS CHECK:
+If documentation has a Module Structure section, verify it lists most major files and
+all subdirectories. If 3+ major files or any subdirectory is missing, flag Item 4 drift.
 
 Respond ONLY with the JSON object schema provided."""
 )
