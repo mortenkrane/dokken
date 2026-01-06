@@ -13,8 +13,14 @@ Dokken is an AI-powered documentation generation and drift detection tool design
 - **src/**: Root directory containing core implementation
 - **src/llm/**: LLM interaction and prompt management
 - **src/config/**: Configuration loading and management
+- **src/security/**: Security utilities for input validation
 - **src/cache.py**: Caching utilities for expensive operations
 - **src/code_analyzer.py**: Code context extraction and analysis
+- **src/doc_configs.py**: Documentation type configuration registry
+- **src/doc_merger.py**: Document merging and incremental fix utilities
+- **src/exceptions.py**: Custom exception definitions
+- **src/file_utils.py**: Path resolution and directory operations
+- **src/formatters.py**: Documentation formatting utilities
 - **src/main.py**: CLI interface and workflow orchestration
 
 ## Architecture Overview
