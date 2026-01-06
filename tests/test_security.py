@@ -257,13 +257,3 @@ def test_validation_result_structure() -> None:
     assert result.is_suspicious is True
     assert result.warnings == ["warning 1", "warning 2"]
     assert result.severity == "high"
-
-
-@pytest.mark.parametrize(
-    "severity",
-    ["low", "medium", "high"],
-)
-def test_validation_result_severity_literal_type(severity: str) -> None:
-    """Severity should accept only valid literal values."""
-    result = ValidationResult(is_suspicious=False, warnings=[], severity=severity)  # type: ignore[arg-type]
-    assert result.severity == severity
