@@ -22,7 +22,8 @@ def test_build_human_intent_section_with_data() -> None:
 
     result = build_human_intent_section(intent)
 
-    assert "--- HUMAN-PROVIDED CONTEXT ---" in result
+    assert "<user_intent>" in result
+    assert "</user_intent>" in result
     assert "Problems Solved: Authentication and authorization" in result
     assert "Core Responsibilities: Manage user sessions and permissions" in result
 
@@ -33,7 +34,8 @@ def test_build_human_intent_section_with_partial_data() -> None:
 
     result = build_human_intent_section(intent)
 
-    assert "--- HUMAN-PROVIDED CONTEXT ---" in result
+    assert "<user_intent>" in result
+    assert "</user_intent>" in result
     assert "Problems Solved: User management" in result
     assert "Core Responsibilities" not in result
 
@@ -56,10 +58,10 @@ def test_build_drift_context_section_basic() -> None:
 
     result = build_drift_context_section(rationale)
 
-    assert "--- DETECTED DOCUMENTATION DRIFT ---" in result
+    assert "<drift_analysis>" in result
+    assert "</drift_analysis>" in result
     assert "API changed from v1 to v2, authentication module was removed" in result
     assert "documentation drift occurs when" in result.lower()
-    assert "IMPORTANT" in result
     assert "addresses these specific drift issues" in result.lower()
 
 
@@ -71,8 +73,8 @@ def test_build_drift_context_section_educational_content() -> None:
 
     # Check for educational elements
     assert "code changes but documentation doesn't" in result.lower()
-    assert "automated analysis" in result.lower()
-    assert "current code state" in result.lower()
+    assert "drift issues were detected" in result.lower()
+    assert "addresses these specific drift issues" in result.lower()
 
 
 def test_build_drift_context_section_with_special_characters() -> None:
@@ -131,7 +133,9 @@ def test_build_custom_prompt_section_global_only() -> None:
         custom_prompts=custom_prompts, doc_type=DocType.MODULE_README
     )
 
-    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "<custom_prompts>" in result
+    assert "</custom_prompts>" in result
+    assert "user preferences" in result.lower()
     assert "Use British spelling." in result
 
 
@@ -146,7 +150,8 @@ def test_build_custom_prompt_section_doc_type_specific() -> None:
         custom_prompts=custom_prompts, doc_type=DocType.MODULE_README
     )
 
-    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "<custom_prompts>" in result
+    assert "</custom_prompts>" in result
     assert "Focus on implementation details." in result
     assert "Keep it concise." not in result  # Different doc type
 
@@ -162,7 +167,8 @@ def test_build_custom_prompt_section_project_readme() -> None:
         custom_prompts=custom_prompts, doc_type=DocType.PROJECT_README
     )
 
-    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "<custom_prompts>" in result
+    assert "</custom_prompts>" in result
     assert "Include quick-start guide." in result
     assert "Focus on implementation." not in result  # Different doc type
 
@@ -178,7 +184,8 @@ def test_build_custom_prompt_section_style_guide() -> None:
         custom_prompts=custom_prompts, doc_type=DocType.STYLE_GUIDE
     )
 
-    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "<custom_prompts>" in result
+    assert "</custom_prompts>" in result
     assert "Reference existing code patterns." in result
     assert "Focus on implementation." not in result  # Different doc type
 
@@ -194,7 +201,8 @@ def test_build_custom_prompt_section_global_and_specific() -> None:
         custom_prompts=custom_prompts, doc_type=DocType.MODULE_README
     )
 
-    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "<custom_prompts>" in result
+    assert "</custom_prompts>" in result
     assert "Use clear, simple language." in result
     assert "Focus on architecture." in result
     # Check they're separated by double newline
@@ -210,7 +218,8 @@ def test_build_custom_prompt_section_no_doc_type() -> None:
 
     result = build_custom_prompt_section(custom_prompts=custom_prompts, doc_type=None)
 
-    assert "--- USER PREFERENCES (IMPORTANT) ---" in result
+    assert "<custom_prompts>" in result
+    assert "</custom_prompts>" in result
     assert "Be concise." in result
     assert "Focus on implementation." not in result  # No doc type specified
 
@@ -240,7 +249,8 @@ def test_build_generation_prompt_with_human_intent() -> None:
     )
 
     assert combined_context == context
-    assert "--- HUMAN-PROVIDED CONTEXT ---" in combined_intent_section
+    assert "<user_intent>" in combined_intent_section
+    assert "</user_intent>" in combined_intent_section
     assert "Problems Solved: User authentication" in combined_intent_section
 
 
@@ -254,7 +264,8 @@ def test_build_generation_prompt_with_custom_prompts() -> None:
     )
 
     assert combined_context == context
-    assert "--- USER PREFERENCES (IMPORTANT) ---" in combined_intent_section
+    assert "<custom_prompts>" in combined_intent_section
+    assert "</custom_prompts>" in combined_intent_section
     assert "Be concise." in combined_intent_section
 
 
@@ -267,7 +278,8 @@ def test_build_generation_prompt_with_drift_rationale() -> None:
         context=context, drift_rationale=drift_rationale
     )
 
-    assert "--- DETECTED DOCUMENTATION DRIFT ---" in combined_context
+    assert "<drift_analysis>" in combined_context
+    assert "</drift_analysis>" in combined_context
     assert "Function bar() was removed" in combined_context
     assert combined_intent_section == ""
 
@@ -289,11 +301,14 @@ def test_build_generation_prompt_with_all_sections() -> None:
 
     # Context should have drift info
     assert "def foo(): pass" in combined_context
-    assert "--- DETECTED DOCUMENTATION DRIFT ---" in combined_context
+    assert "<drift_analysis>" in combined_context
+    assert "</drift_analysis>" in combined_context
     assert "Function removed" in combined_context
 
     # Intent section should have both human intent and custom prompts
-    assert "--- HUMAN-PROVIDED CONTEXT ---" in combined_intent_section
+    assert "<user_intent>" in combined_intent_section
+    assert "</user_intent>" in combined_intent_section
     assert "Problems Solved: Auth" in combined_intent_section
-    assert "--- USER PREFERENCES (IMPORTANT) ---" in combined_intent_section
+    assert "<custom_prompts>" in combined_intent_section
+    assert "</custom_prompts>" in combined_intent_section
     assert "Be clear." in combined_intent_section

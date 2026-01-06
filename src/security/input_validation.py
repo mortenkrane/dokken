@@ -18,7 +18,7 @@ class ValidationResult:
 SUSPICIOUS_PATTERNS = [
     # Direct instruction attempts
     (
-        r"\b(ignore|disregard|forget)\s+(previous|prior|all)\s+(instructions?|tasks?|prompts?)",
+        r"\b(ignore|disregard|forget)\s+((all\s+)?(previous|prior)\s+|(all\s+))(instructions?|tasks?|prompts?)",
         "Contains instruction to ignore previous directives",
         "high",
     ),
