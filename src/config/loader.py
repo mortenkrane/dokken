@@ -2,14 +2,14 @@
 
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, TypeVar, cast
 
 if sys.version_info >= (3, 11):
     import tomllib
 else:
     import tomli as tomllib  # type: ignore[import-not-found]
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 from rich.console import Console
 
 from src.config.merger import merge_config
@@ -20,6 +20,34 @@ from src.security.input_validation import validate_custom_prompt
 
 # Console for error/warning output
 error_console = Console(stderr=True)
+
+# Type variable for config validation helper
+T = TypeVar("T", bound=BaseModel)
+
+
+def _validate_config_section(
+    config_data: ConfigDataDict,
+    section_name: str,
+    model_class: type[T],
+) -> T:
+    """
+    Validate and construct a config section with clear error messages.
+
+    Args:
+        config_data: The full configuration dictionary.
+        section_name: The name of the section being validated (for error messages).
+        model_class: The Pydantic model class to validate against.
+
+    Returns:
+        Validated config section instance.
+
+    Raises:
+        ValueError: If the configuration fails validation.
+    """
+    try:
+        return model_class(**config_data.get(section_name, {}))
+    except ValidationError as e:
+        raise ValueError(f"Invalid {section_name} configuration: {e}") from e
 
 
 def load_config(*, module_path: str) -> DokkenConfig:
@@ -59,23 +87,18 @@ def load_config(*, module_path: str) -> DokkenConfig:
     _load_and_merge_config(Path(module_path) / ".dokken.toml", config_data)
 
     # Construct ExclusionConfig, CustomPrompts, and CacheConfig from merged dictionary
-    try:
-        exclusion_config = ExclusionConfig(**config_data.get("exclusions", {}))
-    except ValidationError as e:
-        raise ValueError(f"Invalid exclusions configuration: {e}") from e
+    exclusion_config = _validate_config_section(
+        config_data, "exclusions", ExclusionConfig
+    )
 
-    try:
-        custom_prompts = CustomPrompts(**config_data.get("custom_prompts", {}))
-    except ValidationError as e:
-        raise ValueError(f"Invalid custom prompts configuration: {e}") from e
+    custom_prompts = _validate_config_section(
+        config_data, "custom_prompts", CustomPrompts
+    )
 
     # Validate custom prompts for suspicious patterns
     _validate_custom_prompts(custom_prompts)
 
-    try:
-        cache_config = CacheConfig(**config_data.get("cache", {}))
-    except ValidationError as e:
-        raise ValueError(f"Invalid cache configuration: {e}") from e
+    cache_config = _validate_config_section(config_data, "cache", CacheConfig)
 
     return DokkenConfig(
         exclusions=exclusion_config,

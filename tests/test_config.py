@@ -324,7 +324,7 @@ global_prompt = "{very_long_prompt}"
     (module_dir / ".dokken.toml").write_text(config_content)
 
     # Should raise ValueError with helpful message
-    with pytest.raises(ValueError, match="Invalid custom prompts configuration"):
+    with pytest.raises(ValueError, match="Invalid custom_prompts configuration"):
         load_config(module_path=str(module_dir))
 
 
