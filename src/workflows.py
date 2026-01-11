@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import cast
 
 from llama_index.core.llms import LLM
+from pydantic import BaseModel
 from rich.console import Console
 
-from src.config import load_config
+from src.config import DokkenConfig, load_config
 from src.constants import (
     ERROR_INVALID_DIRECTORY,
     ERROR_NO_MODULES_CONFIGURED,
@@ -30,6 +31,22 @@ from src.output import apply_incremental_fixes
 from src.records import DocumentationContext
 
 console = Console()
+
+
+def _build_generation_config(
+    *,
+    config: DokkenConfig,
+    doc_type: DocType,
+    human_intent: BaseModel | None,
+    drift_rationale: str | None = None,
+) -> GenerationConfig:
+    """Build GenerationConfig from common parameters."""
+    return GenerationConfig(
+        custom_prompts=config.custom_prompts,
+        doc_type=doc_type,
+        human_intent=human_intent,
+        drift_rationale=drift_rationale,
+    )
 
 
 def prepare_documentation_context(
@@ -534,11 +551,11 @@ def generate_documentation(
     )
 
     # Build generation configuration
-    gen_config = GenerationConfig(
-        custom_prompts=config.custom_prompts,
+    gen_config = _build_generation_config(
+        config=config,
         doc_type=doc_type,
         human_intent=human_intent,
-        drift_rationale=(drift_check.rationale if drift_check.drift_detected else None),
+        drift_rationale=drift_check.rationale if drift_check.drift_detected else None,
     )
 
     # 4. Step 3: Generate New Structured Documentation (doc-type-specific)
