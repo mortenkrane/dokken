@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.formatters import (
+from src.output import (
     format_module_documentation,
     format_project_documentation,
     format_style_guide,

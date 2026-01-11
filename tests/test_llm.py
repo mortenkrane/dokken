@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 
 from src.cache import DRIFT_CACHE_SIZE, get_drift_cache_info, set_cache_max_size
 from src.config.models import CustomPrompts
-from src.doc_types import DocType
+from src.doctypes import DocType
 from src.llm import (
     MODULE_GENERATION_PROMPT,
     TEMPERATURE,

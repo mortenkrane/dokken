@@ -1,6 +1,6 @@
 """Tests for doc_types module."""
 
-from src.doc_types import DocType
+from src.doctypes import DocType
 
 
 def test_doc_type_enum_values() -> None:

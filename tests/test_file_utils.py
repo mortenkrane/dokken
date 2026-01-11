@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.doc_types import DocType
+from src.doctypes import DocType
 from src.file_utils import ensure_output_directory, find_repo_root, resolve_output_path
 
 

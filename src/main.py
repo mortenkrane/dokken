@@ -13,7 +13,7 @@ from src.cache import (
 )
 from src.config import load_config
 from src.constants import DEFAULT_CACHE_FILE
-from src.doc_types import DocType
+from src.doctypes import DocType
 from src.exceptions import DocumentationDriftError
 from src.file_utils import find_repo_root
 from src.workflows import (

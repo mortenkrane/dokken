@@ -14,7 +14,7 @@ Separated from llm.py to maintain single responsibility:
 from pydantic import BaseModel
 
 from src.config import CustomPrompts
-from src.doc_types import DocType
+from src.doctypes import DocType
 
 
 def build_human_intent_section(

@@ -1,7 +1,7 @@
 """Tests for src/prompt_builder.py"""
 
 from src.config import CustomPrompts
-from src.doc_types import DocType
+from src.doctypes import DocType
 from src.llm import (
     build_custom_prompt_section,
     build_drift_context_section,

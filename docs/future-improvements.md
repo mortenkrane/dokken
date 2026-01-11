@@ -455,8 +455,7 @@ ______________________________________________________________________
 
 ```python
 # src/human_in_the_loop.py
-from src.doc_configs import DOC_CONFIGS
-from src.doc_types import DocType
+from src.doctypes import DOC_CONFIGS, DocType
 
 def ask_human_intent(...):
     if questions is None:
