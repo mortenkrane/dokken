@@ -10,12 +10,16 @@ else:
     import tomli as tomllib  # type: ignore[import-not-found]
 
 from pydantic import ValidationError
+from rich.console import Console
 
 from src.config.merger import merge_config
 from src.config.models import CacheConfig, CustomPrompts, DokkenConfig, ExclusionConfig
 from src.config.types import ConfigDataDict
 from src.file_utils import find_repo_root
 from src.security.input_validation import validate_custom_prompt
+
+# Console for error/warning output
+error_console = Console(stderr=True)
 
 
 def load_config(*, module_path: str) -> DokkenConfig:
@@ -120,18 +124,16 @@ def _validate_custom_prompts(custom_prompts: CustomPrompts) -> None:
         if prompt_text:
             result = validate_custom_prompt(prompt_text)
             if result.is_suspicious:
-                print(
+                error_console.print(
                     f"\n⚠️  WARNING: Suspicious pattern detected in "
-                    f"custom_prompts.{prompt_type}",
-                    file=sys.stderr,
+                    f"custom_prompts.{prompt_type}"
                 )
                 for warning in result.warnings:
-                    print(f"   - {warning}", file=sys.stderr)
+                    error_console.print(f"   - {warning}")
                 if result.severity == "high":
-                    print(f"   Severity: {result.severity.upper()}", file=sys.stderr)
-                    print(
+                    error_console.print(f"   Severity: {result.severity.upper()}")
+                    error_console.print(
                         "   This prompt may attempt to manipulate "
-                        "documentation generation.",
-                        file=sys.stderr,
+                        "documentation generation."
                     )
-                    print("   Review .dokken.toml carefully.\n", file=sys.stderr)
+                    error_console.print("   Review .dokken.toml carefully.\n")
