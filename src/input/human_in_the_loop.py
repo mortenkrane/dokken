@@ -6,6 +6,7 @@ import questionary
 from pydantic import BaseModel
 from rich.console import Console
 
+from src.doctypes import DOC_CONFIGS, DocType
 from src.records import ModuleIntent, ProjectIntent, StyleGuideIntent
 
 console = Console()
@@ -70,25 +71,8 @@ def ask_human_intent(
         questionnaire.
     """
     if questions is None:
-        # Default module questions for backward compatibility
-        questions = [
-            {
-                "key": "problems_solved",
-                "question": "What problems does this module solve?",
-            },
-            {
-                "key": "core_responsibilities",
-                "question": "What are the module's core responsibilities?",
-            },
-            {
-                "key": "non_responsibilities",
-                "question": "What is NOT this module's responsibility?",
-            },
-            {
-                "key": "system_context",
-                "question": "How does the module fit into the larger system?",
-            },
-        ]
+        # Use module questions as default (most common case)
+        questions = DOC_CONFIGS[DocType.MODULE_README].intent_questions
 
     console.print(
         "\n[bold cyan]Human Intent Capture[/bold cyan]\n"
