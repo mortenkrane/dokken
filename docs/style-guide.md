@@ -37,12 +37,17 @@ src/
 ├── code_analyzer.py     # Code context extraction - pure functions
 ├── llm.py               # LLM client and operations - structured output
 ├── prompts.py           # LLM prompt templates - constants for easy iteration
-├── formatters.py        # Output formatting - pure data transformation
 ├── config.py            # Configuration loading - .dokken.toml
 ├── human_in_the_loop.py # Interactive questionnaires - questionary
 ├── records.py           # Pydantic models - structured data validation
 ├── exceptions.py        # Custom exceptions
-└── git.py               # Git operations - subprocess wrapper
+├── git.py               # Git operations - subprocess wrapper
+├── doctypes/            # Documentation type system
+│   ├── types.py         # DocType enum definitions
+│   └── configs.py       # DocType configuration registry
+└── output/              # Output formatting and transformation
+    ├── formatters.py    # Structured data → markdown conversion
+    └── merger.py        # Markdown parsing and incremental updates
 ```
 
 ## Module Responsibilities
@@ -78,11 +83,17 @@ src/
 - Git diffs show prompt changes clearly
 - Example: `DRIFT_CHECK_PROMPT`, `MODULE_GENERATION_PROMPT`
 
-**`formatters.py` - Output Formatting**
+**`doctypes/` - Documentation Type System**
 
-- Pure data transformation (no I/O)
-- Currently: Markdown formatting
-- See `src/formatters.py` for templates
+- `types.py`: `DocType` enum defining documentation types (MODULE_README, PROJECT_README, STYLE_GUIDE)
+- `configs.py`: Registry mapping each DocType to its configuration (prompt, formatter, intent model, questions)
+- Centralizes doc type configuration for easy extension
+
+**`output/` - Output Formatting and Transformation**
+
+- `formatters.py`: Pure functions converting structured Pydantic models to markdown
+- `merger.py`: Markdown parsing and incremental update application
+- All output generation and document manipulation
 
 **`config.py` - Configuration**
 
@@ -104,10 +115,11 @@ src/
 ## Dependency Flow
 
 ```
-main.py (CLI) → workflows.py (Orchestration) → code_analyzer.py, llm.py, formatters.py, human_in_the_loop.py
-                                                 ↓           ↓           ↓              ↓
-                                                 config.py   prompts.py  records.py    records.py
-                                                             records.py
+main.py (CLI) → workflows.py (Orchestration) → code_analyzer.py, llm.py, output/, human_in_the_loop.py
+                                                 ↓           ↓        ↓          ↓
+                                                 config.py   prompts.py  doctypes/  records.py
+                                                             records.py  records.py
+                                                             doctypes/
 ```
 
 ## Code Style
@@ -151,7 +163,7 @@ main.py (CLI) → workflows.py (Orchestration) → code_analyzer.py, llm.py, for
 
 **Add new output format:**
 
-1. Add formatter to `formatters.py`
+1. Add formatter to `src/output/formatters.py`
 1. Call from `workflows.py`
 
 **Add new CLI command:**

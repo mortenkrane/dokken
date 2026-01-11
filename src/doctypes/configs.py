@@ -10,9 +10,9 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
-from src import formatters
-from src.doc_types import DocType
+from src.doctypes.types import DocType
 from src.llm import prompts
+from src.output import formatters
 from src.records import (
     ModuleDocumentation,
     ModuleIntent,

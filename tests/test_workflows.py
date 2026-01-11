@@ -8,8 +8,7 @@ from pytest_mock import MockerFixture
 
 from src.config import DokkenConfig
 from src.config.models import CustomPrompts
-from src.doc_configs import DOC_CONFIGS
-from src.doc_types import DocType
+from src.doctypes import DOC_CONFIGS, DocType
 from src.exceptions import DocumentationDriftError
 from src.records import (
     DocumentationChange,

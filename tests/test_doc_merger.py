@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.doc_merger import apply_incremental_fixes, parse_sections
+from src.output import apply_incremental_fixes, parse_sections
 from src.records import DocumentationChange, IncrementalDocumentationFix
 
 # Fixtures for test documentation strings

@@ -7,7 +7,7 @@ from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
 from src.constants import DEFAULT_CACHE_FILE
-from src.doc_types import DocType
+from src.doctypes import DocType
 from src.exceptions import DocumentationDriftError
 from src.main import _get_cache_file_path, _get_cache_module_path, check, cli, generate
 

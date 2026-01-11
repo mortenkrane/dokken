@@ -16,9 +16,7 @@ from src.constants import (
     ERROR_NOT_IN_GIT_REPO,
     ERROR_NOT_IN_GIT_REPO_MULTI_MODULE,
 )
-from src.doc_configs import DOC_CONFIGS
-from src.doc_merger import apply_incremental_fixes
-from src.doc_types import DocType
+from src.doctypes import DOC_CONFIGS, DocType
 from src.exceptions import DocumentationDriftError
 from src.file_utils import ensure_output_directory, find_repo_root, resolve_output_path
 from src.human_in_the_loop import ask_human_intent
@@ -29,6 +27,7 @@ from src.llm import (
     generate_doc,
     initialize_llm,
 )
+from src.output import apply_incremental_fixes
 from src.records import DocumentationContext
 
 console = Console()

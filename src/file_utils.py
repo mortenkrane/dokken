@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from src.constants import ERROR_CANNOT_CREATE_DIR, ERROR_NOT_IN_GIT_REPO
-from src.doc_types import DocType
+from src.doctypes import DocType
 
 
 def find_repo_root(start_path: str) -> str | None:

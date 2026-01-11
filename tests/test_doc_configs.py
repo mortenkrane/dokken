@@ -1,16 +1,15 @@
 """Tests for doc_configs module."""
 
-from src.doc_configs import DOC_CONFIGS, DocConfig
-from src.doc_types import DocType
-from src.formatters import (
-    format_module_documentation,
-    format_project_documentation,
-    format_style_guide,
-)
+from src.doctypes import DOC_CONFIGS, DocConfig, DocType
 from src.llm import (
     MODULE_GENERATION_PROMPT,
     PROJECT_README_GENERATION_PROMPT,
     STYLE_GUIDE_GENERATION_PROMPT,
+)
+from src.output import (
+    format_module_documentation,
+    format_project_documentation,
+    format_style_guide,
 )
 from src.records import (
     ModuleDocumentation,
