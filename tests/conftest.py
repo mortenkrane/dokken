@@ -1,13 +1,37 @@
 """Shared fixtures for Dokken tests."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol, cast
 
 import pytest
+from llama_index.core.llms import LLM
 from pytest_mock import MockerFixture
 
 from src.cache import clear_drift_cache
 from src.records import DocumentationDriftCheck, ModuleDocumentation
+
+
+class MockLLMClient(Protocol):
+    """Protocol for mocked LLM client.
+
+    This protocol documents the expected interface for LLM mocks in tests.
+    It includes the key attributes used by the LLM client.
+    """
+
+    model: str
+    temperature: float
+
+
+class MockConsoleProtocol(Protocol):
+    """Protocol for mocked Rich console."""
+
+    def print(self, *args: Any, **kwargs: Any) -> None:
+        """Print method for console output."""
+        ...
+
+    def status(self, *args: Any, **kwargs: Any) -> Any:
+        """Status method for console status display."""
+        ...
 
 
 @pytest.fixture(autouse=True)
@@ -81,16 +105,20 @@ def temp_module_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def mock_llm_client(mocker: MockerFixture) -> Any:
-    """Mock LLM client."""
-    mock_client = mocker.MagicMock()
+def mock_llm_client(mocker: MockerFixture) -> LLM:
+    """Mock LLM client with proper typing.
+
+    Returns a MagicMock configured with model and temperature attributes
+    that conforms to the LLM interface expected by the application.
+    """
+    mock_client = mocker.MagicMock(spec=["model", "temperature"])
     mock_client.model = "gemini-2.5-flash"
     mock_client.temperature = 0.0
-    return mock_client
+    return cast(LLM, mock_client)
 
 
 @pytest.fixture
-def mock_console(mocker: MockerFixture) -> Any:
+def mock_console(mocker: MockerFixture) -> MockConsoleProtocol:
     """Mock Rich console to suppress output during tests."""
     # Patch all console locations
     mocker.patch("src.workflows.console")
@@ -100,31 +128,31 @@ def mock_console(mocker: MockerFixture) -> Any:
 
 
 @pytest.fixture
-def mock_workflows_console(mocker: MockerFixture) -> Any:
+def mock_workflows_console(mocker: MockerFixture) -> MockConsoleProtocol:
     """Mock workflows console to suppress output."""
     return mocker.patch("src.workflows.console")
 
 
 @pytest.fixture
-def mock_main_console(mocker: MockerFixture) -> Any:
+def mock_main_console(mocker: MockerFixture) -> MockConsoleProtocol:
     """Mock main console to suppress output."""
     return mocker.patch("src.main.console")
 
 
 @pytest.fixture
-def mock_code_analyzer_console(mocker: MockerFixture) -> Any:
+def mock_code_analyzer_console(mocker: MockerFixture) -> MockConsoleProtocol:
     """Mock code_analyzer console to suppress output."""
     return mocker.patch("src.code_analyzer.console")
 
 
 @pytest.fixture
-def mock_hitl_console(mocker: MockerFixture) -> Any:
+def mock_hitl_console(mocker: MockerFixture) -> MockConsoleProtocol:
     """Mock human_in_the_loop console to suppress output."""
     return mocker.patch("src.human_in_the_loop.console")
 
 
 @pytest.fixture
-def mock_all_consoles(mocker: MockerFixture) -> dict[str, Any]:
+def mock_all_consoles(mocker: MockerFixture) -> dict[str, MockConsoleProtocol]:
     """Mock all console instances across modules."""
     return {
         "workflows": mocker.patch("src.workflows.console"),

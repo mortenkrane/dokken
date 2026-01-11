@@ -2,9 +2,9 @@
 
 import json
 from pathlib import Path
-from typing import Any
 
 import pytest
+from llama_index.core.llms import LLM
 from pytest_mock import MockerFixture
 
 from src.cache import load_drift_cache_from_disk, save_drift_cache_to_disk
@@ -21,7 +21,7 @@ from src.workflows import check_multiple_modules_drift, generate_documentation
 # --- Tests for LLM API Failures and Retries ---
 
 
-def test_llm_api_failure_handling(mocker: MockerFixture, mock_llm_client: Any) -> None:
+def test_llm_api_failure_handling(mocker: MockerFixture, mock_llm_client: LLM) -> None:
     """Test that LLM API failures propagate correctly for caller to handle."""
     # Mock LLM program to raise API error
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
@@ -39,7 +39,7 @@ def test_llm_api_failure_handling(mocker: MockerFixture, mock_llm_client: Any) -
         )
 
 
-def test_llm_rate_limit_error(mocker: MockerFixture, mock_llm_client: Any) -> None:
+def test_llm_rate_limit_error(mocker: MockerFixture, mock_llm_client: LLM) -> None:
     """Test that LLM rate limit errors propagate correctly."""
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -57,7 +57,7 @@ def test_llm_rate_limit_error(mocker: MockerFixture, mock_llm_client: Any) -> No
         )
 
 
-def test_llm_authentication_error(mocker: MockerFixture, mock_llm_client: Any) -> None:
+def test_llm_authentication_error(mocker: MockerFixture, mock_llm_client: LLM) -> None:
     """Test that LLM authentication errors propagate correctly."""
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -75,7 +75,7 @@ def test_llm_authentication_error(mocker: MockerFixture, mock_llm_client: Any) -
         )
 
 
-def test_llm_network_timeout_error(mocker: MockerFixture, mock_llm_client: Any) -> None:
+def test_llm_network_timeout_error(mocker: MockerFixture, mock_llm_client: LLM) -> None:
     """Test that LLM network timeout errors propagate correctly."""
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -93,7 +93,7 @@ def test_llm_network_timeout_error(mocker: MockerFixture, mock_llm_client: Any) 
 
 
 def test_llm_malformed_response_error(
-    mocker: MockerFixture, mock_llm_client: Any
+    mocker: MockerFixture, mock_llm_client: LLM
 ) -> None:
     """Test that malformed LLM responses are handled correctly."""
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
@@ -440,7 +440,7 @@ def test_cache_corruption_with_partial_valid_data(tmp_path: Path) -> None:
 
 
 def test_cache_save_failure_recovery(
-    tmp_path: Path, mocker: MockerFixture, mock_llm_client: Any
+    tmp_path: Path, mocker: MockerFixture, mock_llm_client: LLM
 ) -> None:
     """Test that cache save failures don't crash the application."""
     # Add entry to cache
@@ -487,7 +487,7 @@ def test_cache_binary_file_recovery(tmp_path: Path) -> None:
 # --- Tests for Network Timeout Scenarios ---
 
 
-def test_llm_connection_timeout(mocker: MockerFixture, mock_llm_client: Any) -> None:
+def test_llm_connection_timeout(mocker: MockerFixture, mock_llm_client: LLM) -> None:
     """Test LLM operations handle connection timeout errors."""
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -504,7 +504,7 @@ def test_llm_connection_timeout(mocker: MockerFixture, mock_llm_client: Any) -> 
         )
 
 
-def test_llm_read_timeout(mocker: MockerFixture, mock_llm_client: Any) -> None:
+def test_llm_read_timeout(mocker: MockerFixture, mock_llm_client: LLM) -> None:
     """Test LLM operations handle read timeout errors."""
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
     mock_program = mocker.MagicMock()
@@ -567,7 +567,7 @@ def test_multi_module_check_with_intermittent_timeouts(
 
 
 def test_generate_doc_with_slow_response_timeout(
-    mocker: MockerFixture, mock_llm_client: Any
+    mocker: MockerFixture, mock_llm_client: LLM
 ) -> None:
     """Test generate_doc handles slow LLM response timeouts."""
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
