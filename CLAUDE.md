@@ -50,5 +50,5 @@ Key design decisions to keep in mind:
 - **Module Structure**: See [docs/style-guide.md](docs/style-guide.md#module-responsibilities) for separation of concerns
 - **File Type Overrides**: Module-level `file_types` replace (not extend) repo-level settings in `.dokken.toml`
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists
-- **Search-Optimized Docs**: Templates optimized for grep/search (see `src/formatters.py` and `src/prompts.py`)
+- **Search-Optimized Docs**: Templates optimized for grep/search (see `src/output/formatters.py` and `src/prompts.py`)
 - **Testing**: Use function-based tests, mock external dependencies, use fixtures from `conftest.py`
