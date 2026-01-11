@@ -34,14 +34,15 @@ git commit -m "docs: update documentation"
 src/
 ├── main.py              # CLI entry points (Click) - thin UI layer
 ├── workflows.py         # High-level orchestration - business logic
-├── code_analyzer.py     # Code context extraction - pure functions
 ├── llm.py               # LLM client and operations - structured output
 ├── prompts.py           # LLM prompt templates - constants for easy iteration
 ├── config.py            # Configuration loading - .dokken.toml
-├── human_in_the_loop.py # Interactive questionnaires - questionary
 ├── records.py           # Pydantic models - structured data validation
 ├── exceptions.py        # Custom exceptions
 ├── git.py               # Git operations - subprocess wrapper
+├── input/               # Input gathering for documentation generation
+│   ├── code_analyzer.py # Code context extraction - pure functions
+│   └── human_in_the_loop.py # Interactive questionnaires - questionary
 ├── doctypes/            # Documentation type system
 │   ├── types.py         # DocType enum definitions
 │   └── configs.py       # DocType configuration registry
@@ -61,12 +62,13 @@ src/
 **`workflows.py` - Orchestration**
 
 - High-level business logic
-- Coordinates: analyzer → LLM → formatter → human-in-the-loop
+- Coordinates: input → LLM → output
 - Importable without CLI for scripting
 
-**`code_analyzer.py` - Code Extraction**
+**`input/` - Input Gathering**
 
-- Pure functions, no LLM calls
+- `code_analyzer.py`: Code context extraction with pure functions, no LLM calls
+- `human_in_the_loop.py`: Interactive questionnaires for capturing human intent
 - Configurable depth traversal (`depth` parameter)
 - Respects `.dokken.toml` exclusions
 
@@ -101,12 +103,6 @@ src/
 - Repo-level and module-level configs
 - Module config overrides repo config
 
-**`human_in_the_loop.py` - Questionnaires**
-
-- Interactive questionary system
-- Captures human intent AI can't infer
-- Graceful skip handling (ESC on first question)
-
 **`records.py` - Data Models**
 
 - Pydantic models for type-safe validation
@@ -115,9 +111,9 @@ src/
 ## Dependency Flow
 
 ```
-main.py (CLI) → workflows.py (Orchestration) → code_analyzer.py, llm.py, output/, human_in_the_loop.py
-                                                 ↓           ↓        ↓          ↓
-                                                 config.py   prompts.py  doctypes/  records.py
+main.py (CLI) → workflows.py (Orchestration) → input/, llm.py, output/
+                                                 ↓      ↓        ↓
+                                                 config.py   prompts.py  doctypes/
                                                              records.py  records.py
                                                              doctypes/
 ```
@@ -377,7 +373,7 @@ def test_writes_file(tmp_path: Path) -> None:
 
 **Configurable Depth Analysis:**
 
-- `code_analyzer.py` supports depth parameter (0=root only, 1=root+1 level, -1=infinite)
+- `input/code_analyzer.py` supports depth parameter (0=root only, 1=root+1 level, -1=infinite)
 
 **Alphabetically Sorted Decisions:**
 
@@ -391,4 +387,4 @@ def test_writes_file(tmp_path: Path) -> None:
 **Human-in-the-Loop:**
 
 - Interactive questionnaire captures intent AI can't infer from code
-- See `human_in_the_loop.py`
+- See `input/human_in_the_loop.py`

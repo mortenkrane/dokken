@@ -2,14 +2,14 @@
 
 from unittest.mock import patch
 
-from src.human_in_the_loop import ask_human_intent
+from src.input.human_in_the_loop import ask_human_intent
 from src.records import ModuleIntent
 
 
 def test_ask_human_intent_full_responses():
     """Test questionnaire with full responses for all questions."""
     # Mock questionary to return specific answers
-    with patch("src.human_in_the_loop.questionary.text") as mock_text:
+    with patch("src.input.human_in_the_loop.questionary.text") as mock_text:
         mock_text.return_value.ask.side_effect = [
             "Handles payment processing",
             "Payment gateway integration",
@@ -29,7 +29,7 @@ def test_ask_human_intent_full_responses():
 
 def test_ask_human_intent_skip_first_question():
     """Test that pressing ESC on first question skips entire questionnaire."""
-    with patch("src.human_in_the_loop.questionary.text") as mock_text:
+    with patch("src.input.human_in_the_loop.questionary.text") as mock_text:
         # Return None (ESC pressed) on first question
         mock_text.return_value.ask.return_value = None
 
@@ -42,7 +42,7 @@ def test_ask_human_intent_skip_first_question():
 
 def test_ask_human_intent_skip_later_questions():
     """Test that pressing ESC on later questions skips those questions."""
-    with patch("src.human_in_the_loop.questionary.text") as mock_text:
+    with patch("src.input.human_in_the_loop.questionary.text") as mock_text:
         # Answer first two, skip last two
         mock_text.return_value.ask.side_effect = [
             "Handles authentication",  # Question 1
@@ -63,7 +63,7 @@ def test_ask_human_intent_skip_later_questions():
 
 def test_ask_human_intent_empty_responses():
     """Test that empty string responses are converted to None."""
-    with patch("src.human_in_the_loop.questionary.text") as mock_text:
+    with patch("src.input.human_in_the_loop.questionary.text") as mock_text:
         # Return empty strings
         mock_text.return_value.ask.side_effect = [
             "Has a value",
@@ -84,7 +84,7 @@ def test_ask_human_intent_empty_responses():
 
 def test_ask_human_intent_all_empty_responses():
     """Test that all empty responses returns None."""
-    with patch("src.human_in_the_loop.questionary.text") as mock_text:
+    with patch("src.input.human_in_the_loop.questionary.text") as mock_text:
         # Return all empty strings
         mock_text.return_value.ask.side_effect = ["", "", "", ""]
 
@@ -95,7 +95,7 @@ def test_ask_human_intent_all_empty_responses():
 
 def test_ask_human_intent_keyboard_interrupt():
     """Test that keyboard interrupt returns None."""
-    with patch("src.human_in_the_loop.questionary.text") as mock_text:
+    with patch("src.input.human_in_the_loop.questionary.text") as mock_text:
         # Raise KeyboardInterrupt on first question
         mock_text.return_value.ask.side_effect = KeyboardInterrupt()
 

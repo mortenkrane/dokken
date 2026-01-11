@@ -11,17 +11,23 @@ Dokken is an AI-powered documentation generation and drift detection tool design
 ## Module Structure
 
 - **src/**: Root directory containing core implementation
-- **src/llm/**: LLM interaction and prompt management
-- **src/config/**: Configuration loading and management
-- **src/security/**: Security utilities for input validation
-- **src/cache.py**: Caching utilities for expensive operations
-- **src/code_analyzer.py**: Code context extraction and analysis
-- **src/doc_configs.py**: Documentation type configuration registry
-- **src/doc_merger.py**: Document merging and incremental fix utilities
+- **src/input/**: Input gathering for documentation generation
+  - **code_analyzer.py**: Code context extraction and analysis
+  - **human_in_the_loop.py**: Interactive questionnaires for capturing human intent
+- **src/output/**: Output formatting and transformation
+  - **formatters.py**: Structured data to markdown conversion
+  - **merger.py**: Markdown parsing and incremental updates
+- **src/doctypes/**: Documentation type system
+  - **types.py**: DocType enum definitions
+  - **configs.py**: DocType configuration registry
+- **src/llm.py**: LLM client and operations
+- **src/config.py**: Configuration loading and management
+- **src/prompts.py**: LLM prompt templates
+- **src/records.py**: Pydantic models for structured data validation
 - **src/exceptions.py**: Custom exception definitions
 - **src/file_utils.py**: Path resolution and directory operations
-- **src/formatters.py**: Documentation formatting utilities
-- **src/main.py**: CLI interface and workflow orchestration
+- **src/main.py**: CLI interface
+- **src/workflows.py**: High-level orchestration and business logic
 
 ## Architecture Overview
 
