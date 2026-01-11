@@ -8,7 +8,6 @@ from typing import cast
 from llama_index.core.llms import LLM
 from rich.console import Console
 
-from src.code_analyzer import get_module_context
 from src.config import load_config
 from src.constants import (
     ERROR_INVALID_DIRECTORY,
@@ -19,7 +18,7 @@ from src.constants import (
 from src.doctypes import DOC_CONFIGS, DocType
 from src.exceptions import DocumentationDriftError
 from src.file_utils import ensure_output_directory, find_repo_root, resolve_output_path
-from src.human_in_the_loop import ask_human_intent
+from src.input import ask_human_intent, get_module_context
 from src.llm import (
     GenerationConfig,
     check_drift,

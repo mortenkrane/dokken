@@ -1,11 +1,11 @@
-"""Tests for src/code_analyzer.py"""
+"""Tests for src/input/code_analyzer.py"""
 
 import time
 from pathlib import Path
 
 from pytest_mock import MockerFixture
 
-from src.code_analyzer import (
+from src.input.code_analyzer import (
     _filter_excluded_files,
     _find_source_files,
     get_module_context,
@@ -22,7 +22,7 @@ def test_get_module_context_with_python_files(
     (module_dir / "file1.py").write_text("print('hello')")
     (module_dir / "file2.py").write_text("print('world')")
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -42,7 +42,7 @@ def test_get_module_context_no_python_files(
     module_dir = tmp_path / "empty_module"
     module_dir.mkdir()
 
-    mock_console = mocker.patch("src.code_analyzer.console")
+    mock_console = mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -60,7 +60,7 @@ def test_get_module_context_includes_file_content(
     file_content = "def hello():\n    return 'world'"
     (module_dir / "test.py").write_text(file_content)
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -76,7 +76,7 @@ def test_get_module_context_sorts_files(tmp_path: Path, mocker: MockerFixture) -
     (module_dir / "a_file.py").write_text("a")
     (module_dir / "b_file.py").write_text("b")
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -97,7 +97,7 @@ def test_get_module_context_handles_exception(
     (module_dir / "test.py").write_text("code")
 
     # Make file reading raise an exception
-    mock_console = mocker.patch("src.code_analyzer.console")
+    mock_console = mocker.patch("src.input.code_analyzer.console")
     mocker.patch("builtins.open", side_effect=OSError("File read error"))
 
     context = get_module_context(module_path=str(module_dir))
@@ -123,7 +123,7 @@ def test_get_module_context_multiple_files(
     for filename in files:
         (module_dir / filename).write_text(f"# {filename}")
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -207,7 +207,7 @@ files = ["__init__.py", "test_*.py"]
 """
     (module_dir / ".dokken.toml").write_text(config_content)
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -235,7 +235,7 @@ files = ["test_*.py"]
 """
     (module_dir / ".dokken.toml").write_text(config_content)
 
-    mock_console = mocker.patch("src.code_analyzer.console")
+    mock_console = mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -327,7 +327,7 @@ def test_get_module_context_with_depth(tmp_path: Path, mocker: MockerFixture) ->
     subdir.mkdir()
     (subdir / "nested.py").write_text("nested content")
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     # depth=0 should only find root
     context = get_module_context(module_path=str(module_dir), depth=0)
@@ -342,10 +342,10 @@ def test_get_module_context_with_depth(tmp_path: Path, mocker: MockerFixture) ->
 
 def test_get_module_context_oserror_on_module_path(mocker: MockerFixture) -> None:
     """Test get_module_context handles OSError when accessing module path."""
-    mock_console = mocker.patch("src.code_analyzer.console")
+    mock_console = mocker.patch("src.input.code_analyzer.console")
     # Mock load_config to raise OSError (simulating permission denied on module path)
     mocker.patch(
-        "src.code_analyzer.load_config", side_effect=OSError("Permission denied")
+        "src.input.code_analyzer.load_config", side_effect=OSError("Permission denied")
     )
 
     context = get_module_context(module_path="/some/path")
@@ -417,7 +417,7 @@ file_types = [".js", ".ts"]
 """
     (module_dir / ".dokken.toml").write_text(config_content)
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -441,7 +441,7 @@ def test_get_module_context_default_file_types(
     (module_dir / "script.py").write_text("# Python")
     (module_dir / "app.js").write_text("// JavaScript")
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -467,7 +467,7 @@ def test_get_module_context_concurrent_file_reading(
     for i in range(num_files):
         (module_dir / f"file_{i:02d}.py").write_text(f"# File {i}")
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -489,7 +489,7 @@ def test_get_module_context_concurrent_errors_dont_block(
     (module_dir / "bad.py").write_text("# Bad")
     (module_dir / "good2.py").write_text("# Good 2")
 
-    mock_console = mocker.patch("src.code_analyzer.console")
+    mock_console = mocker.patch("src.input.code_analyzer.console")
 
     # Mock open to fail for bad.py but work for others
     original_open = open
@@ -528,7 +528,7 @@ def test_get_module_context_parallel_reading_maintains_order(
     for filename in files:
         (module_dir / filename).write_text(f"# {filename}")
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     context = get_module_context(module_path=str(module_dir))
 
@@ -568,7 +568,7 @@ class Class{i}:
 """
         (module_dir / f"module_{i:03d}.py").write_text(content)
 
-    mocker.patch("src.code_analyzer.console")
+    mocker.patch("src.input.code_analyzer.console")
 
     # This should complete without timing out
     start = time.time()
@@ -596,7 +596,7 @@ def test_get_module_context_mixed_success_and_failure(
     for i in range(10):
         (module_dir / f"file_{i}.py").write_text(f"# File {i}")
 
-    mock_console = mocker.patch("src.code_analyzer.console")
+    mock_console = mocker.patch("src.input.code_analyzer.console")
 
     # Simulate failures on files 3, 5, and 7
     original_open = open

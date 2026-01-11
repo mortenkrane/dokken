@@ -87,12 +87,11 @@ The code review agent evaluates changes against these fundamental principles:
 
 - `main.py` - CLI only, no business logic
 - `workflows.py` - High-level orchestration, delegates to specialized modules
-- `code_analyzer.py` - Pure functions, no LLM calls
+- `input/` - Input gathering (code_analyzer.py - pure functions, no LLM calls; human_in_the_loop.py - interactive questionnaires only)
 - `llm.py` - LLM operations only, uses prompts from `prompts.py`
 - `prompts.py` - Prompt templates as constants
-- `formatters.py` - Pure data transformation, no I/O
+- `output/formatters.py` - Pure data transformation, no I/O
 - `config.py` - Configuration loading only
-- `human_in_the_loop.py` - Interactive questionnaires only
 
 ### 2. Code Quality
 

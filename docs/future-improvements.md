@@ -97,7 +97,7 @@ ______________________________________________________________________
 
 - `workflows.py` and `main.py`: Use `sys.exit(1)` for fatal errors
 - `file_utils.py`: Raises `ValueError` and `PermissionError`
-- `code_analyzer.py`: Prints warnings and continues with empty results
+- `input/code_analyzer.py`: Prints warnings and continues with empty results
 - `llm.py`: Raises `ValueError` for missing API keys
 
 **Example Inconsistency:**
@@ -112,7 +112,7 @@ if not os.path.isdir(target_module_path):
 if not repo_root:
     raise ValueError(f"Cannot generate {doc_type.value}: {ERROR_NOT_IN_GIT_REPO}...")
 
-# code_analyzer.py:38-39 - prints and returns empty
+# input/code_analyzer.py:38-39 - prints and returns empty
 if not python_files:
     console.print(f"[yellow]⚠[/yellow] No Python files found in {module_path}")
     return ""
@@ -402,9 +402,9 @@ class DocConfig:
 
 ______________________________________________________________________
 
-### 2. Reduce Overload Complexity in `human_in_the_loop.py`
+### 2. Reduce Overload Complexity in `input/human_in_the_loop.py`
 
-**Current State:** Four overload signatures for type hints (`src/human_in_the_loop.py:14-44`):
+**Current State:** Four overload signatures for type hints (`src/input/human_in_the_loop.py:14-44`):
 
 ```python
 @overload
@@ -449,12 +449,12 @@ ______________________________________________________________________
 **Current State:** Default questions duplicated in two places:
 
 - `src/doc_configs.py:62-79` - Defined in DOC_CONFIGS registry
-- `src/human_in_the_loop.py:71-87` - Duplicated as fallback defaults
+- `src/input/human_in_the_loop.py:71-87` - Duplicated as fallback defaults
 
 **Recommendation:** Remove duplication by importing from doc_configs:
 
 ```python
-# src/human_in_the_loop.py
+# src/input/human_in_the_loop.py
 from src.doctypes import DOC_CONFIGS, DocType
 
 def ask_human_intent(...):
@@ -914,7 +914,7 @@ def content_based_cache(cache_key_fn):
 
 **Impact:** Low (code simplification)
 
-**Note:** The parallel file reading in code_analyzer.py uses ThreadPoolExecutor, so threads do exist. However, the cache is only accessed from the main thread. Document the decision either way.
+**Note:** The parallel file reading in input/code_analyzer.py uses ThreadPoolExecutor, so threads do exist. However, the cache is only accessed from the main thread. Document the decision either way.
 
 ______________________________________________________________________
 
