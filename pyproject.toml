@@ -29,7 +29,7 @@ where = ["."]
 include = ["src*"]
 
 [tool.ruff]
-exclude = [".venv"]
+exclude = [".venv", "renovate.json"]
 line-length = 88
 target-version = "py310"
 
