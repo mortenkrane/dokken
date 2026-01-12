@@ -102,7 +102,7 @@ def _reconstruct_document(sections: dict[str, str], original_doc: str) -> str:
 
     # Start with preamble
     if "_preamble" in sections:
-        result_parts.append(sections["_preamble"])
+        result_parts.append(sections["_preamble"].rstrip())
 
     # Get original section order
     original_sections = parse_sections(original_doc)
@@ -112,13 +112,13 @@ def _reconstruct_document(sections: dict[str, str], original_doc: str) -> str:
     added_sections = set()
     for section_header in original_order:
         if section_header in sections:
-            result_parts.append(sections[section_header])
+            result_parts.append(sections[section_header].rstrip())
             added_sections.add(section_header)
 
     # Add new sections at the end
     for section_header, content in sections.items():
         if section_header != "_preamble" and section_header not in added_sections:
-            result_parts.append(content)
+            result_parts.append(content.rstrip())
 
     return "\n\n".join(result_parts) + "\n"
 
