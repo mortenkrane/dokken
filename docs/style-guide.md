@@ -34,9 +34,10 @@ git commit -m "docs: update documentation"
 src/
 ├── main.py              # CLI entry points (Click) - thin UI layer
 ├── workflows.py         # High-level orchestration - business logic
-├── llm.py               # LLM client and operations - structured output
-├── prompts.py           # LLM prompt templates - constants for easy iteration
-├── config.py            # Configuration loading - .dokken.toml
+├── llm/                 # LLM operations
+│   ├── llm.py           # LLM client and operations - structured output
+│   └── prompts.py       # LLM prompt templates - constants for easy iteration
+├── config/              # Configuration loading - .dokken.toml
 ├── records.py           # Pydantic models - structured data validation
 ├── exceptions.py        # Custom exceptions
 ├── git.py               # Git operations - subprocess wrapper
@@ -72,16 +73,12 @@ src/
 - Configurable depth traversal (`depth` parameter)
 - Respects `.dokken.toml` exclusions
 
-**`llm.py` - LLM Operations**
+**`llm/` - LLM Operations**
 
-- LLM initialization and interaction
-- Uses prompts from `prompts.py`
+- `llm.py`: LLM initialization and interaction
+- `prompts.py`: All LLM prompts as module-level constants
+- Uses prompts from `llm/prompts.py`
 - Returns structured Pydantic objects (from `records.py`)
-
-**`prompts.py` - Prompt Templates**
-
-- All LLM prompts as module-level constants
-- Easy iteration without touching logic
 - Git diffs show prompt changes clearly
 - Example: `DRIFT_CHECK_PROMPT`, `MODULE_GENERATION_PROMPT`
 
@@ -97,7 +94,7 @@ src/
 - `merger.py`: Markdown parsing and incremental update application
 - All output generation and document manipulation
 
-**`config.py` - Configuration**
+**`config/` - Configuration**
 
 - Loads `.dokken.toml` exclusion rules
 - Repo-level and module-level configs
@@ -111,11 +108,10 @@ src/
 ## Dependency Flow
 
 ```
-main.py (CLI) → workflows.py (Orchestration) → input/, llm.py, output/
+main.py (CLI) → workflows.py (Orchestration) → input/, llm/, output/
                                                  ↓      ↓        ↓
-                                                 config.py   prompts.py  doctypes/
-                                                             records.py  records.py
-                                                             doctypes/
+                                                 config/    llm/prompts.py  doctypes/
+                                                             records.py
 ```
 
 ## Code Style
@@ -267,13 +263,13 @@ def test_cli_invalid_module() -> None:
 
 **Add new prompt:**
 
-1. Add constant to `prompts.py`
-1. Use it in `llm.py`
+1. Add constant to `llm/prompts.py`
+1. Use it in `llm/llm.py`
 
 **Add new LLM operation:**
 
-1. Add prompt to `prompts.py`
-1. Add function to `llm.py`
+1. Add prompt to `llm/prompts.py`
+1. Add function to `llm/llm.py`
 1. Use it in `workflows.py`
 
 **Add new output format:**
@@ -348,7 +344,7 @@ git commit -m "docs: add PDF guide"
 - ✅ `uv run ruff format && uv run ruff check`
 - ✅ `uvx ty check`
 
-See [docs/releasing-to-pypi.md](releasing-to-pypi.md) for release workflow.
+See [releasing-to-pypi.md](releasing-to-pypi.md) for release workflow.
 
 ## Testing
 
@@ -501,7 +497,7 @@ def test_writes_file(tmp_path: Path) -> None:
 **Drift-Based Generation:**
 
 - Only generates docs when drift detected or no doc exists (saves LLM calls)
-- Criteria in `DRIFT_CHECK_PROMPT` (`src/prompts.py:6`)
+- Criteria in `DRIFT_CHECK_PROMPT` (`src/llm/prompts.py`)
 
 **Human-in-the-Loop:**
 

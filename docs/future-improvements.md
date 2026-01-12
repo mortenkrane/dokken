@@ -19,9 +19,9 @@ ______________________________________________________________________
 
 **Current State:** Some constants scattered across modules:
 
-- `TEMPERATURE = 0.0` in `src/llm.py:22`
-- `depth` defaults in `src/doc_configs.py:80,106,130`
-- Section headers hardcoded in `src/formatters.py` (e.g., "## Main Entry Points")
+- `TEMPERATURE = 0.0` in `src/llm/llm.py:22`
+- `depth` defaults in `src/doctypes/configs.py:86,112,136`
+- Section headers hardcoded in `src/output/formatters.py` (e.g., "## Main Entry Points")
 
 **Recommendation:** Consider moving to `src/constants.py`:
 
@@ -124,9 +124,9 @@ def _initialize_documentation_workflow(
 
 ______________________________________________________________________
 
-### 2. Simplify Generic Types in `doc_configs.py`
+### 2. Simplify Generic Types in `doctypes/configs.py`
 
-**Current State:** `src/doc_configs.py:25-35` uses complex generics:
+**Current State:** `src/doctypes/configs.py:30-59` uses complex generics:
 
 ```python
 @dataclass
@@ -227,7 +227,7 @@ ______________________________________________________________________
 
 ### 4. Consider Plugin Architecture for Formatters
 
-**Current State:** Formatters hardcoded in `formatters.py` and `doc_configs.py`
+**Current State:** Formatters hardcoded in `output/formatters.py` and `doctypes/configs.py`
 
 **Recommendation:** Allow custom formatters via plugin system (future enhancement):
 

@@ -79,12 +79,12 @@ Manually invoke a code review:
 # → Provides comprehensive analysis against checklist
 # → Returns structured feedback with 🔴🟡🟢✨ priorities
 
-/review src/llm.py
+/review src/llm/llm.py
 # → Focuses analysis on the single file
 # → Checks code quality, testing, documentation
 # → References line numbers for specific issues
 
-/review src/workflows.py src/llm.py
+/review src/workflows.py src/llm/llm.py
 # → Reviews multiple files
 # → Cross-checks for consistency and patterns
 # → Identifies duplication between files

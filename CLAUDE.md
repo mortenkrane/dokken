@@ -38,7 +38,7 @@ These checks ensure code quality and will be automatically verified by pre-commi
 ## Key Design Patterns
 
 1. **Structured Output**: All LLM operations return validated Pydantic models
-1. **Prompt-as-Constants**: Prompts stored in `prompts.py` for easy experimentation
+1. **Prompt-as-Constants**: Prompts stored in `llm/prompts.py` for easy experimentation
 1. **Dependency Injection**: Functions receive dependencies as parameters
 1. **Pure Functions**: Most business logic is in pure, testable functions
 1. **Deterministic LLM**: Temperature=0.0 for reproducible documentation
@@ -50,5 +50,5 @@ Key design decisions to keep in mind:
 - **Module Structure**: See [docs/style-guide.md](docs/style-guide.md#module-responsibilities) for separation of concerns
 - **File Type Overrides**: Module-level `file_types` replace (not extend) repo-level settings in `.dokken.toml`
 - **Drift-Based Generation**: Only generates docs when drift detected or no doc exists
-- **Search-Optimized Docs**: Templates optimized for grep/search (see `src/output/formatters.py` and `src/prompts.py`)
+- **Search-Optimized Docs**: Templates optimized for grep/search (see `src/output/formatters.py` and `src/llm/prompts.py`)
 - **Testing**: Use function-based tests, mock external dependencies, use fixtures from `conftest.py`
