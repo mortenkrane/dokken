@@ -201,10 +201,10 @@ Generate comprehensive documentation covering:
    - Key decision points (conceptual)
    - How data flows from input to output
 
-6. **Control Flow Diagram** (optional): If control flow has meaningful decision points
-   or branching, create a Mermaid flowchart using conceptual stages (NOT function names).
-   Use ```mermaid flowchart TD``` syntax. Include conceptual entry points, decision
-   points, processing stages, and data flow arrows.
+6. **Control Flow Diagram** (optional): If control flow has meaningful decision
+   points or branching, create a Mermaid flowchart using conceptual stages (NOT
+   function names). Use ```mermaid flowchart TD``` syntax. Include conceptual entry
+   points, decision points, processing stages, and data flow arrows.
    Example: "Input Received → Validate → Process → Transform → Output"
    Skip if flow is purely linear.
 
@@ -285,7 +285,8 @@ Generate comprehensive project documentation covering:
    - **Code Quality**: Linting, formatting commands
    - **Documentation**: Links to style guides or contributing docs
 
-7. **Contributing** (optional): How to contribute. Keep brief or link to CONTRIBUTING.md.
+7. **Contributing** (optional): How to contribute. Keep brief or link to
+   CONTRIBUTING.md.
 
 Focus on practical, actionable information with clear structure for easy navigation.
 
