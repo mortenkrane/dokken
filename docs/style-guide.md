@@ -144,6 +144,125 @@ main.py (CLI) → workflows.py (Orchestration) → input/, llm.py, output/
 - Pure functions (no side effects in business logic)
 - Structured output (Pydantic models for LLM responses)
 
+## Error Handling
+
+**Consistent error handling patterns across the codebase:**
+
+### 1. Fatal Errors (CLI Entrypoints)
+
+**Use `sys.exit(1)` for unrecoverable errors in CLI-facing code**
+
+- Apply in: `main.py` and top-level workflow functions
+- Provides clean user-facing error messages
+- Exits immediately without stack traces for expected failures
+
+```python
+# ✅ Good - main.py or workflows.py
+from rich.console import Console
+import sys
+
+console = Console()
+
+if not os.path.isdir(target_module_path):
+    console.print(f"[red]Error:[/red] Module path does not exist: {target_module_path}")
+    sys.exit(1)
+```
+
+### 2. Library Functions
+
+**Raise specific exceptions for errors in reusable library code**
+
+- Apply in: All modules except `main.py` and top-level workflows
+- Enables callers to handle errors programmatically
+- Makes functions testable (can assert on exceptions)
+- Use built-in exceptions: `ValueError`, `FileNotFoundError`, `PermissionError`, etc.
+
+```python
+# ✅ Good - config.py, llm.py, file_utils.py, etc.
+def get_repo_root() -> str:
+    """Get repository root directory."""
+    repo_root = find_git_root()
+    if not repo_root:
+        raise ValueError("Not in a git repository. Dokken requires a git repository.")
+    return repo_root
+
+def initialize_llm() -> Gemini:
+    """Initialize LLM client."""
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY environment variable must be set")
+    return Gemini(api_key=api_key)
+```
+
+### 3. Warnings and Skippable Issues
+
+**Print warnings and return safe defaults for non-fatal issues**
+
+- Apply when: Operation can continue with degraded functionality
+- Print warning using Rich console
+- Return safe default value (empty string, empty list, None, etc.)
+
+```python
+# ✅ Good - code_analyzer.py
+from rich.console import Console
+
+console = Console()
+
+def analyze_module(module_path: str) -> str:
+    """Analyze module and extract context."""
+    python_files = find_python_files(module_path)
+
+    if not python_files:
+        console.print(f"[yellow]⚠[/yellow] No Python files found in {module_path}")
+        return ""  # Safe default - empty context
+
+    return extract_context(python_files)
+```
+
+### Decision Matrix
+
+| Scenario | Pattern | Example |
+| ----------------------------------- | -------------------------- | ------------------------------------------- |
+| CLI command fails (invalid args) | `sys.exit(1)` | User provides non-existent module path |
+| Missing required configuration | Raise `ValueError` | Missing API key in library function |
+| File not found in library function | Raise `FileNotFoundError` | Config file doesn't exist |
+| Permission denied | Raise `PermissionError` | Can't write to protected directory |
+| Skippable issue (can continue) | Print warning + safe value | No Python files in module (return "") |
+
+### Testing Error Handling
+
+**Test exceptions with pytest.raises:**
+
+```python
+def test_missing_api_key(mocker: MockerFixture) -> None:
+    mocker.patch.dict(os.environ, {}, clear=True)
+    with pytest.raises(ValueError, match="GEMINI_API_KEY"):
+        initialize_llm()
+
+def test_invalid_repo_path() -> None:
+    with pytest.raises(FileNotFoundError, match="Repository not found"):
+        load_config("/nonexistent/path")
+```
+
+**Test sys.exit with CliRunner:**
+
+```python
+from click.testing import CliRunner
+
+def test_cli_invalid_module() -> None:
+    runner = CliRunner()
+    result = runner.invoke(generate, ["nonexistent_module"])
+    assert result.exit_code == 1
+    assert "Error:" in result.output
+```
+
+### Benefits
+
+- **Predictability**: Clear patterns for each scenario
+- **Testability**: Exceptions easier to test than sys.exit
+- **Reusability**: Library functions don't terminate process
+- **User Experience**: Clean error messages without stack traces
+
 ## How to Add Features
 
 **Add new prompt:**

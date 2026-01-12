@@ -1,9 +1,9 @@
 """Tests for src/llm.py"""
 
 import os
-from typing import Any
 
 import pytest
+from llama_index.core.llms import LLM
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
@@ -151,7 +151,7 @@ def test_initialize_llm_with_various_key_formats(
 
 def test_check_drift_detects_drift_when_functions_removed(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test check_drift detects drift when documented functions are removed."""
     # Mock the LLM program to return drift detected
@@ -182,7 +182,7 @@ def test_check_drift_detects_drift_when_functions_removed(
 
 def test_check_drift_no_drift_when_code_matches_docs(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test check_drift returns no drift when code matches documentation."""
     # Mock the LLM program to return no drift
@@ -209,7 +209,7 @@ def test_check_drift_no_drift_when_code_matches_docs(
 
 def test_check_drift_detects_new_functions_added(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test check_drift detects when new functions are added to code."""
     # Mock the LLM program to return drift detected
@@ -243,7 +243,7 @@ def test_check_drift_detects_new_functions_added(
 
 def test_check_drift_cache_hit(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift returns cached result on cache hit."""
@@ -274,7 +274,7 @@ def test_check_drift_cache_hit(
 
 def test_check_drift_cache_miss_on_different_context(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift triggers new LLM call when context changes."""
@@ -295,7 +295,7 @@ def test_check_drift_cache_miss_on_different_context(
 
 def test_check_drift_cache_miss_on_different_doc(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift triggers new LLM call when documentation changes."""
@@ -316,7 +316,7 @@ def test_check_drift_cache_miss_on_different_doc(
 
 def test_check_drift_cache_evicts_oldest_when_full(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test cache evicts oldest entry when maxsize is reached."""
@@ -365,7 +365,7 @@ def test_check_drift_cache_evicts_oldest_when_full(
 
 def test_generate_doc_returns_structured_documentation(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc returns structured ModuleDocumentation."""
@@ -395,7 +395,7 @@ def test_generate_doc_returns_structured_documentation(
 
 def test_generate_doc_without_human_intent(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc works without human intent provided."""
@@ -432,7 +432,7 @@ def test_generate_doc_without_human_intent(
 )
 def test_check_drift_handles_various_inputs(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
     context: str,
     current_doc: str,
@@ -454,7 +454,7 @@ def test_check_drift_handles_various_inputs(
 
 def test_check_drift_handles_none_documentation(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_with_drift: DocumentationDriftCheck,
 ) -> None:
     """Test check_drift handles None for current_doc (no documentation)."""
@@ -483,7 +483,7 @@ def test_check_drift_handles_none_documentation(
 
 def test_check_drift_no_drift_for_helper_function_addition(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test that adding helper functions should NOT trigger drift (conservative)."""
     # Mock the LLM to return no drift (expected conservative behavior)
@@ -521,7 +521,7 @@ def _validate_input(username, password):
 
 def test_check_drift_no_drift_for_refactoring(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test that code refactoring should NOT trigger drift (conservative)."""
     # Mock the LLM to return no drift (expected conservative behavior)
@@ -558,7 +558,7 @@ Main functions: create_payment, process_payment."""
 
 def test_check_drift_requires_checklist_citation_when_drift_detected(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test that drift rationale cites specific checklist items."""
     # Mock the LLM to return drift with checklist citation
@@ -600,7 +600,7 @@ def refund_payment(): pass  # NEW user-facing feature
 )
 def test_generate_doc_handles_various_contexts(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_component_documentation: ModuleDocumentation,
     context: str,
 ) -> None:
@@ -626,7 +626,7 @@ def test_generate_doc_handles_various_contexts(
 
 def test_generate_doc_with_human_intent(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc includes human intent when provided."""
@@ -662,7 +662,7 @@ def test_generate_doc_with_human_intent(
 
 def test_generate_doc_with_partial_human_intent(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_component_documentation: ModuleDocumentation,
 ) -> None:
     """Test generate_doc handles partial human intent."""
@@ -698,7 +698,7 @@ def test_generate_doc_with_partial_human_intent(
 
 def test_fix_doc_incrementally_returns_structured_fixes(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test fix_doc_incrementally returns IncrementalDocumentationFix with changes."""
     # Mock the LLM program to return incremental fix
@@ -745,7 +745,7 @@ def test_fix_doc_incrementally_returns_structured_fixes(
 
 def test_fix_doc_incrementally_with_custom_prompts(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test fix_doc_incrementally includes custom prompts when provided."""
     # Mock the LLM program
@@ -795,7 +795,7 @@ def test_fix_doc_incrementally_with_custom_prompts(
 
 def test_fix_doc_incrementally_without_optional_params(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test fix_doc_incrementally works without optional parameters."""
     # Mock the LLM program
@@ -834,7 +834,7 @@ def test_fix_doc_incrementally_without_optional_params(
 
 def test_fix_doc_incrementally_multiple_changes(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test fix_doc_incrementally handles multiple changes."""
     # Mock the LLM program
@@ -887,7 +887,7 @@ def test_fix_doc_incrementally_multiple_changes(
 # Tests for error recovery and resilience
 
 
-def test_check_drift_llm_api_error(mocker: MockerFixture, mock_llm_client: Any) -> None:
+def test_check_drift_llm_api_error(mocker: MockerFixture, mock_llm_client: LLM) -> None:
     """Test check_drift handles LLM API errors gracefully."""
     # Mock LLM program to raise an exception
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
@@ -906,7 +906,7 @@ def test_check_drift_llm_api_error(mocker: MockerFixture, mock_llm_client: Any) 
 
 
 def test_check_drift_with_empty_context(
-    mocker: MockerFixture, mock_llm_client: Any
+    mocker: MockerFixture, mock_llm_client: LLM
 ) -> None:
     """Test check_drift handles empty context."""
     drift_check = DocumentationDriftCheck(
@@ -926,7 +926,7 @@ def test_check_drift_with_empty_context(
 
 
 def test_check_drift_with_very_large_context(
-    mocker: MockerFixture, mock_llm_client: Any
+    mocker: MockerFixture, mock_llm_client: LLM
 ) -> None:
     """Test check_drift handles very large code context."""
     # Create a large context (simulate large codebase)
@@ -952,7 +952,7 @@ def test_check_drift_with_very_large_context(
     assert mock_program.call_count == 1
 
 
-def test_generate_doc_llm_timeout(mocker: MockerFixture, mock_llm_client: Any) -> None:
+def test_generate_doc_llm_timeout(mocker: MockerFixture, mock_llm_client: LLM) -> None:
     """Test generate_doc handles LLM timeout errors."""
     # Mock LLM program to simulate timeout
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
@@ -972,7 +972,7 @@ def test_generate_doc_llm_timeout(mocker: MockerFixture, mock_llm_client: Any) -
 
 
 def test_generate_doc_invalid_response_structure(
-    mocker: MockerFixture, mock_llm_client: Any
+    mocker: MockerFixture, mock_llm_client: LLM
 ) -> None:
     """Test generate_doc handles invalid LLM response structure."""
     # Mock LLM program to return invalid data
@@ -997,7 +997,7 @@ def test_generate_doc_invalid_response_structure(
 
 
 def test_fix_doc_incrementally_llm_error(
-    mocker: MockerFixture, mock_llm_client: Any
+    mocker: MockerFixture, mock_llm_client: LLM
 ) -> None:
     """Test fix_doc_incrementally handles LLM errors."""
     # Mock LLM program to raise error

@@ -2,8 +2,8 @@
 
 import json
 from pathlib import Path
-from typing import Any
 
+from llama_index.core.llms import LLM
 from pytest_mock import MockerFixture
 
 from src.cache import (
@@ -39,11 +39,11 @@ def test_hash_content() -> None:
 
 
 def test_generate_cache_key_includes_llm_model(
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test _generate_cache_key includes LLM model in the cache key."""
     # Mock LLM with model attribute
-    mock_llm_client.model = "claude-3-5-haiku-20241022"
+    mock_llm_client.model = "claude-3-5-haiku-20241022"  # type: ignore[attr-defined]
 
     key1 = _generate_cache_key("context", "doc", mock_llm_client)
 
@@ -51,7 +51,7 @@ def test_generate_cache_key_includes_llm_model(
     assert "claude-3-5-haiku-20241022" in key1
 
     # Different model should produce different key
-    mock_llm_client.model = "gpt-4o-mini"
+    mock_llm_client.model = "gpt-4o-mini"  # type: ignore[attr-defined]
     key2 = _generate_cache_key("context", "doc", mock_llm_client)
 
     assert key1 != key2
@@ -60,7 +60,7 @@ def test_generate_cache_key_includes_llm_model(
 
 def test_clear_drift_cache_removes_all_entries(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test clear_drift_cache removes all cached entries."""
@@ -94,7 +94,7 @@ def test_clear_drift_cache_removes_all_entries(
 
 def test_get_drift_cache_info_returns_correct_stats(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test get_drift_cache_info returns accurate cache statistics."""
@@ -124,7 +124,7 @@ def test_get_drift_cache_info_returns_correct_stats(
 def test_save_drift_cache_to_disk(
     tmp_path: Path,
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test save_drift_cache_to_disk persists cache to JSON file."""
@@ -160,7 +160,7 @@ def test_save_drift_cache_to_disk(
 def test_load_drift_cache_from_disk(
     tmp_path: Path,
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
 ) -> None:
     """Test load_drift_cache_from_disk restores cache from JSON file."""
     clear_drift_cache()
@@ -241,7 +241,7 @@ def test_load_drift_cache_from_disk_invalid_version(tmp_path: Path) -> None:
 def test_save_and_load_roundtrip(
     tmp_path: Path,
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test save and load cache roundtrip preserves data."""
@@ -279,7 +279,7 @@ def test_save_and_load_roundtrip(
 
 def test_set_cache_max_size(
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test set_cache_max_size updates the maximum cache size."""
@@ -313,7 +313,7 @@ def test_set_cache_max_size(
 def test_save_drift_cache_creates_parent_directory(
     tmp_path: Path,
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test save_drift_cache_to_disk creates parent directories."""
@@ -341,7 +341,7 @@ def test_save_drift_cache_creates_parent_directory(
 def test_save_drift_cache_handles_permission_error(
     tmp_path: Path,
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test save_drift_cache_to_disk handles OSError gracefully."""
@@ -370,7 +370,7 @@ def test_save_drift_cache_handles_permission_error(
 def test_save_drift_cache_atomic_write(
     tmp_path: Path,
     mocker: MockerFixture,
-    mock_llm_client: Any,
+    mock_llm_client: LLM,
     sample_drift_check_no_drift: DocumentationDriftCheck,
 ) -> None:
     """Test save_drift_cache_to_disk uses atomic write."""
