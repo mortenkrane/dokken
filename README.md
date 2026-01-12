@@ -155,6 +155,8 @@ dokken generate src/auth --depth 2         # Custom depth
 
 ## Configuration
 
+**Quick reference:** See [examples/.dokken.toml](examples/.dokken.toml) for a comprehensive configuration example with all available options.
+
 ### API Keys (Environment Variables)
 
 ```bash
@@ -315,6 +317,8 @@ max_size = 100               # Max cache entries (default)
 - Add to `.gitignore` (cache is environment-specific)
 
 ## CI/CD Integration
+
+**Quick reference:** See [examples/dokken-drift-check.yml](examples/dokken-drift-check.yml) for a complete GitHub Actions workflow example.
 
 **Exit codes:**
 
