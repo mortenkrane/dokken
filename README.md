@@ -149,8 +149,8 @@ dokken generate src/auth --depth 2         # Custom depth
 
 **Keyboard shortcuts:**
 
-- `ESC` - Skip question or entire questionnaire (if first question)
-- `Enter` twice - Submit answer (supports multiline)
+- `Ctrl+C` - Skip question or entire questionnaire (if first question)
+- `Meta+Enter` or `Esc+Enter` - Submit answer (supports multiline)
 - Leave blank - Skip if no relevant information
 
 ## Configuration
@@ -418,7 +418,7 @@ A: Run `uv sync --all-groups` to install dependencies
 A: Adjust criteria in `DRIFT_CHECK_PROMPT` in `src/llm/prompts.py`
 
 **Q: How to skip questionnaire?**
-A: Press `ESC` on first question
+A: Press `Ctrl+C` on first question
 
 **Q: Exclude test files from documentation?**
 A: Add pattern to `.dokken.toml`:
