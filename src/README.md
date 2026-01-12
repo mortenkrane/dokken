@@ -20,9 +20,10 @@ Dokken is an AI-powered documentation generation and drift detection tool design
 - **src/doctypes/**: Documentation type system
   - **types.py**: DocType enum definitions
   - **configs.py**: DocType configuration registry
-- **src/llm.py**: LLM client and operations
-- **src/config.py**: Configuration loading and management
-- **src/prompts.py**: LLM prompt templates
+- **src/llm/**: LLM operations
+  - **llm.py**: LLM client and operations
+  - **prompts.py**: LLM prompt templates
+- **src/config/**: Configuration loading and management
 - **src/records.py**: Pydantic models for structured data validation
 - **src/exceptions.py**: Custom exception definitions
 - **src/file_utils.py**: Path resolution and directory operations

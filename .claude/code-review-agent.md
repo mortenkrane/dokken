@@ -88,10 +88,10 @@ The code review agent evaluates changes against these fundamental principles:
 - `main.py` - CLI only, no business logic
 - `workflows.py` - High-level orchestration, delegates to specialized modules
 - `input/` - Input gathering (code_analyzer.py - pure functions, no LLM calls; human_in_the_loop.py - interactive questionnaires only)
-- `llm.py` - LLM operations only, uses prompts from `prompts.py`
-- `prompts.py` - Prompt templates as constants
+- `llm/llm.py` - LLM operations only, uses prompts from `llm/prompts.py`
+- `llm/prompts.py` - Prompt templates as constants
 - `output/formatters.py` - Pure data transformation, no I/O
-- `config.py` - Configuration loading only
+- `config/` - Configuration loading only
 
 ### 2. Code Quality
 
@@ -307,10 +307,10 @@ The `generate_documentation()` function contains inline prompt text:
 
     prompt = "Generate documentation for..."
 
-**Problem:** Prompts should be in `prompts.py` for easy iteration and clear git diffs.
+**Problem:** Prompts should be in `llm/prompts.py` for easy iteration and clear git diffs.
 
 **Fix:**
-1. Add constant to `prompts.py`: `DOCUMENTATION_GENERATION_PROMPT = "..."`
+1. Add constant to `llm/prompts.py`: `DOCUMENTATION_GENERATION_PROMPT = "..."`
 2. Import and use: `prompt = DOCUMENTATION_GENERATION_PROMPT`
 
 **Reference:** See `docs/style-guide.md` - Module Responsibilities
@@ -319,7 +319,7 @@ The `generate_documentation()` function contains inline prompt text:
 **Testability Issue:**
 
 ```markdown
-🔴 **Untestable Code** (`src/llm.py:123`)
+🔴 **Untestable Code** (`src/llm/llm.py:123`)
 
 Function `generate_docs()` directly instantiates `Gemini()` client:
 
@@ -344,7 +344,7 @@ Function `generate_docs()` directly instantiates `Gemini()` client:
 **DRY Violation:**
 
 ```markdown
-🟡 **Code Duplication** (`src/formatters.py:78-92`, `src/formatters.py:156-170`)
+🟡 **Code Duplication** (`src/output/formatters.py:78-92`, `src/output/formatters.py:156-170`)
 
 Similar markdown formatting logic appears in two functions. Consider extracting:
 

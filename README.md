@@ -129,7 +129,7 @@ dokken generate src/auth --depth 2         # Custom depth
 - Changed function signatures
 - Modified exports
 - Major architectural changes
-- See `DRIFT_CHECK_PROMPT` in `src/prompts.py` for full criteria
+- See `DRIFT_CHECK_PROMPT` in `src/llm/prompts.py` for full criteria
 
 **Documentation Types**: Dokken generates three types of documentation:
 
@@ -375,7 +375,7 @@ jobs:
 
 - **Three Documentation Types**: Module READMEs, project READMEs, and style guides
 - **Configurable Depth**: Control code analysis depth (0=root only, -1=infinite recursion)
-- **Drift Detection**: Criteria-based detection (see `src/prompts.py`)
+- **Drift Detection**: Criteria-based detection (see `src/llm/prompts.py`)
 - **Multi-Module Check**: Check all modules with `--all` flag
 - **Custom Prompts**: Inject preferences into generation (see Configuration)
 - **Exclusion Rules**: Filter files via `.dokken.toml`
@@ -407,13 +407,10 @@ uvx ty check                  # Type checking
 A: Run `uv sync --all-groups` to install dependencies
 
 **Q: Drift detection too sensitive**
-A: Adjust criteria in `DRIFT_CHECK_PROMPT` in `src/prompts.py`
+A: Adjust criteria in `DRIFT_CHECK_PROMPT` in `src/llm/prompts.py`
 
 **Q: How to skip questionnaire?**
 A: Press `ESC` on first question
-
-**Q: Change base branch for drift detection?**
-A: Set `GIT_BASE_BRANCH` in `src/git.py`
 
 **Q: Exclude test files from documentation?**
 A: Add pattern to `.dokken.toml`:
