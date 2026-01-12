@@ -389,6 +389,14 @@ jobs:
 **Dev setup:**
 
 ```bash
+# Using mise tasks (recommended)
+mise run dev                  # Set up development environment
+mise run check                # Run all checks (format, lint, type, test)
+mise run test                 # Run tests with coverage
+mise run fix                  # Auto-fix formatting and linting
+mise tasks                    # List all available tasks
+
+# Or using uv directly
 uv sync --all-groups          # Install dependencies + dev tools
 uv run pytest tests/ --cov=src  # Run tests with coverage
 uv run ruff format            # Format code
