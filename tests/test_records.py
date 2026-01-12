@@ -42,7 +42,7 @@ def test_documentation_drift_check_no_drift() -> None:
 def test_documentation_drift_check_missing_drift_detected() -> None:
     """Test that DocumentationDriftCheck requires drift_detected field."""
     with pytest.raises(ValidationError) as exc_info:
-        DocumentationDriftCheck(rationale="Missing drift_detected field")  # type: ignore[call-arg]
+        DocumentationDriftCheck(rationale="Missing drift_detected field")
 
     errors = exc_info.value.errors()
     assert any(error["loc"] == ("drift_detected",) for error in errors)
@@ -52,7 +52,7 @@ def test_documentation_drift_check_missing_drift_detected() -> None:
 def test_documentation_drift_check_missing_rationale() -> None:
     """Test that DocumentationDriftCheck requires rationale field."""
     with pytest.raises(ValidationError) as exc_info:
-        DocumentationDriftCheck(drift_detected=True)  # type: ignore[call-arg]
+        DocumentationDriftCheck(drift_detected=True)
 
     errors = exc_info.value.errors()
     assert any(error["loc"] == ("rationale",) for error in errors)
@@ -121,7 +121,7 @@ def test_module_documentation_with_optional_fields() -> None:
 def test_module_documentation_missing_required_field() -> None:
     """Test that ModuleDocumentation requires all mandatory fields."""
     with pytest.raises(ValidationError) as exc_info:
-        ModuleDocumentation(  # type: ignore[call-arg]
+        ModuleDocumentation(
             component_name="User Auth",
             purpose_and_scope="Handles auth",
             # Missing architecture_overview
@@ -161,7 +161,7 @@ def test_module_documentation_all_required_fields(field_name: str) -> None:
     invalid_data = {k: v for k, v in valid_data.items() if k != field_name}
 
     with pytest.raises(ValidationError) as exc_info:
-        ModuleDocumentation(**invalid_data)  # type: ignore[arg-type]
+        ModuleDocumentation(**invalid_data)
 
     errors = exc_info.value.errors()
     assert any(error["loc"] == (field_name,) for error in errors)
@@ -220,7 +220,7 @@ def test_project_documentation_with_contributing() -> None:
 def test_project_documentation_missing_required_field() -> None:
     """Test that ProjectDocumentation requires all mandatory fields."""
     with pytest.raises(ValidationError) as exc_info:
-        ProjectDocumentation(  # type: ignore[call-arg]
+        ProjectDocumentation(
             project_name="Dokken",
             project_purpose="Tool",
             # Missing key_features
