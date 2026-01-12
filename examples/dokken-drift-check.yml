@@ -1,0 +1,198 @@
+# Dokken Documentation Drift Check - GitHub Actions Workflow
+# This workflow checks for documentation drift on pull requests and pushes to main.
+# It uses caching to minimize LLM API calls for unchanged code.
+#
+# To use this workflow:
+# 1. Copy this file to .github/workflows/dokken-drift-check.yml
+# 2. Add an API key secret (ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_API_KEY)
+# 3. Configure .dokken.toml with your modules list
+# 4. Commit and push to enable the workflow
+
+name: Documentation Drift Check
+
+on:
+  pull_request:
+    branches: [main]
+    # Only run when code or documentation files change
+    paths:
+      - 'src/**'
+      - 'docs/**'
+      - '.dokken.toml'
+      - '**/.dokken.toml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'docs/**'
+      - '.dokken.toml'
+      - '**/.dokken.toml'
+
+jobs:
+  dokken-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ========================================================================
+      # CHECKOUT CODE
+      # ========================================================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ========================================================================
+      # SETUP PYTHON
+      # ========================================================================
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # ========================================================================
+      # INSTALL UV AND DEPENDENCIES
+      # ========================================================================
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dokken
+        run: |
+          # For published version from PyPI:
+          # uv tool install dokken
+
+          # For development version from git:
+          git clone https://github.com/mortenkrane/dokken.git /tmp/dokken
+          cd /tmp/dokken
+          uv sync --all-groups
+
+      # ========================================================================
+      # RESTORE DRIFT DETECTION CACHE
+      # ========================================================================
+      # Cache key includes hashes of source files and config
+      # This ensures cache invalidation when code changes
+      - name: Restore drift detection cache
+        uses: actions/cache@v4
+        with:
+          path: .dokken-cache.json
+          # Cache key based on source files and config
+          key: dokken-drift-${{ hashFiles('src/**/*.py', '.dokken.toml', '**/.dokken.toml') }}
+          # Fallback to partial cache hits (still beneficial)
+          restore-keys: |
+            dokken-drift-
+
+      # ========================================================================
+      # RUN DRIFT DETECTION
+      # ========================================================================
+      # Check all modules configured in .dokken.toml
+      # Exit code 1 if any module has drift
+      - name: Check documentation drift
+        run: |
+          cd /tmp/dokken
+          uv run dokken check --all
+        env:
+          # Use one of these API keys (stored as GitHub secret)
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+
+      # ========================================================================
+      # SAVE CACHE (AUTOMATIC)
+      # ========================================================================
+      # Cache is automatically saved by actions/cache@v4 after workflow completes
+      # No manual step needed - dokken writes cache to .dokken-cache.json
+
+# ==============================================================================
+# ALTERNATIVE: Auto-fix drift on main branch pushes
+# ==============================================================================
+# Uncomment this job to automatically regenerate docs when drift is detected
+# on the main branch. This creates a follow-up commit with updated docs.
+
+# dokken-autofix:
+#   runs-on: ubuntu-latest
+#   # Only run on main branch pushes, not PRs
+#   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+#
+#   steps:
+#     - uses: actions/checkout@v4
+#       with:
+#         # Need token with write permissions for commits
+#         token: ${{ secrets.GITHUB_TOKEN }}
+#
+#     - name: Set up Python
+#       uses: actions/setup-python@v5
+#       with:
+#         python-version: '3.13'
+#
+#     - name: Install uv
+#       uses: astral-sh/setup-uv@v4
+#
+#     - name: Install dokken
+#       run: |
+#         git clone https://github.com/mortenkrane/dokken.git /tmp/dokken
+#         cd /tmp/dokken
+#         uv sync --all-groups
+#
+#     - name: Restore drift cache
+#       uses: actions/cache@v4
+#       with:
+#         path: .dokken-cache.json
+#         key: dokken-drift-${{ hashFiles('src/**/*.py', '.dokken.toml') }}
+#         restore-keys: dokken-drift-
+#
+#     - name: Auto-fix documentation drift
+#       run: |
+#         cd /tmp/dokken
+#         uv run dokken check --all --fix
+#       env:
+#         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+#
+#     - name: Commit updated documentation
+#       run: |
+#         git config user.name "github-actions[bot]"
+#         git config user.email "github-actions[bot]@users.noreply.github.com"
+#         git add -A
+#         git diff --staged --quiet || git commit -m "docs: auto-fix documentation drift [skip ci]"
+#         git push
+
+# ==============================================================================
+# SETUP INSTRUCTIONS
+# ==============================================================================
+#
+# 1. Add API Key Secret
+#    Go to: Settings > Secrets and variables > Actions > New repository secret
+#    Name: ANTHROPIC_API_KEY (or OPENAI_API_KEY or GOOGLE_API_KEY)
+#    Value: Your API key (e.g., sk-ant-...)
+#
+# 2. Configure .dokken.toml
+#    Create .dokken.toml at repository root:
+#
+#    modules = ["src/auth", "src/api", "src/database"]
+#
+#    [cache]
+#    file = ".dokken-cache.json"
+#    max_size = 100
+#
+# 3. Add cache file to .gitignore
+#    echo ".dokken-cache.json" >> .gitignore
+#
+# 4. Test locally
+#    dokken check --all
+#
+# 5. Commit and push workflow
+#    git add .github/workflows/dokken-drift-check.yml
+#    git commit -m "ci: add dokken drift detection workflow"
+#    git push
+#
+# ==============================================================================
+# CACHE BENEFITS
+# ==============================================================================
+# - 80-95% reduction in LLM token usage for unchanged code
+# - Faster drift checks on repeated CI runs
+# - Works across workflow runs and branches (with restore-keys fallback)
+# - Automatically invalidated when source files change
+#
+# ==============================================================================
+# CUSTOMIZATION
+# ==============================================================================
+# - Adjust cache key to match your project structure
+# - Add more file patterns to 'paths' trigger
+# - Use different Python version if needed
+# - Switch between Anthropic/OpenAI/Google API keys
+# - Enable auto-fix job for automatic drift resolution

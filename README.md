@@ -155,6 +155,8 @@ dokken generate src/auth --depth 2         # Custom depth
 
 ## Configuration
 
+**Quick reference:** See [examples/.dokken.toml](examples/.dokken.toml) for a comprehensive configuration example with all available options.
+
 ### API Keys (Environment Variables)
 
 ```bash
@@ -164,212 +166,91 @@ export OPENAI_API_KEY="sk-..."         # OpenAI (GPT-4o-mini)
 export GOOGLE_API_KEY="AIza..."        # Google (Gemini Flash)
 ```
 
-### Multi-Module Detection (`.dokken.toml`)
+### Configuration Options
 
-Configure multiple modules to check in a single command:
+Create a `.dokken.toml` file at your repository root to configure Dokken. Available options:
+
+**Multi-Module Projects:**
 
 ```toml
-# List of modules (paths relative to repo root)
-modules = [
-    "src/auth",
-    "src/api",
-    "src/database"
-]
-
-# File types to analyze (optional, defaults to [".py"])
-file_types = [".py", ".js", ".ts"]
+modules = ["src/auth", "src/api", "src/database"]
 ```
-
-**Usage:**
 
 ```bash
 dokken check --all              # Check all configured modules
 dokken check --all --fix        # Check and auto-fix drift
-dokken check src/auth           # Check single module
 ```
 
-**Exit behavior:**
-
-- Exit code 1 if any module has drift (CI/CD-friendly)
-- Summary report at end showing all modules
-
-### File Types (`.dokken.toml`)
-
-Configure which file types to analyze for documentation:
+**File Types:**
 
 ```toml
-# File types to analyze (optional, defaults to [".py"])
-# Supports any programming language file extension
-file_types = [".py"]           # Python only (default)
+file_types = [".py"]           # Python (default)
 # file_types = [".js", ".ts"]  # JavaScript/TypeScript
 # file_types = [".py", ".js"]  # Multiple languages
 ```
 
-**Notes:**
-
-- Extensions can be specified with or without leading dot (`.py` or `py`)
-- Applies to all modules in the repository
-- Can be overridden in module-specific `.dokken.toml` files
-
-### Exclusion Patterns (`.dokken.toml`)
-
-**File locations:**
-
-- `/.dokken.toml` - Global exclusions, module list, and file types
-- `<module>/.dokken.toml` - Module-specific exclusions and file types
-
-**Syntax:**
+**Exclusions:**
 
 ```toml
-# Configure modules to check (repo root only)
-modules = ["src/auth", "src/api"]
-
-# File types to analyze (optional, defaults to [".py"])
-file_types = [".py", ".js", ".ts"]
-
 [exclusions]
-# Exclude files (glob patterns supported)
-files = [
-    "__init__.py",
-    "*_test.py",
-    "conftest.py"
-]
+files = ["__init__.py", "*_test.py", "conftest.py"]
 ```
 
-**Common file exclusion patterns:**
-
-- Test files: `"*_test.py"`, `"test_*.py"`, `"*.spec.js"`
-- Private code: `"_private_*"`, `"_internal_*"`
-- Boilerplate: `"__init__.py"`, `"conftest.py"`
-- Experimental: `"experimental_*"`, `"Temp*"`
-- Build artifacts: `"*.min.js"`, `"*.d.ts"`
-
-### Custom Prompts (`.dokken.toml`)
-
-Inject preferences and instructions into documentation generation:
-
-**Available prompt types:**
-
-- `global_prompt` - Applied to all documentation types
-- `module_readme` - Module-level docs (`<module>/README.md`)
-- `project_readme` - Project README (`README.md`)
-- `style_guide` - Style guide (`docs/style-guide.md`)
-
-**Example:**
+**Custom Prompts:**
 
 ```toml
 [custom_prompts]
-global_prompt = """
-Use British spelling.
-Prefer active voice and present tense.
-Keep sentences concise.
-"""
-
-module_readme = "Focus on architectural patterns and design decisions."
-project_readme = "Include quick-start guide and highlight key features."
-style_guide = "Reference specific files as examples."
+global_prompt = "Use British spelling and active voice."
+module_readme = "Focus on architectural patterns."
 ```
 
-**How it works:**
-
-- Custom prompts appended to LLM generation under "USER PREFERENCES"
-- Module-level configs extend/override repository-level configs
-- Max 5,000 characters per prompt field
-
-**Common use cases:**
-
-- Enforce writing style/tone (British spelling, active voice)
-- Request specific sections (mermaid diagrams, examples)
-- Emphasize aspects (security, performance)
-- Align with company style guides
-
-### Cache Configuration (`.dokken.toml`)
-
-Dokken caches drift detection results to avoid redundant LLM API calls. The cache persists across runs, making it especially useful in CI environments.
-
-**Configuration:**
+**Drift Detection Cache:**
 
 ```toml
 [cache]
-file = ".dokken-cache.json"  # Path to cache file (default)
-max_size = 100               # Max cache entries (default)
+file = ".dokken-cache.json"  # Default location
+max_size = 100               # Max entries (default)
 ```
 
-**How it works:**
+Cache automatically saves drift detection results to avoid redundant LLM API calls (80-95% token reduction in CI). Add `.dokken-cache.json` to `.gitignore`.
 
-- Cache key: SHA256 hash of code + documentation content + LLM model
-- Persistent: Stored as JSON file, survives across runs
-- Automatic: Loaded/saved by `dokken check` and `dokken generate`
-- Thread-safe: FIFO eviction when cache reaches `max_size`
-
-**Benefits:**
-
-- Reduces LLM token consumption in CI (80-95% reduction for unchanged code)
-- Faster drift checks on repeated runs
-- Works locally and in CI/CD pipelines
-
-**Cache location:**
-
-- Default: `.dokken-cache.json` in repository root
-- Customize via `cache.file` in `.dokken.toml`
-- Add to `.gitignore` (cache is environment-specific)
+**See [examples/.dokken.toml](examples/.dokken.toml) for complete configuration details and all available options.**
 
 ## CI/CD Integration
 
-**Exit codes:**
+Use `dokken check --all` in CI pipelines to enforce documentation hygiene:
 
-- `dokken check`: Exit 1 if drift detected, 0 if synchronized
-- Use in pipelines to enforce documentation hygiene
+- Exit code 0: Documentation is up-to-date
+- Exit code 1: Drift detected (fails the build)
 
-**GitHub Actions Example (with caching):**
+**Minimal GitHub Actions workflow:**
 
 ```yaml
-name: Documentation Drift Check
-
-on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
-
-jobs:
-  dokken-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Install dependencies
-        run: uv sync --all-groups
-
-      # Restore drift detection cache (saves LLM tokens)
-      - name: Restore drift cache
-        uses: actions/cache@v4
-        with:
-          path: .dokken-cache.json
-          key: dokken-drift-${{ hashFiles('src/**/*.py', '.dokken.toml') }}
-          restore-keys: |
-            dokken-drift-
-
-      # Check for drift (cache auto-loaded/saved)
-      - name: Check documentation drift
-        run: uv run dokken check --all
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+- name: Check documentation drift
+  run: dokken check --all
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-**Notes:**
+**With caching (recommended):**
 
-- Cache key includes source files hash (invalidates when code changes)
-- Restore-keys provide fallback (partial cache hits still beneficial)
-- Cache automatically loaded/saved by dokken (no manual steps needed)
-- Other CI platforms (GitLab CI, CircleCI, Azure Pipelines) have similar caching mechanisms
+```yaml
+- name: Restore drift cache
+  uses: actions/cache@v4
+  with:
+    path: .dokken-cache.json
+    key: dokken-drift-${{ hashFiles('src/**/*.py', '.dokken.toml') }}
+    restore-keys: dokken-drift-
+
+- name: Check documentation drift
+  run: dokken check --all
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+Caching reduces LLM token consumption by 80-95% for unchanged code.
+
+**See [examples/dokken-drift-check.yml](examples/dokken-drift-check.yml) for a complete workflow with setup instructions, auto-fix options, and multi-platform support.**
 
 ## Features
 
@@ -420,24 +301,8 @@ A: Adjust criteria in `DRIFT_CHECK_PROMPT` in `src/llm/prompts.py`
 **Q: How to skip questionnaire?**
 A: Press `Ctrl+C` on first question
 
-**Q: Exclude test files from documentation?**
-A: Add pattern to `.dokken.toml`:
-
-```toml
-[exclusions]
-files = ["*_test.py", "test_*.py"]
-```
-
-**Q: How to use custom prompts?**
-A: Add to `.dokken.toml`:
-
-```toml
-[custom_prompts]
-global_prompt = "Use British spelling throughout."
-```
-
-**Q: How to check multiple modules at once?**
-A: Configure modules in `.dokken.toml` and run `dokken check --all`
+**Q: Configuration questions (exclusions, custom prompts, multi-module setup)?**
+A: See [examples/.dokken.toml](examples/.dokken.toml) for comprehensive configuration examples
 
 ## License
 

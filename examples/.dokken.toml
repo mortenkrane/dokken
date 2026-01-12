@@ -1,0 +1,166 @@
+# Complete Dokken Configuration Example
+# This file demonstrates all available configuration options for Dokken.
+# Place this file at your repository root as .dokken.toml
+
+# ==============================================================================
+# MODULES CONFIGURATION
+# ==============================================================================
+# List of modules to check with 'dokken check --all'
+# Paths are relative to repository root
+modules = [
+    "src/auth",
+    "src/api",
+    "src/database",
+    "src/utils"
+]
+
+# ==============================================================================
+# FILE TYPES CONFIGURATION
+# ==============================================================================
+# Which file extensions to analyze for documentation
+# Default: [".py"]
+# Module-level file_types override (not extend) repo-level file_types
+file_types = [".py"]
+
+# For JavaScript/TypeScript projects:
+# file_types = [".js", ".ts", ".jsx", ".tsx"]
+
+# For multi-language projects:
+# file_types = [".py", ".js", ".ts"]
+
+# ==============================================================================
+# FILE DEPTH CONFIGURATION
+# ==============================================================================
+# How deep to traverse directories when analyzing code
+# - 0 = root directory only (no subdirectories)
+# - 1 = root + 1 level deep
+# - 2 = root + 2 levels deep
+# - -1 = infinite recursion (all subdirectories)
+# - null/omit = use doc type defaults (module=0, project=1, style-guide=-1)
+file_depth = 2
+
+# ==============================================================================
+# EXCLUSIONS CONFIGURATION
+# ==============================================================================
+[exclusions]
+# Files to exclude from documentation (glob patterns supported)
+# Module-level exclusions extend (not replace) repo-level exclusions
+files = [
+    # Test files
+    "*_test.py",
+    "test_*.py",
+    "*.spec.js",
+    "*.test.js",
+
+    # Private/internal code
+    "_private_*",
+    "_internal_*",
+
+    # Boilerplate
+    "__init__.py",
+    "conftest.py",
+
+    # Experimental/temporary
+    "experimental_*",
+    "temp_*",
+
+    # Build artifacts
+    "*.min.js",
+    "*.d.ts"
+]
+
+# ==============================================================================
+# CUSTOM PROMPTS CONFIGURATION
+# ==============================================================================
+[custom_prompts]
+# Inject preferences and instructions into LLM documentation generation
+# Max 5,000 characters per field
+# Module-level custom_prompts extend/override repo-level custom_prompts
+
+# Global prompt - applied to all documentation types
+global_prompt = """
+Use British spelling throughout.
+Prefer active voice and present tense.
+Keep sentences concise (under 20 words when possible).
+"""
+
+# Module-level documentation prompts (src/module/README.md)
+module_readme = """
+Focus on architectural patterns and design decisions.
+Include clear boundaries and responsibilities.
+Explain why this module exists and what problems it solves.
+"""
+
+# Project README prompts (README.md at repo root)
+project_readme = """
+Include a quick-start guide for new developers.
+Highlight key features and use cases.
+Keep installation instructions up-to-date.
+"""
+
+# Style guide prompts (docs/style-guide.md)
+style_guide = """
+Reference specific files as examples of good patterns.
+Include code snippets demonstrating conventions.
+Explain the 'why' behind each convention.
+"""
+
+# ==============================================================================
+# CACHE CONFIGURATION
+# ==============================================================================
+[cache]
+# Drift detection cache to avoid redundant LLM API calls
+# Cache persists across runs (especially useful in CI/CD)
+
+# Path to cache file (relative to repo root)
+# Default: ".dokken-cache.json"
+file = ".dokken-cache.json"
+
+# Maximum number of cache entries
+# Uses FIFO eviction when limit reached
+# Default: 100
+max_size = 100
+
+# ==============================================================================
+# USAGE EXAMPLES
+# ==============================================================================
+# After configuring this file, you can:
+#
+# Check all configured modules:
+#   dokken check --all
+#
+# Check and auto-fix drift:
+#   dokken check --all --fix
+#
+# Check single module (ignores modules list):
+#   dokken check src/auth
+#
+# Generate module documentation:
+#   dokken generate src/auth
+#
+# Generate project README:
+#   dokken generate . --doc-type project-readme
+#
+# Generate style guide:
+#   dokken generate . --doc-type style-guide
+
+# ==============================================================================
+# MODULE-LEVEL OVERRIDES
+# ==============================================================================
+# You can also create module-specific .dokken.toml files:
+#
+# src/auth/.dokken.toml:
+#   [exclusions]
+#   files = ["legacy_*"]  # Extends repo-level exclusions
+#
+#   file_types = [".py", ".js"]  # Overrides repo-level file_types
+#
+#   [custom_prompts]
+#   module_readme = "Emphasize security considerations."
+#
+# Module-level configs:
+# - exclusions: extend repo-level exclusions
+# - file_types: override (not extend) repo-level file_types
+# - file_depth: override repo-level file_depth
+# - custom_prompts: extend/override repo-level custom_prompts
+# - modules: extend repo-level modules
