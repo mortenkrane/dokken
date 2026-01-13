@@ -4,14 +4,14 @@ from typing import TYPE_CHECKING, Literal
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
-    from src.doctypes.configs import AnyDocConfig
+    from src.doctypes.configs import DocConfig
 
 
 @dataclass
 class DocumentationContext:
     """Context information for documentation generation or drift checking."""
 
-    doc_config: "AnyDocConfig"
+    doc_config: "DocConfig"
     output_path: str
     analysis_path: str
     analysis_depth: int

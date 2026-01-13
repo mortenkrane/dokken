@@ -1,54 +1,14 @@
 """Interactive questionnaire for capturing human intent in documentation."""
 
-from typing import TypeVar, overload
-
 import questionary
 from pydantic import BaseModel
 from rich.console import Console
 
 from src.doctypes import DOC_CONFIGS, DocType
-from src.records import ModuleIntent, ProjectIntent, StyleGuideIntent
 
 console = Console()
 
-# Type variable for generic intent models
-IntentModelT = TypeVar("IntentModelT", bound=BaseModel)
 
-
-# Overloads for specific intent types
-@overload
-def ask_human_intent(
-    *,
-    intent_model: type[ModuleIntent],
-    questions: list[dict[str, str]] | None = None,
-) -> ModuleIntent | None: ...
-
-
-@overload
-def ask_human_intent(
-    *,
-    intent_model: type[ProjectIntent],
-    questions: list[dict[str, str]] | None = None,
-) -> ProjectIntent | None: ...
-
-
-@overload
-def ask_human_intent(
-    *,
-    intent_model: type[StyleGuideIntent],
-    questions: list[dict[str, str]] | None = None,
-) -> StyleGuideIntent | None: ...
-
-
-@overload
-def ask_human_intent(
-    *,
-    intent_model: type[IntentModelT],
-    questions: list[dict[str, str]] | None = None,
-) -> IntentModelT | None: ...
-
-
-# Actual implementation
 def ask_human_intent(
     *,
     intent_model: type[BaseModel],

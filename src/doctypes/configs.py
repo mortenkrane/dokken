@@ -6,10 +6,14 @@ keeping generation config separate from path resolution logic.
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
+from src.constants import (
+    DEFAULT_DEPTH_MODULE,
+    DEFAULT_DEPTH_PROJECT,
+    DEFAULT_DEPTH_STYLE_GUIDE,
+)
 from src.doctypes.types import DocType
 from src.llm import prompts
 from src.output import formatters
@@ -22,44 +26,26 @@ from src.records import (
     StyleGuideIntent,
 )
 
-# Type variables for generic DocConfig class
-IntentT = TypeVar("IntentT", bound=BaseModel)
-ModelT = TypeVar("ModelT", bound=BaseModel)
-
 
 @dataclass
-class DocConfig(Generic[IntentT, ModelT]):
+class DocConfig:
     """Configuration for documentation generation (NOT path resolution).
 
-    This class uses generics to provide type safety across different doc types.
-    Each doc type (MODULE_README, PROJECT_README, STYLE_GUIDE) has its own
-    intent and output models, and this generic class ensures they stay paired.
-
-    Note: Type inference creates union types (e.g., ModuleIntent | ProjectIntent)
-    rather than specific types. This is by design - the registry holds multiple
-    doc types, so accessing it returns a union of all possible variants.
+    This class contains all the configuration needed for generating documentation
+    for a specific doc type (MODULE_README, PROJECT_README, STYLE_GUIDE).
     """
 
-    model: type[ModelT]  # Pydantic model for structured output
+    model: type[BaseModel]  # Pydantic model for structured output
     prompt: str  # Prompt template
     formatter: Callable[..., str]  # Formatter function (keyword-only args)
-    intent_model: type[IntentT]  # Intent model for human-in-the-loop
+    intent_model: type[BaseModel]  # Intent model for human-in-the-loop
     intent_questions: list[dict[str, str]]  # Questions for intent capture
     default_depth: int  # Default code analysis depth
     analyze_entire_repo: bool  # Whether to analyze entire repo vs module
 
 
-# Type alias representing all possible DocConfig variants in the registry.
-# Used for type hints when accessing DOC_CONFIGS - inferred as a union type
-# since the registry contains multiple different doc type configurations.
-AnyDocConfig = (
-    DocConfig[ModuleIntent, ModuleDocumentation]
-    | DocConfig[ProjectIntent, ProjectDocumentation]
-    | DocConfig[StyleGuideIntent, StyleGuideDocumentation]
-)
-
 # Registry mapping doc types to their configurations
-DOC_CONFIGS: dict[DocType, AnyDocConfig] = {
+DOC_CONFIGS: dict[DocType, DocConfig] = {
     DocType.MODULE_README: DocConfig(
         model=ModuleDocumentation,
         prompt=prompts.MODULE_GENERATION_PROMPT,
@@ -83,7 +69,7 @@ DOC_CONFIGS: dict[DocType, AnyDocConfig] = {
                 "question": "How does the module fit into the larger system?",
             },
         ],
-        default_depth=0,
+        default_depth=DEFAULT_DEPTH_MODULE,
         analyze_entire_repo=False,
     ),
     DocType.PROJECT_README: DocConfig(
@@ -109,7 +95,7 @@ DOC_CONFIGS: dict[DocType, AnyDocConfig] = {
                 "question": "Any special setup considerations?",
             },
         ],
-        default_depth=1,
+        default_depth=DEFAULT_DEPTH_PROJECT,
         analyze_entire_repo=True,
     ),
     DocType.STYLE_GUIDE: DocConfig(
@@ -133,7 +119,7 @@ DOC_CONFIGS: dict[DocType, AnyDocConfig] = {
                 "question": "Are there specific patterns to follow or avoid?",
             },
         ],
-        default_depth=-1,  # Full recursion
+        default_depth=DEFAULT_DEPTH_STYLE_GUIDE,
         analyze_entire_repo=True,
     ),
 }

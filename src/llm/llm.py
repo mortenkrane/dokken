@@ -12,14 +12,11 @@ from pydantic import BaseModel
 
 from src.cache import _generate_cache_key, content_based_cache
 from src.config import CustomPrompts
-from src.constants import ERROR_NO_API_KEY
+from src.constants import ERROR_NO_API_KEY, LLM_TEMPERATURE
 from src.doctypes import DocType
 from src.llm.prompt_builder import build_custom_prompt_section, build_generation_prompt
 from src.llm.prompts import DRIFT_CHECK_PROMPT, INCREMENTAL_FIX_PROMPT
 from src.records import DocumentationDriftCheck, IncrementalDocumentationFix
-
-# Temperature setting for deterministic, reproducible documentation output
-TEMPERATURE = 0.0
 
 
 @dataclass
@@ -52,19 +49,19 @@ def initialize_llm() -> LLM:
         # Using Claude 3.5 Haiku for fast, cost-effective structured output
         return Anthropic(
             model="claude-3-5-haiku-20241022",
-            temperature=TEMPERATURE,
+            temperature=LLM_TEMPERATURE,
             max_tokens=8192,
         )
 
     # Check for OpenAI API key
     if os.getenv("OPENAI_API_KEY"):
         # Using GPT-4o-mini for good balance of speed, cost, and quality
-        return OpenAI(model="gpt-4o-mini", temperature=TEMPERATURE)
+        return OpenAI(model="gpt-4o-mini", temperature=LLM_TEMPERATURE)
 
     # Check for Google API key
     if os.getenv("GOOGLE_API_KEY"):
         # Using Gemini-2.5-Flash for speed, cost, and context balance
-        return GoogleGenAI(model="gemini-2.5-flash", temperature=TEMPERATURE)
+        return GoogleGenAI(model="gemini-2.5-flash", temperature=LLM_TEMPERATURE)
 
     raise ValueError(ERROR_NO_API_KEY)
 
