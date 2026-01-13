@@ -30,7 +30,12 @@ DEFAULT_DEPTH_MODULE = 0  # Module README: analyze only root level
 DEFAULT_DEPTH_PROJECT = 1  # Project README: analyze root + 1 level
 DEFAULT_DEPTH_STYLE_GUIDE = -1  # Style Guide: full recursion
 
-# Formatter section headers - Module documentation
+# Formatter section headers
+# These constants ensure consistent section naming across all generated
+# documentation and make it easy to update headers globally (e.g., for
+# internationalization or rebranding).
+
+# Module documentation sections
 SECTION_MAIN_ENTRY_POINTS = "## Main Entry Points"
 SECTION_PURPOSE_SCOPE = "## Purpose & Scope"
 SECTION_MODULE_STRUCTURE = "## Module Structure"

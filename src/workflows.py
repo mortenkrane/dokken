@@ -2,7 +2,6 @@
 
 import os
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
@@ -29,7 +28,7 @@ from src.llm import (
     initialize_llm,
 )
 from src.output import apply_incremental_fixes
-from src.records import DocumentationContext
+from src.records import DocumentationContext, WorkflowContext
 
 console = Console()
 
@@ -120,15 +119,6 @@ def prepare_documentation_context(
         analysis_path=analysis_path,
         analysis_depth=analysis_depth,
     )
-
-
-@dataclass
-class WorkflowContext:
-    """Context for documentation workflow operations."""
-
-    llm_client: LLM
-    doc_context: DocumentationContext
-    code_context: str
 
 
 def _initialize_documentation_workflow(

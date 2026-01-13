@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Literal
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
+    from llama_index.core.llms import LLM
+
     from src.doctypes.configs import DocConfig
 
 
@@ -15,6 +17,15 @@ class DocumentationContext:
     output_path: str
     analysis_path: str
     analysis_depth: int
+
+
+@dataclass
+class WorkflowContext:
+    """Context for documentation workflow operations."""
+
+    llm_client: "LLM"
+    doc_context: DocumentationContext
+    code_context: str
 
 
 class DocumentationDriftCheck(BaseModel):
