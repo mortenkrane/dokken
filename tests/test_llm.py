@@ -50,7 +50,9 @@ def test_initialize_llm_with_openai_key(mocker: MockerFixture) -> None:
 
     llm = initialize_llm()
 
-    mock_openai.assert_called_once_with(model="gpt-4o-mini", temperature=LLM_TEMPERATURE)
+    mock_openai.assert_called_once_with(
+        model="gpt-4o-mini", temperature=LLM_TEMPERATURE
+    )
     assert llm == mock_openai.return_value
 
 
