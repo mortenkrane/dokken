@@ -9,10 +9,10 @@ from pytest_mock import MockerFixture
 
 from src.cache import DRIFT_CACHE_SIZE, get_drift_cache_info, set_cache_max_size
 from src.config.models import CustomPrompts
+from src.constants import LLM_TEMPERATURE
 from src.doctypes import DocType
 from src.llm import (
     MODULE_GENERATION_PROMPT,
-    TEMPERATURE,
     GenerationConfig,
     check_drift,
     fix_doc_incrementally,
@@ -38,7 +38,7 @@ def test_initialize_llm_with_anthropic_key(mocker: MockerFixture) -> None:
     llm = initialize_llm()
 
     mock_anthropic.assert_called_once_with(
-        model="claude-3-5-haiku-20241022", temperature=TEMPERATURE, max_tokens=8192
+        model="claude-3-5-haiku-20241022", temperature=LLM_TEMPERATURE, max_tokens=8192
     )
     assert llm == mock_anthropic.return_value
 
@@ -50,7 +50,9 @@ def test_initialize_llm_with_openai_key(mocker: MockerFixture) -> None:
 
     llm = initialize_llm()
 
-    mock_openai.assert_called_once_with(model="gpt-4o-mini", temperature=TEMPERATURE)
+    mock_openai.assert_called_once_with(
+        model="gpt-4o-mini", temperature=LLM_TEMPERATURE
+    )
     assert llm == mock_openai.return_value
 
 
@@ -62,7 +64,7 @@ def test_initialize_llm_with_google_key(mocker: MockerFixture) -> None:
     llm = initialize_llm()
 
     mock_genai.assert_called_once_with(
-        model="gemini-2.5-flash", temperature=TEMPERATURE
+        model="gemini-2.5-flash", temperature=LLM_TEMPERATURE
     )
     assert llm == mock_genai.return_value
 

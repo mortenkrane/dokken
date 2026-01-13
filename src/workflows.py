@@ -28,7 +28,7 @@ from src.llm import (
     initialize_llm,
 )
 from src.output import apply_incremental_fixes
-from src.records import DocumentationContext
+from src.records import DocumentationContext, WorkflowContext
 
 console = Console()
 
@@ -126,7 +126,7 @@ def _initialize_documentation_workflow(
     target_module_path: str,
     doc_type: DocType,
     depth: int | None,
-) -> tuple[LLM, DocumentationContext, str]:
+) -> WorkflowContext:
     """
     Common setup for documentation workflows.
 
@@ -138,7 +138,7 @@ def _initialize_documentation_workflow(
         depth: Directory depth to traverse, or None to use doc type's default.
 
     Returns:
-        Tuple of (llm_client, context, code_context).
+        WorkflowContext with llm_client, doc_context, and code_context.
 
     Raises:
         SystemExit: If the target path is invalid or git root not found.
@@ -160,7 +160,11 @@ def _initialize_documentation_workflow(
             module_path=ctx.analysis_path, depth=ctx.analysis_depth
         )
 
-    return llm_client, ctx, code_context
+    return WorkflowContext(
+        llm_client=llm_client,
+        doc_context=ctx,
+        code_context=code_context,
+    )
 
 
 def check_documentation_drift(
@@ -185,22 +189,23 @@ def check_documentation_drift(
         SystemExit: If the target path is invalid.
     """
     # Initialize workflow
-    llm_client, ctx, code_context = _initialize_documentation_workflow(
+    workflow_ctx = _initialize_documentation_workflow(
         target_module_path=target_module_path,
         doc_type=doc_type,
         depth=depth,
     )
 
-    if not code_context:
+    if not workflow_ctx.code_context:
         console.print(
             "[yellow]⚠[/yellow] No code context found. No drift check needed."
         )
         return
 
     # Check for existing documentation
-    if not os.path.exists(ctx.output_path):
+    if not os.path.exists(workflow_ctx.doc_context.output_path):
         console.print(
-            f"[yellow]⚠[/yellow] No existing documentation found at {ctx.output_path}. "
+            f"[yellow]⚠[/yellow] No existing documentation found at "
+            f"{workflow_ctx.doc_context.output_path}. "
             f"Try running `dokken generate --doc-type {doc_type.value}` first."
         )
         raise DocumentationDriftError(
@@ -208,14 +213,16 @@ def check_documentation_drift(
             module_path=target_module_path,
         )
 
-    with open(ctx.output_path) as f:
+    with open(workflow_ctx.doc_context.output_path) as f:
         current_doc_content = f.read()
     console.print("[green]✓[/green] Found existing documentation\n")
 
     # 2. Check for Documentation Drift
     with console.status("[cyan]Checking for documentation drift..."):
         drift_check = check_drift(
-            llm=llm_client, context=code_context, current_doc=current_doc_content
+            llm=workflow_ctx.llm_client,
+            context=workflow_ctx.code_context,
+            current_doc=current_doc_content,
         )
 
     console.print(f"[bold]Drift Detected:[/bold] {drift_check.drift_detected}")
@@ -224,9 +231,9 @@ def check_documentation_drift(
     if drift_check.drift_detected:
         if fix:
             fix_documentation_drift(
-                llm_client=llm_client,
-                ctx=ctx,
-                code_context=code_context,
+                llm_client=workflow_ctx.llm_client,
+                ctx=workflow_ctx.doc_context,
+                code_context=workflow_ctx.code_context,
                 drift_rationale=drift_check.rationale,
                 doc_type=doc_type,
                 module_path=target_module_path,
@@ -499,20 +506,20 @@ def generate_documentation(
         ValueError: If git root not found for repo-wide doc types.
     """
     # Initialize workflow
-    llm_client, ctx, code_context = _initialize_documentation_workflow(
+    workflow_ctx = _initialize_documentation_workflow(
         target_module_path=target_module_path,
         doc_type=doc_type,
         depth=depth,
     )
 
-    if not code_context:
+    if not workflow_ctx.code_context:
         console.print("[yellow]⚠[/yellow] No code context found. Exiting.")
         return None
 
     # Check for existing documentation
     current_doc_content: str | None
-    if os.path.exists(ctx.output_path):
-        with open(ctx.output_path) as f:
+    if os.path.exists(workflow_ctx.doc_context.output_path):
+        with open(workflow_ctx.doc_context.output_path) as f:
             current_doc_content = f.read()
         console.print("[green]✓[/green] Found existing documentation")
     else:
@@ -525,7 +532,9 @@ def generate_documentation(
     )
     with console.status("[cyan]Analyzing drift..."):
         drift_check = check_drift(
-            llm=llm_client, context=code_context, current_doc=current_doc_content
+            llm=workflow_ctx.llm_client,
+            context=workflow_ctx.code_context,
+            current_doc=current_doc_content,
         )
 
     console.print(f"[bold]Drift Detected:[/bold] {drift_check.drift_detected}")
@@ -546,8 +555,8 @@ def generate_documentation(
         "[bold cyan]Step 2:[/bold cyan] Capturing human intent for documentation..."
     )
     human_intent = ask_human_intent(
-        intent_model=ctx.doc_config.intent_model,
-        questions=ctx.doc_config.intent_questions,
+        intent_model=workflow_ctx.doc_context.doc_config.intent_model,
+        questions=workflow_ctx.doc_context.doc_config.intent_questions,
     )
 
     # Build generation configuration
@@ -564,26 +573,28 @@ def generate_documentation(
     )
     with console.status("[cyan]Generating documentation..."):
         new_doc_data = generate_doc(
-            llm=llm_client,
-            context=code_context,
+            llm=workflow_ctx.llm_client,
+            context=workflow_ctx.code_context,
             config=gen_config,
-            output_model=ctx.doc_config.model,
-            prompt_template=ctx.doc_config.prompt,
+            output_model=workflow_ctx.doc_context.doc_config.model,
+            prompt_template=workflow_ctx.doc_context.doc_config.prompt,
         )
 
     # 5. Generate Final Markdown (doc-type-specific formatter)
-    final_markdown = ctx.doc_config.formatter(doc_data=new_doc_data)
+    final_markdown = workflow_ctx.doc_context.doc_config.formatter(
+        doc_data=new_doc_data
+    )
 
     # 6. Write documentation to output path
     # Ensure parent directory exists before writing
-    ensure_output_directory(ctx.output_path)
+    ensure_output_directory(workflow_ctx.doc_context.output_path)
 
-    with open(ctx.output_path, "w") as f:
+    with open(workflow_ctx.doc_context.output_path, "w") as f:
         f.write(final_markdown)
 
     console.print(
         f"\n[green]✓[/green] New documentation generated and saved to: "
-        f"[bold]{ctx.output_path}[/bold]"
+        f"[bold]{workflow_ctx.doc_context.output_path}[/bold]"
     )
 
     return final_markdown

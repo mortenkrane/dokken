@@ -7,7 +7,6 @@ This submodule provides:
 """
 
 from src.llm.llm import (
-    TEMPERATURE,
     GenerationConfig,
     check_drift,
     fix_doc_incrementally,
@@ -36,7 +35,6 @@ __all__ = [
     "PROJECT_README_GENERATION_PROMPT",
     "STYLE_GUIDE_GENERATION_PROMPT",
     # LLM operations
-    "TEMPERATURE",
     "GenerationConfig",
     # Prompt building
     "build_custom_prompt_section",
