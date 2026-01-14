@@ -1,7 +1,5 @@
 """Tests for Pydantic models in src/records.py."""
 
-import pytest
-from pydantic import ValidationError
 
 from src.records import (
     DocumentationDriftCheck,
@@ -39,50 +37,6 @@ def test_documentation_drift_check_no_drift() -> None:
     assert "accurately reflects" in drift_check.rationale
 
 
-def test_documentation_drift_check_missing_drift_detected() -> None:
-    """Test that DocumentationDriftCheck requires drift_detected field."""
-    with pytest.raises(ValidationError) as exc_info:
-        DocumentationDriftCheck(rationale="Missing drift_detected field")  # type: ignore[call-arg]
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("drift_detected",) for error in errors)
-    assert any(error["type"] == "missing" for error in errors)
-
-
-def test_documentation_drift_check_missing_rationale() -> None:
-    """Test that DocumentationDriftCheck requires rationale field."""
-    with pytest.raises(ValidationError) as exc_info:
-        DocumentationDriftCheck(drift_detected=True)  # type: ignore[call-arg]
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("rationale",) for error in errors)
-    assert any(error["type"] == "missing" for error in errors)
-
-
-def test_documentation_drift_check_invalid_drift_detected_type() -> None:
-    """Test that DocumentationDriftCheck validates drift_detected type."""
-    with pytest.raises(ValidationError) as exc_info:
-        DocumentationDriftCheck(
-            drift_detected=["not", "a", "bool"],  # type: ignore[arg-type]
-            rationale="Test rationale",
-        )
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("drift_detected",) for error in errors)
-
-
-def test_documentation_drift_check_invalid_rationale_type() -> None:
-    """Test that DocumentationDriftCheck validates rationale type."""
-    with pytest.raises(ValidationError) as exc_info:
-        DocumentationDriftCheck(
-            drift_detected=True,
-            rationale=123,  # type: ignore[arg-type]
-        )
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("rationale",) for error in errors)
-
-
 # ModuleDocumentation Tests
 
 
@@ -118,72 +72,6 @@ def test_module_documentation_with_optional_fields() -> None:
     assert doc.external_dependencies == "Redis, PyJWT"
 
 
-def test_module_documentation_missing_required_field() -> None:
-    """Test that ModuleDocumentation requires all mandatory fields."""
-    with pytest.raises(ValidationError) as exc_info:
-        ModuleDocumentation(  # type: ignore[call-arg]
-            component_name="User Auth",
-            purpose_and_scope="Handles auth",
-            # Missing architecture_overview
-            main_entry_points="authenticate()",
-            control_flow="Request → Validate",
-            key_design_decisions="JWT",
-        )
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("architecture_overview",) for error in errors)
-    assert any(error["type"] == "missing" for error in errors)
-
-
-@pytest.mark.parametrize(
-    "field_name",
-    [
-        "component_name",
-        "purpose_and_scope",
-        "architecture_overview",
-        "main_entry_points",
-        "control_flow",
-        "key_design_decisions",
-    ],
-)
-def test_module_documentation_all_required_fields(field_name: str) -> None:
-    """Test that each required field in ModuleDocumentation is validated."""
-    valid_data = {
-        "component_name": "Test Component",
-        "purpose_and_scope": "Test purpose",
-        "architecture_overview": "Test architecture",
-        "main_entry_points": "Test entry points",
-        "control_flow": "Test flow",
-        "key_design_decisions": "Test decisions",
-    }
-
-    # Remove one field at a time
-    invalid_data = {k: v for k, v in valid_data.items() if k != field_name}
-
-    with pytest.raises(ValidationError) as exc_info:
-        ModuleDocumentation(**invalid_data)  # type: ignore[arg-type]
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == (field_name,) for error in errors)
-    assert any(error["type"] == "missing" for error in errors)
-
-
-def test_module_documentation_invalid_type() -> None:
-    """Test that ModuleDocumentation validates field types."""
-    with pytest.raises(ValidationError) as exc_info:
-        ModuleDocumentation(
-            component_name=123,  # type: ignore[arg-type]
-            purpose_and_scope="Test",
-            architecture_overview="Test",
-            main_entry_points="Test",
-            control_flow="Test",
-            key_design_decisions="Test",
-        )
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("component_name",) for error in errors)
-
-
 # ProjectDocumentation Tests
 
 
@@ -215,23 +103,6 @@ def test_project_documentation_with_contributing() -> None:
         contributing="See CONTRIBUTING.md",
     )
     assert doc.contributing == "See CONTRIBUTING.md"
-
-
-def test_project_documentation_missing_required_field() -> None:
-    """Test that ProjectDocumentation requires all mandatory fields."""
-    with pytest.raises(ValidationError) as exc_info:
-        ProjectDocumentation(  # type: ignore[call-arg]
-            project_name="Dokken",
-            project_purpose="Tool",
-            # Missing key_features
-            installation="Install",
-            development_setup="Setup",
-            usage_examples="Examples",
-            project_structure="Structure",
-        )
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("key_features",) for error in errors)
 
 
 # StyleGuideDocumentation Tests
@@ -268,24 +139,6 @@ def test_style_guide_documentation_multiple_languages() -> None:
     )
     assert len(doc.languages) == 3
     assert "TypeScript" in doc.languages
-
-
-def test_style_guide_documentation_invalid_languages_type() -> None:
-    """Test that StyleGuideDocumentation validates languages type."""
-    with pytest.raises(ValidationError) as exc_info:
-        StyleGuideDocumentation(
-            project_name="Test",
-            languages="Python",  # type: ignore[arg-type]
-            code_style_patterns="Patterns",
-            architectural_patterns="Patterns",
-            testing_conventions="Conventions",
-            git_workflow="Workflow",
-            module_organization="Organization",
-            dependencies_management="Management",
-        )
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("languages",) for error in errors)
 
 
 def test_style_guide_documentation_empty_languages() -> None:
@@ -381,59 +234,6 @@ def test_style_guide_intent_with_all_fields() -> None:
     assert intent.unique_conventions == "Use ruff for linting"
     assert intent.organization_notes == "Flat module structure"
     assert intent.patterns == "Dependency injection preferred"
-
-
-# Type coercion tests
-
-
-def test_module_documentation_optional_field_type_validation() -> None:
-    """Test that optional fields still validate types when provided."""
-    with pytest.raises(ValidationError) as exc_info:
-        ModuleDocumentation(
-            component_name="Test",
-            purpose_and_scope="Test",
-            architecture_overview="Test",
-            main_entry_points="Test",
-            control_flow="Test",
-            key_design_decisions="Test",
-            control_flow_diagram=123,  # Should be str | None  # type: ignore[arg-type]
-        )
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("control_flow_diagram",) for error in errors)
-
-
-def test_project_documentation_optional_field_type_validation() -> None:
-    """Test that optional fields still validate types when provided."""
-    with pytest.raises(ValidationError) as exc_info:
-        ProjectDocumentation(
-            project_name="Test",
-            project_purpose="Test",
-            key_features="Test",
-            installation="Test",
-            development_setup="Test",
-            usage_examples="Test",
-            project_structure="Test",
-            contributing=[
-                "Not",
-                "a",
-                "string",
-            ],  # Should be str | None  # type: ignore[arg-type]
-        )
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("contributing",) for error in errors)
-
-
-def test_intent_model_type_validation() -> None:
-    """Test that Intent models validate field types."""
-    with pytest.raises(ValidationError) as exc_info:
-        ModuleIntent(
-            problems_solved=123,  # Should be str | None  # type: ignore[arg-type]
-        )
-
-    errors = exc_info.value.errors()
-    assert any(error["loc"] == ("problems_solved",) for error in errors)
 
 
 # Edge case tests

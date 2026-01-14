@@ -150,17 +150,15 @@ def test_initialize_llm_with_various_key_formats(
 # --- Tests for check_drift() ---
 
 
-def test_check_drift_detects_drift_when_functions_removed(
+def test_check_drift_calls_llm_with_correct_parameters(
     mocker: MockerFixture,
     mock_llm_client: LLM,
 ) -> None:
-    """Test check_drift detects drift when documented functions are removed."""
+    """Test check_drift calls LLM program with correct parameters."""
     # Mock the LLM program to return drift detected
     drift_result = DocumentationDriftCheck(
         drift_detected=True,
-        rationale=(
-            "Function 'create_session()' is documented but no longer exists in code."
-        ),
+        rationale="Drift detected",
     )
 
     mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
@@ -168,75 +166,23 @@ def test_check_drift_detects_drift_when_functions_removed(
     mock_program.return_value = drift_result
     mock_program_class.from_defaults.return_value = mock_program
 
-    # Given: Code without create_session function
+    # Given: Code and documentation
     code = "def authenticate_user(): pass"
-    # And: Documentation that mentions create_session
     doc = "## Functions\n- create_session() - Creates user sessions"
 
     # When: Checking drift
     result = check_drift(llm=mock_llm_client, context=code, current_doc=doc)
 
-    # Then: Drift should be detected
-    assert result.drift_detected is True
-    assert "create_session()" in result.rationale
+    # Then: Should call LLM program with correct parameters
+    mock_program.assert_called_once()
+    call_kwargs = mock_program.call_args.kwargs
+    assert "context" in call_kwargs
+    assert "current_doc" in call_kwargs
+    assert call_kwargs["context"] == code
+    assert call_kwargs["current_doc"] == doc
 
-
-def test_check_drift_no_drift_when_code_matches_docs(
-    mocker: MockerFixture,
-    mock_llm_client: LLM,
-) -> None:
-    """Test check_drift returns no drift when code matches documentation."""
-    # Mock the LLM program to return no drift
-    no_drift_result = DocumentationDriftCheck(
-        drift_detected=False, rationale="Documentation is up-to-date."
-    )
-
-    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.return_value = no_drift_result
-    mock_program_class.from_defaults.return_value = mock_program
-
-    # Given: Code and documentation that match
-    code = "def process_payment(): pass"
-    doc = "## Functions\n- process_payment() - Processes payments"
-
-    # When: Checking drift
-    result = check_drift(llm=mock_llm_client, context=code, current_doc=doc)
-
-    # Then: No drift should be detected
-    assert result.drift_detected is False
-    assert "up-to-date" in result.rationale
-
-
-def test_check_drift_detects_new_functions_added(
-    mocker: MockerFixture,
-    mock_llm_client: LLM,
-) -> None:
-    """Test check_drift detects when new functions are added to code."""
-    # Mock the LLM program to return drift detected
-    drift_result = DocumentationDriftCheck(
-        drift_detected=True,
-        rationale=(
-            "New function 'generate_token()' exists in code but is not documented."
-        ),
-    )
-
-    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.return_value = drift_result
-    mock_program_class.from_defaults.return_value = mock_program
-
-    # Given: Code with new function
-    code = "def authenticate_user(): pass\ndef generate_token(): pass"
-    # And: Documentation without generate_token
-    doc = "## Functions\n- authenticate_user() - Authenticates users"
-
-    # When: Checking drift
-    result = check_drift(llm=mock_llm_client, context=code, current_doc=doc)
-
-    # Then: Drift should be detected
-    assert result.drift_detected is True
-    assert "generate_token()" in result.rationale
+    # And: Should return the LLM result
+    assert result == drift_result
 
 
 # --- Tests for check_drift with caching ---
