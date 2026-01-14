@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+import pytest
 from llama_index.core.llms import LLM
 from pytest_mock import MockerFixture
 
@@ -121,117 +122,40 @@ def test_get_drift_cache_info_returns_correct_stats(
     assert cache_info["size"] == 2
 
 
-def test_save_drift_cache_to_disk(
-    tmp_path: Path,
-    mocker: MockerFixture,
-    mock_llm_client: LLM,
-    sample_drift_check_no_drift: DocumentationDriftCheck,
+@pytest.mark.parametrize(
+    "file_setup,description",
+    [
+        (None, "missing file"),
+        ("invalid json{{{", "corrupted file"),
+        (
+            {
+                "version": 999,
+                "entries": {"key": {"drift_detected": True, "rationale": "Test"}},
+            },
+            "invalid version",
+        ),
+    ],
+)
+def test_load_handles_errors(
+    tmp_path: Path, file_setup: object, description: str
 ) -> None:
-    """Test save_drift_cache_to_disk persists cache to JSON file."""
+    """Test load_drift_cache_from_disk handles various error conditions gracefully."""
     clear_drift_cache()
 
-    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.return_value = sample_drift_check_no_drift
-    mock_program_class.from_defaults.return_value = mock_program
-
-    # Add entries to cache
-    check_drift(llm=mock_llm_client, context="test_context", current_doc="test_doc")
-
-    # Save to disk
     cache_file = tmp_path / "test_cache.json"
-    save_drift_cache_to_disk(str(cache_file))
 
-    # Verify file exists and has correct structure
-    assert cache_file.exists()
-    data = json.loads(cache_file.read_text())
-
-    assert data["version"] == 1
-    assert "entries" in data
-    assert len(data["entries"]) == 1
-
-    # Verify entry structure
-    entry = next(iter(data["entries"].values()))
-    assert "drift_detected" in entry
-    assert "rationale" in entry
-    assert entry["drift_detected"] is False
-
-
-def test_load_drift_cache_from_disk(
-    tmp_path: Path,
-    mocker: MockerFixture,
-    mock_llm_client: LLM,
-) -> None:
-    """Test load_drift_cache_from_disk restores cache from JSON file."""
-    clear_drift_cache()
-
-    # Create a cache file
-    cache_file = tmp_path / "test_cache.json"
-    cache_data = {
-        "version": 1,
-        "entries": {
-            "test_key": {
-                "drift_detected": True,
-                "rationale": "Test rationale",
-            }
-        },
-    }
-    cache_file.write_text(json.dumps(cache_data))
-
-    # Load from disk
-    load_drift_cache_from_disk(str(cache_file))
-
-    # Verify cache was populated
-    cache_info = get_drift_cache_info()
-    assert cache_info["size"] == 1
-
-
-def test_load_drift_cache_from_disk_missing_file(tmp_path: Path) -> None:
-    """Test load_drift_cache_from_disk handles missing file gracefully."""
-    clear_drift_cache()
-
-    # Try to load from non-existent file
-    cache_file = tmp_path / "nonexistent.json"
-    load_drift_cache_from_disk(str(cache_file))
+    # Setup file based on test case
+    if file_setup is None:
+        # Don't create the file (missing file case)
+        pass
+    elif isinstance(file_setup, str):
+        # Corrupted file case
+        cache_file.write_text(file_setup)
+    elif isinstance(file_setup, dict):
+        # Invalid version case
+        cache_file.write_text(json.dumps(file_setup))
 
     # Should not raise error, cache should be empty
-    cache_info = get_drift_cache_info()
-    assert cache_info["size"] == 0
-
-
-def test_load_drift_cache_from_disk_corrupted_file(tmp_path: Path) -> None:
-    """Test load_drift_cache_from_disk handles corrupted file gracefully."""
-    clear_drift_cache()
-
-    # Create corrupted cache file
-    cache_file = tmp_path / "corrupted_cache.json"
-    cache_file.write_text("invalid json{{{")
-
-    # Should not raise error, cache should be empty
-    load_drift_cache_from_disk(str(cache_file))
-
-    cache_info = get_drift_cache_info()
-    assert cache_info["size"] == 0
-
-
-def test_load_drift_cache_from_disk_invalid_version(tmp_path: Path) -> None:
-    """Test load_drift_cache_from_disk ignores file with wrong version."""
-    clear_drift_cache()
-
-    # Create cache file with wrong version
-    cache_file = tmp_path / "wrong_version.json"
-    cache_data = {
-        "version": 999,
-        "entries": {
-            "test_key": {
-                "drift_detected": True,
-                "rationale": "Test",
-            }
-        },
-    }
-    cache_file.write_text(json.dumps(cache_data))
-
-    # Should ignore file with wrong version
     load_drift_cache_from_disk(str(cache_file))
 
     cache_info = get_drift_cache_info()

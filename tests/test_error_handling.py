@@ -170,41 +170,21 @@ def test_partial_failure_multi_module_with_missing_readme(
 # --- Tests for Disk I/O Errors During Documentation Writing ---
 
 
-def test_write_permission_errors(mocker: MockerFixture, tmp_path: Path) -> None:
-    """Test generate_documentation handles write permission errors correctly."""
-    module_dir = tmp_path / "module"
-    module_dir.mkdir()
-
-    mocker.patch("src.workflows.console")
-    mocker.patch("src.workflows.initialize_llm")
-    mocker.patch("src.workflows.get_module_context", return_value="code context")
-
-    mock_drift = DocumentationDriftCheck(drift_detected=True, rationale="No docs")
-    mocker.patch("src.workflows.check_drift", return_value=mock_drift)
-    mocker.patch("src.workflows.ask_human_intent", return_value=None)
-
-    mock_doc = ModuleDocumentation(
-        component_name="Test",
-        purpose_and_scope="Test purpose",
-        architecture_overview="Test architecture",
-        main_entry_points="Test entry points",
-        control_flow="Test control flow",
-        key_design_decisions="Test decisions",
-        external_dependencies="None",
-    )
-    mocker.patch("src.workflows.generate_doc", return_value=mock_doc)
-
-    # Mock file write to fail with permission error
-    mocker.patch("builtins.open", side_effect=PermissionError("Permission denied"))
-
-    # When: Attempting to write documentation
-    # Then: Should propagate permission error
-    with pytest.raises(PermissionError, match="Permission denied"):
-        generate_documentation(target_module_path=str(module_dir))
-
-
-def test_disk_full_error_during_write(mocker: MockerFixture, tmp_path: Path) -> None:
-    """Test generate_documentation handles disk full errors correctly."""
+@pytest.mark.parametrize(
+    "error_type,error_msg",
+    [
+        (PermissionError, "Permission denied"),
+        (OSError, "No space left on device"),
+        (OSError, "Interrupted system call"),
+    ],
+)
+def test_file_write_errors_propagate(
+    mocker: MockerFixture,
+    tmp_path: Path,
+    error_type: type[BaseException],
+    error_msg: str,
+) -> None:
+    """Test that file I/O errors during write propagate correctly."""
     module_dir = tmp_path / "module"
     module_dir.mkdir()
 
@@ -227,12 +207,12 @@ def test_disk_full_error_during_write(mocker: MockerFixture, tmp_path: Path) -> 
     )
     mocker.patch("src.workflows.generate_doc", return_value=mock_doc)
 
-    # Mock disk full error (ENOSPC error code 28)
-    mocker.patch("builtins.open", side_effect=OSError(28, "No space left on device"))
+    # Mock file write to fail with specified error
+    mocker.patch("builtins.open", side_effect=error_type(error_msg))
 
     # When: Attempting to write documentation
-    # Then: Should propagate OSError
-    with pytest.raises(OSError, match="No space left on device"):
+    # Then: Should propagate the error
+    with pytest.raises(error_type, match=error_msg):
         generate_documentation(target_module_path=str(module_dir))
 
 
@@ -264,39 +244,6 @@ def test_directory_creation_permission_error() -> None:
     except PermissionError as e:
         # Expected behavior - PermissionError is raised
         assert "Cannot create" in str(e)
-
-
-def test_file_write_interrupted_error(mocker: MockerFixture, tmp_path: Path) -> None:
-    """Test documentation write handles interrupted I/O errors."""
-    module_dir = tmp_path / "module"
-    module_dir.mkdir()
-
-    mocker.patch("src.workflows.console")
-    mocker.patch("src.workflows.initialize_llm")
-    mocker.patch("src.workflows.get_module_context", return_value="code")
-
-    mock_drift = DocumentationDriftCheck(drift_detected=True, rationale="No docs")
-    mocker.patch("src.workflows.check_drift", return_value=mock_drift)
-    mocker.patch("src.workflows.ask_human_intent", return_value=None)
-
-    mock_doc = ModuleDocumentation(
-        component_name="Test",
-        purpose_and_scope="Test",
-        architecture_overview="Test",
-        main_entry_points="Test",
-        control_flow="Test",
-        key_design_decisions="Test",
-        external_dependencies="None",
-    )
-    mocker.patch("src.workflows.generate_doc", return_value=mock_doc)
-
-    # Mock interrupted system call error (EINTR)
-    mocker.patch("builtins.open", side_effect=OSError(4, "Interrupted system call"))
-
-    # When: Write is interrupted
-    # Then: Should propagate the error
-    with pytest.raises(OSError, match="Interrupted system call"):
-        generate_documentation(target_module_path=str(module_dir))
 
 
 # --- Tests for Cache Corruption Recovery ---
