@@ -33,10 +33,10 @@ This document tracks the test suite simplification effort to reduce maintenance 
 **Changes made:**
 
 1. ✅ Consolidated `test_config.py` using parameterization (~115 lines saved)
-2. ✅ Consolidated `test_formatters.py` field inclusion tests (~129 lines saved)
-3. ✅ Removed Click framework tests from `test_main.py` (~50 lines saved)
-4. ✅ Consolidated `test_error_handling.py` error propagation tests (~90 lines saved)
-5. ✅ Consolidated `test_cache.py` disk persistence tests (~80 lines saved)
+1. ✅ Consolidated `test_formatters.py` field inclusion tests (~129 lines saved)
+1. ✅ Removed Click framework tests from `test_main.py` (~50 lines saved)
+1. ✅ Consolidated `test_error_handling.py` error propagation tests (~90 lines saved)
+1. ✅ Consolidated `test_cache.py` disk persistence tests (~80 lines saved)
 
 **Total savings:** ~464 lines removed
 
