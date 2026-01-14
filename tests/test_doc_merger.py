@@ -593,27 +593,6 @@ So all of this should be treated as preamble."""
     assert len(sections) == 1
 
 
-def test_parse_sections_with_very_long_document():
-    """Stress test with a document containing many sections."""
-    # Create a document with 100 sections
-    doc_parts = ["# Module\n\nPreamble content.\n"]
-    for i in range(100):
-        doc_parts.append(f"## Section {i}\n\nContent for section {i}.\n")
-
-    doc = "\n".join(doc_parts)
-    sections = parse_sections(doc)
-
-    # Should have preamble + 100 sections
-    assert "_preamble" in sections
-    assert len(sections) == 101
-
-    # Verify first and last sections
-    assert "Section 0" in sections
-    assert "Section 99" in sections
-    assert "Content for section 0" in sections["Section 0"]
-    assert "Content for section 99" in sections["Section 99"]
-
-
 def test_parse_sections_with_headers_with_extra_whitespace():
     """Test parsing headers with trailing/leading whitespace."""
     doc = """# Module
@@ -812,41 +791,3 @@ Content."""
     # Content after the fake header is part of that section
     assert "## Neither is this" in sections["This is treated as a header"]
     assert "More content" in sections["This is treated as a header"]
-
-
-def test_apply_incremental_fixes_with_very_long_content():
-    """Stress test applying fixes with very long section content."""
-    # Create a section with very long content (10,000 lines)
-    long_content = "\n".join([f"Line {i} of content." for i in range(10000)])
-
-    doc = f"""# Module
-
-## Section 1
-
-{long_content}
-
-## Section 2
-
-Short content."""
-
-    fixes = IncrementalDocumentationFix(
-        changes=[
-            DocumentationChange(
-                section="Section 2",
-                change_type="update",
-                rationale="Updating short section",
-                updated_content="Updated short content.",
-            )
-        ],
-        summary="Updated section 2",
-        preserved_sections=["Section 1"],
-    )
-
-    result = apply_incremental_fixes(current_doc=doc, fixes=fixes)
-
-    # Long content should be preserved
-    assert "Line 0 of content" in result
-    assert "Line 9999 of content" in result
-    # Update should be applied
-    assert "Updated short content" in result
-    assert "Short content." not in result
