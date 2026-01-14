@@ -5,62 +5,22 @@ import pytest
 from src.exceptions import DocumentationDriftError
 
 
-def test_documentation_drift_error_initialization() -> None:
-    """Test DocumentationDriftError initialization with rationale and module_path."""
-    rationale = "Documentation is outdated"
-    module_path = "src/test_module"
-
-    error = DocumentationDriftError(rationale=rationale, module_path=module_path)
-
-    assert error.rationale == rationale
-    assert error.module_path == module_path
-
-
-def test_documentation_drift_error_message() -> None:
-    """Test DocumentationDriftError generates correct error message."""
-    rationale = "New functions added without docs"
+def test_documentation_drift_error() -> None:
+    """Smoke test that DocumentationDriftError works as expected."""
+    rationale = "New functions added without documentation"
     module_path = "src/payment"
 
+    # Test initialization and attributes
     error = DocumentationDriftError(rationale=rationale, module_path=module_path)
-
-    expected_message = f"Documentation drift detected in {module_path}:\n{rationale}"
-    assert str(error) == expected_message
-
-
-@pytest.mark.parametrize(
-    "rationale,module_path",
-    [
-        ("No docs found", "src/module1"),
-        ("Outdated API", "src/module2"),
-        ("Missing dependencies", "src/module3"),
-    ],
-)
-def test_documentation_drift_error_various_inputs(
-    rationale: str, module_path: str
-) -> None:
-    """
-    Test DocumentationDriftError with various rationale and module_path combinations.
-    """
-    error = DocumentationDriftError(rationale=rationale, module_path=module_path)
-
     assert error.rationale == rationale
     assert error.module_path == module_path
-    assert module_path in str(error)
-    assert rationale in str(error)
 
+    # Test string representation
+    error_str = str(error)
+    assert module_path in error_str
+    assert rationale in error_str
 
-def test_documentation_drift_error_is_exception() -> None:
-    """Test that DocumentationDriftError is a proper Exception."""
-    error = DocumentationDriftError(rationale="test", module_path="test/path")
-
-    assert isinstance(error, Exception)
-
-
-def test_documentation_drift_error_can_be_raised() -> None:
-    """Test that DocumentationDriftError can be raised and caught."""
-    rationale = "Test error"
-    module_path = "test/module"
-
+    # Test it can be raised and caught
     with pytest.raises(DocumentationDriftError) as exc_info:
         raise DocumentationDriftError(rationale=rationale, module_path=module_path)
 

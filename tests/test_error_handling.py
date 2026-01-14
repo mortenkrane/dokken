@@ -11,7 +11,7 @@ from src.cache import load_drift_cache_from_disk, save_drift_cache_to_disk
 from src.config import DokkenConfig
 from src.exceptions import DocumentationDriftError
 from src.file_utils import ensure_output_directory
-from src.llm import check_drift, fix_doc_incrementally, generate_doc
+from src.llm import check_drift, generate_doc
 from src.records import (
     DocumentationDriftCheck,
     ModuleDocumentation,
@@ -19,97 +19,7 @@ from src.records import (
 from src.workflows import check_multiple_modules_drift, generate_documentation
 
 # --- Tests for LLM API Failures and Retries ---
-
-
-def test_llm_api_failure_handling(mocker: MockerFixture, mock_llm_client: LLM) -> None:
-    """Test that LLM API failures propagate correctly for caller to handle."""
-    # Mock LLM program to raise API error
-    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.side_effect = RuntimeError("API connection failed")
-    mock_program_class.from_defaults.return_value = mock_program
-
-    # When: Calling check_drift with API failure
-    # Then: Should propagate the error for caller to handle
-    with pytest.raises(RuntimeError, match="API connection failed"):
-        check_drift(
-            llm=mock_llm_client,
-            context="def func(): pass",
-            current_doc="# Documentation",
-        )
-
-
-def test_llm_rate_limit_error(mocker: MockerFixture, mock_llm_client: LLM) -> None:
-    """Test that LLM rate limit errors propagate correctly."""
-    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.side_effect = Exception("Rate limit exceeded. Please retry after 60s")
-    mock_program_class.from_defaults.return_value = mock_program
-
-    # When: Calling generate_doc with rate limit error
-    # Then: Should propagate the error
-    with pytest.raises(Exception, match="Rate limit exceeded"):
-        generate_doc(
-            llm=mock_llm_client,
-            context="def func(): pass",
-            output_model=ModuleDocumentation,
-            prompt_template="Generate: {context}",
-        )
-
-
-def test_llm_authentication_error(mocker: MockerFixture, mock_llm_client: LLM) -> None:
-    """Test that LLM authentication errors propagate correctly."""
-    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.side_effect = PermissionError("Invalid API key")
-    mock_program_class.from_defaults.return_value = mock_program
-
-    # When: Calling fix_doc_incrementally with auth error
-    # Then: Should propagate the error
-    with pytest.raises(PermissionError, match="Invalid API key"):
-        fix_doc_incrementally(
-            llm=mock_llm_client,
-            context="def func(): pass",
-            current_doc="# Docs",
-            drift_rationale="Drift detected",
-        )
-
-
-def test_llm_network_timeout_error(mocker: MockerFixture, mock_llm_client: LLM) -> None:
-    """Test that LLM network timeout errors propagate correctly."""
-    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.side_effect = TimeoutError("Request timed out after 30s")
-    mock_program_class.from_defaults.return_value = mock_program
-
-    # When: Calling check_drift with timeout
-    # Then: Should propagate timeout error
-    with pytest.raises(TimeoutError, match="timed out"):
-        check_drift(
-            llm=mock_llm_client,
-            context="def func(): pass",
-            current_doc="# Docs",
-        )
-
-
-def test_llm_malformed_response_error(
-    mocker: MockerFixture, mock_llm_client: LLM
-) -> None:
-    """Test that malformed LLM responses are handled correctly."""
-    mock_program_class = mocker.patch("src.llm.llm.LLMTextCompletionProgram")
-    mock_program = mocker.MagicMock()
-    mock_program.side_effect = ValueError("Failed to parse LLM response as JSON")
-    mock_program_class.from_defaults.return_value = mock_program
-
-    # When: Calling generate_doc with malformed response
-    # Then: Should propagate parsing error
-    with pytest.raises(ValueError, match="Failed to parse"):
-        generate_doc(
-            llm=mock_llm_client,
-            context="def func(): pass",
-            output_model=ModuleDocumentation,
-            prompt_template="Generate: {context}",
-        )
+# Note: Basic LLM error propagation is tested in test_llm.py
 
 
 # --- Tests for Partial Failures in Multi-Module Operations ---
