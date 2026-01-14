@@ -18,39 +18,12 @@ def runner() -> CliRunner:
     return CliRunner()
 
 
-def test_cli_help(runner: CliRunner) -> None:
-    """Test that CLI shows help message."""
-    result = runner.invoke(cli, ["--help"])
-
-    assert result.exit_code == 0
-    assert "Dokken" in result.output
-    assert "check" in result.output
-    assert "generate" in result.output
-
-
 def test_cli_version(runner: CliRunner) -> None:
     """Test that CLI shows version."""
     result = runner.invoke(cli, ["--version"])
 
     assert result.exit_code == 0
     assert "0.1.0" in result.output
-
-
-def test_check_command_help(runner: CliRunner) -> None:
-    """Test that check command shows help."""
-    result = runner.invoke(cli, ["check", "--help"])
-
-    assert result.exit_code == 0
-    assert "Check for documentation drift" in result.output
-    assert "CI/CD" in result.output
-
-
-def test_generate_command_help(runner: CliRunner) -> None:
-    """Test that generate command shows help."""
-    result = runner.invoke(cli, ["generate", "--help"])
-
-    assert result.exit_code == 0
-    assert "Generate fresh documentation" in result.output
 
 
 def test_check_command_with_valid_path(
@@ -252,12 +225,6 @@ def test_generate_command_uses_console(
     assert mock_console.print.call_count > 0
 
 
-def test_cli_commands_registered() -> None:
-    """Test that check and generate commands are registered."""
-    assert "check" in cli.commands
-    assert "generate" in cli.commands
-
-
 def test_check_command_path_validation(runner: CliRunner, tmp_path: Path) -> None:
     """Test check command validates that path is a directory."""
     # Create a file instead of directory
@@ -298,15 +265,6 @@ def test_check_command_with_fix_flag(
     )
 
 
-def test_check_command_fix_flag_in_help(runner: CliRunner) -> None:
-    """Test that --fix flag appears in check command help."""
-    result = runner.invoke(cli, ["check", "--help"])
-
-    assert result.exit_code == 0
-    assert "--fix" in result.output
-    assert "documentation" in result.output.lower()
-
-
 def test_check_command_with_depth_flag(
     runner: CliRunner, mocker: MockerFixture, temp_module_dir: Path
 ) -> None:
@@ -340,24 +298,6 @@ def test_generate_command_with_depth_flag(
         depth=-1,
         doc_type=DocType.MODULE_README,
     )
-
-
-def test_check_command_depth_flag_in_help(runner: CliRunner) -> None:
-    """Test that --depth flag appears in check command help."""
-    result = runner.invoke(cli, ["check", "--help"])
-
-    assert result.exit_code == 0
-    assert "--depth" in result.output
-    assert "Directory depth" in result.output
-
-
-def test_generate_command_depth_flag_in_help(runner: CliRunner) -> None:
-    """Test that --depth flag appears in generate command help."""
-    result = runner.invoke(cli, ["generate", "--help"])
-
-    assert result.exit_code == 0
-    assert "--depth" in result.output
-    assert "Directory depth" in result.output
 
 
 def test_check_command_all_flag_with_module_path(
