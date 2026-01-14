@@ -1,6 +1,5 @@
 """Tests for Pydantic models in src/records.py."""
 
-
 from src.records import (
     DocumentationDriftCheck,
     ModuleDocumentation,
