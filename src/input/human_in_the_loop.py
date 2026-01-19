@@ -3,6 +3,7 @@
 import questionary
 from pydantic import BaseModel
 from rich.console import Console
+from rich.table import Table
 
 from src.doctypes import DOC_CONFIGS, DocType
 
@@ -45,35 +46,159 @@ def display_question_preview(questions: list[dict[str, str]]) -> bool:
         return False
 
 
-def ask_human_intent(  # noqa: C901
-    *,
-    intent_model: type[BaseModel],
-    questions: list[dict[str, str]] | None = None,
-) -> BaseModel | None:
+def display_answer_summary(
+    responses: dict[str, str | None],
+    questions: list[dict[str, str]],
+    edited_keys: set[str],
+) -> None:
     """
-    Run an interactive questionnaire to capture human intent for documentation.
-
-    Users can skip any question by pressing Ctrl+C, or skip the entire questionnaire
-    by pressing Ctrl+C on the first question.
+    Display a formatted summary of all collected answers.
 
     Args:
-        intent_model: The Pydantic model to use for intent (e.g., ModuleIntent,
-                      ProjectIntent, StyleGuideIntent).
-        questions: List of dicts with 'key' and 'question' fields. If None, uses
-                   default module questions.
+        responses: Dictionary of question keys to answers.
+        questions: List of question configurations.
+        edited_keys: Set of question keys that have been edited.
+    """
+    table = Table(
+        title="Answer Summary",
+        show_header=True,
+        header_style="bold cyan",
+        show_lines=True,
+    )
+    table.add_column("Question", style="cyan", no_wrap=False)
+    table.add_column("Answer", style="green", no_wrap=False)
+    table.add_column("Status", style="dim", width=10)
+
+    for question_config in questions:
+        key = question_config["key"]
+        answer = responses.get(key)
+        question_text = question_config["question"]
+
+        # Determine answer display and status
+        if answer is None or answer == "":
+            answer_display = "[dim italic](skipped)[/dim italic]"
+            status = ""
+        else:
+            # Truncate long answers for display
+            answer_display = answer if len(answer) <= 100 else f"{answer[:97]}..."
+            status = "[yellow]✎ edited[/yellow]" if key in edited_keys else ""
+
+        table.add_row(question_text, answer_display, status)
+
+    console.print("\n")
+    console.print(table)
+    console.print()
+
+
+def confirm_or_edit_answers(  # noqa: C901
+    responses: dict[str, str | None],
+    questions: list[dict[str, str]],
+    edited_keys: set[str],
+) -> tuple[bool, dict[str, str | None], set[str]]:
+    """
+    Show answer summary and ask user if they want to confirm, edit, or restart.
+
+    Args:
+        responses: Dictionary of question keys to answers.
+        questions: List of question configurations.
+        edited_keys: Set of question keys that have been edited.
 
     Returns:
-        Intent model instance with user responses, or None if user skipped the
-        questionnaire.
+        Tuple of (confirmed, responses, edited_keys).
+        confirmed=True means user wants to continue with current answers.
+        If confirmed=False and responses is empty, user wants to restart.
     """
-    if questions is None:
-        # Use module questions as default (most common case)
-        questions = DOC_CONFIGS[DocType.MODULE_README].intent_questions
+    while True:
+        # Display current answers
+        display_answer_summary(responses, questions, edited_keys)
 
-    # Show question preview first
-    if not display_question_preview(questions):
-        return None
+        # Ask what to do next
+        choice = questionary.select(
+            "What would you like to do?",
+            choices=[
+                "✓ Confirm and continue",
+                "✎ Edit an answer",
+                "↻ Start over",
+                "⊗ Cancel questionnaire",
+            ],
+            instruction="(Use arrow keys)",
+        ).ask()
 
+        if choice is None or choice == "⊗ Cancel questionnaire":
+            # User pressed Ctrl+C or chose to cancel
+            # Use None to distinguish from restart which uses empty dict
+            return (False, None, None)  # type: ignore[return-value]
+
+        if choice == "✓ Confirm and continue":
+            return (True, responses, edited_keys)
+
+        if choice == "↻ Start over":
+            # Clear all responses and signal restart
+            return (False, {}, set())
+
+        if choice == "✎ Edit an answer":
+            # Let user select which question to edit
+            question_choices = [
+                f"{i + 1}. {q['question']}" for i, q in enumerate(questions)
+            ]
+            question_choices.append("← Back to summary")
+
+            selected = questionary.select(
+                "Which question do you want to edit?",
+                choices=question_choices,
+                instruction="(Use arrow keys)",
+            ).ask()
+
+            if selected is None or selected == "← Back to summary":
+                continue  # Go back to summary
+
+            # Extract question index
+            question_idx = question_choices.index(selected)
+            question_config = questions[question_idx]
+            key = question_config["key"]
+            current_answer = responses.get(key)
+
+            # Show current answer
+            console.print(
+                f"\n[bold cyan]Question:[/bold cyan] {question_config['question']}\n"
+            )
+            if current_answer:
+                console.print(f"[dim]Current answer:[/dim] {current_answer}\n")
+            else:
+                console.print("[dim]Current answer: (skipped)[/dim]\n")
+
+            # Ask for new answer
+            new_answer = questionary.text(
+                "New answer:",
+                default=current_answer or "",
+                multiline=True,
+                instruction="(Ctrl+C to cancel, Esc+Enter or Ctrl+D to submit)",
+            ).ask()
+
+            if new_answer is None:
+                # User cancelled, go back to summary
+                continue
+
+            # Update the response
+            responses[key] = new_answer.strip() if new_answer.strip() else None
+            edited_keys.add(key)
+
+            console.print("[green]✓[/green] Answer updated!\n")
+            # Loop back to show updated summary
+
+
+def _collect_answers(
+    questions: list[dict[str, str]],
+) -> dict[str, str | None] | None:
+    """
+    Collect answers to all questions in the questionnaire.
+
+    Args:
+        questions: List of question configurations.
+
+    Returns:
+        Dictionary of responses, or None if user cancelled on first question.
+    """
     console.print(
         "\n[bold cyan]Human Intent Capture[/bold cyan]\n"
         "[dim]Help us understand the intent behind the code you need to "
@@ -126,13 +251,74 @@ def ask_human_intent(  # noqa: C901
             )
             return None
 
-    # Check if user provided any responses
-    if not any(responses.values()):
-        console.print(
-            "\n[yellow]No responses provided. "
-            "Continuing without human intent.[/yellow]\n"
-        )
+    return responses
+
+
+def ask_human_intent(  # noqa: C901
+    *,
+    intent_model: type[BaseModel],
+    questions: list[dict[str, str]] | None = None,
+) -> BaseModel | None:
+    """
+    Run an interactive questionnaire to capture human intent for documentation.
+
+    Users can skip any question by pressing Ctrl+C, or skip the entire questionnaire
+    by pressing Ctrl+C on the first question. After answering all questions, users
+    can review their answers, edit them, restart, or confirm.
+
+    Args:
+        intent_model: The Pydantic model to use for intent (e.g., ModuleIntent,
+                      ProjectIntent, StyleGuideIntent).
+        questions: List of dicts with 'key' and 'question' fields. If None, uses
+                   default module questions.
+
+    Returns:
+        Intent model instance with user responses, or None if user skipped the
+        questionnaire.
+    """
+    if questions is None:
+        # Use module questions as default (most common case)
+        questions = DOC_CONFIGS[DocType.MODULE_README].intent_questions
+
+    # Show question preview first
+    if not display_question_preview(questions):
         return None
 
-    console.print("\n[green]✓[/green] Human intent captured successfully!\n")
-    return intent_model(**responses)
+    # Main loop to allow restarting
+    while True:
+        # Collect answers
+        responses = _collect_answers(questions)
+
+        # If user cancelled, return None
+        if responses is None:
+            return None
+
+        # Track which answers have been edited
+        edited_keys: set[str] = set()
+
+        # Show summary and allow editing
+        confirmed, responses, edited_keys = confirm_or_edit_answers(
+            responses, questions, edited_keys
+        )
+
+        if not confirmed:
+            # Check if user wants to restart or cancel
+            if responses is None:  # None means user cancelled
+                console.print(
+                    "\n[yellow]Questionnaire cancelled. "
+                    "Continuing without human intent.[/yellow]\n"
+                )
+                return None
+            # Empty dict (not None) means restart
+            console.print("\n[cyan]Restarting questionnaire...[/cyan]\n")
+            continue
+        # User confirmed, check if they provided any responses
+        if not any(responses.values()):
+            console.print(
+                "\n[yellow]No responses provided. "
+                "Continuing without human intent.[/yellow]\n"
+            )
+            return None
+
+        console.print("\n[green]✓[/green] Human intent captured successfully!\n")
+        return intent_model(**responses)
