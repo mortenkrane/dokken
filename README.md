@@ -147,10 +147,17 @@ dokken generate src/auth --depth 2         # Custom depth
 
 ## Interactive Questionnaire
 
+The questionnaire now includes:
+
+- **Question Preview**: See all questions upfront before starting
+- **Improved Layout**: Questions display on separate lines with clear visual formatting
+- **Multiline Support**: Press `Enter` for new lines within your answer
+
 **Keyboard shortcuts:**
 
-- `Ctrl+C` - Skip question or entire questionnaire (if first question)
-- `Meta+Enter` or `Esc+Enter` - Submit answer (supports multiline)
+- `Ctrl+C` - Skip question or entire questionnaire (at preview or first question)
+- `Esc+Enter` or `Ctrl+D` - Submit answer (most reliable across terminals)
+- `Meta+Enter` - Submit answer (may work depending on your terminal)
 - Leave blank - Skip if no relevant information
 
 ## Configuration
@@ -299,7 +306,7 @@ A: Run `uv sync --all-groups` to install dependencies
 A: Adjust criteria in `DRIFT_CHECK_PROMPT` in `src/llm/prompts.py`
 
 **Q: How to skip questionnaire?**
-A: Press `Ctrl+C` on first question
+A: Press `Ctrl+C` during the question preview or on the first question
 
 **Q: Configuration questions (exclusions, custom prompts, multi-module setup)?**
 A: See [examples/.dokken.toml](examples/.dokken.toml) for comprehensive configuration examples
