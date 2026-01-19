@@ -147,11 +147,7 @@ dokken generate src/auth --depth 2         # Custom depth
 
 ## Interactive Questionnaire
 
-The questionnaire now includes:
-
-- **Question Preview**: See all questions upfront before starting
-- **Improved Layout**: Questions display on separate lines with clear visual formatting
-- **Multiline Support**: Press `Enter` for new lines within your answer
+The questionnaire shows a preview of all questions before starting, displays questions on separate lines for readability, and supports multiline answers (press `Enter` for new lines).
 
 **Keyboard shortcuts:**
 
