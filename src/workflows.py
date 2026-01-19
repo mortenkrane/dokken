@@ -33,6 +33,22 @@ from src.records import DocumentationContext, WorkflowContext
 console = Console()
 
 
+def _print_generation_plan() -> None:
+    """Print the documentation generation workflow plan."""
+    console.print("\n[bold cyan]Documentation Generation Plan:[/bold cyan]")
+    console.print("1. [ ] Initialize LLM and analyze code")
+    console.print("2. [ ] Check for documentation drift")
+    console.print("3. [ ] Capture human intent (if drift detected)")
+    console.print("4. [ ] Generate structured documentation (if drift detected)")
+    console.print("5. [ ] Save documentation (if drift detected)")
+    console.print()
+
+
+def _mark_step_complete(step_num: int, step_name: str) -> None:
+    """Mark a generation step as complete."""
+    console.print(f"[green]✅ Step {step_num} complete:[/green] {step_name}\n")
+
+
 def _build_generation_config(
     *,
     config: DokkenConfig,
@@ -505,12 +521,16 @@ def generate_documentation(
         SystemExit: If the target path is invalid.
         ValueError: If git root not found for repo-wide doc types.
     """
-    # Initialize workflow
+    # Print the complete workflow plan
+    _print_generation_plan()
+
+    # Step 1: Initialize workflow
     workflow_ctx = _initialize_documentation_workflow(
         target_module_path=target_module_path,
         doc_type=doc_type,
         depth=depth,
     )
+    _mark_step_complete(1, "Initialize LLM and analyze code")
 
     if not workflow_ctx.code_context:
         console.print("[yellow]⚠[/yellow] No code context found. Exiting.")
@@ -526,9 +546,9 @@ def generate_documentation(
         current_doc_content = None
         console.print("[yellow]⚠[/yellow] No existing documentation found")
 
-    # 2. Step 1: Check for Documentation Drift
+    # Step 2: Check for Documentation Drift
     console.print(
-        "\n[bold cyan]Step 1:[/bold cyan] Checking for documentation drift..."
+        "[bold cyan]Starting Step 2:[/bold cyan] Checking for documentation drift..."
     )
     with console.status("[cyan]Analyzing drift..."):
         drift_check = check_drift(
@@ -538,26 +558,28 @@ def generate_documentation(
         )
 
     console.print(f"[bold]Drift Detected:[/bold] {drift_check.drift_detected}")
-    console.print(f"[bold]Rationale:[/bold] {drift_check.rationale}\n")
+    console.print(f"[bold]Rationale:[/bold] {drift_check.rationale}")
+    _mark_step_complete(2, "Check for documentation drift")
 
     if not drift_check.drift_detected and current_doc_content is not None:
         console.print(
-            "[green]✓[/green] Documentation is considered up-to-date. No new file "
-            "generated."
+            "[green]✓[/green] Documentation is up-to-date. Skipping steps 3-5."
         )
         return None
 
     # Load configuration for custom prompts
     config = load_config(module_path=target_module_path)
 
-    # 3. Step 2: Capture Human Intent (doc-type-specific questions)
+    # Step 3: Capture Human Intent (doc-type-specific questions)
     console.print(
-        "[bold cyan]Step 2:[/bold cyan] Capturing human intent for documentation..."
+        "[bold cyan]Starting Step 3:[/bold cyan] Capturing human intent for "
+        "documentation..."
     )
     human_intent = ask_human_intent(
         intent_model=workflow_ctx.doc_context.doc_config.intent_model,
         questions=workflow_ctx.doc_context.doc_config.intent_questions,
     )
+    _mark_step_complete(3, "Capture human intent")
 
     # Build generation configuration
     gen_config = _build_generation_config(
@@ -567,9 +589,10 @@ def generate_documentation(
         drift_rationale=drift_check.rationale if drift_check.drift_detected else None,
     )
 
-    # 4. Step 3: Generate New Structured Documentation (doc-type-specific)
+    # Step 4: Generate New Structured Documentation (doc-type-specific)
     console.print(
-        "[bold cyan]Step 3:[/bold cyan] Generating new structured documentation..."
+        "[bold cyan]Starting Step 4:[/bold cyan] Generating new structured "
+        "documentation..."
     )
     with console.status("[cyan]Generating documentation..."):
         new_doc_data = generate_doc(
@@ -579,13 +602,15 @@ def generate_documentation(
             output_model=workflow_ctx.doc_context.doc_config.model,
             prompt_template=workflow_ctx.doc_context.doc_config.prompt,
         )
+    _mark_step_complete(4, "Generate structured documentation")
 
-    # 5. Generate Final Markdown (doc-type-specific formatter)
+    # Step 5: Generate Final Markdown (doc-type-specific formatter)
     final_markdown = workflow_ctx.doc_context.doc_config.formatter(
         doc_data=new_doc_data
     )
 
-    # 6. Write documentation to output path
+    # Step 5: Write documentation to output path
+    console.print("[bold cyan]Starting Step 5:[/bold cyan] Saving documentation...")
     # Ensure parent directory exists before writing
     ensure_output_directory(workflow_ctx.doc_context.output_path)
 
@@ -593,8 +618,9 @@ def generate_documentation(
         f.write(final_markdown)
 
     console.print(
-        f"\n[green]✓[/green] New documentation generated and saved to: "
+        f"[green]✓[/green] Documentation saved to: "
         f"[bold]{workflow_ctx.doc_context.output_path}[/bold]"
     )
+    _mark_step_complete(5, "Save documentation")
 
     return final_markdown
