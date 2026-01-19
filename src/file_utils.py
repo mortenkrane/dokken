@@ -79,7 +79,7 @@ def ensure_output_directory(output_path: str) -> None:
     if parent_dir and not os.path.exists(parent_dir):
         try:
             os.makedirs(parent_dir, exist_ok=True)
-        except PermissionError as e:
+        except (PermissionError, OSError) as e:
             raise PermissionError(
                 ERROR_CANNOT_CREATE_DIR.format(parent_dir=parent_dir, error=e)
             ) from e

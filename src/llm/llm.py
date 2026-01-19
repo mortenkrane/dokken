@@ -11,9 +11,9 @@ from llama_index.llms.openai import OpenAI
 from pydantic import BaseModel
 
 from src.cache import _generate_cache_key, content_based_cache
-from src.config import CustomPrompts
+from src.config.models import CustomPrompts
 from src.constants import ERROR_NO_API_KEY, LLM_TEMPERATURE
-from src.doctypes import DocType
+from src.doctypes.types import DocType
 from src.llm.prompt_builder import build_custom_prompt_section, build_generation_prompt
 from src.llm.prompts import DRIFT_CHECK_PROMPT, INCREMENTAL_FIX_PROMPT
 from src.records import DocumentationDriftCheck, IncrementalDocumentationFix

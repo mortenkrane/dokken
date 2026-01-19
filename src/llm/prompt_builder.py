@@ -13,8 +13,8 @@ Separated from llm.py to maintain single responsibility:
 
 from pydantic import BaseModel
 
-from src.config import CustomPrompts
-from src.doctypes import DocType
+from src.config.models import CustomPrompts
+from src.doctypes.types import DocType
 
 
 def build_human_intent_section(
