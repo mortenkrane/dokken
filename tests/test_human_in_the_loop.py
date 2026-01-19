@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 from src.input.human_in_the_loop import (
+    _collect_answers,
     ask_human_intent,
     confirm_or_edit_answers,
     display_answer_summary,
@@ -470,3 +471,99 @@ def test_ask_human_intent_with_cancel_at_confirmation():
         result = ask_human_intent(intent_model=ModuleIntent)
 
         assert result is None
+
+
+def test_confirm_or_edit_answers_edit_skipped_answer():
+    """Test editing an answer that was previously skipped."""
+    questions = [
+        {"key": "q1", "question": "What does this do?"},
+        {"key": "q2", "question": "What are its responsibilities?"},
+    ]
+    responses = {
+        "q1": "Has answer",
+        "q2": None,  # Previously skipped
+    }
+    edited_keys: set[str] = set()
+
+    with (
+        patch("src.input.human_in_the_loop.display_answer_summary"),
+        patch("src.input.human_in_the_loop.questionary.select") as mock_select,
+        patch("src.input.human_in_the_loop.questionary.text") as mock_text,
+        patch("src.input.human_in_the_loop.console.print"),
+    ):
+        # User chooses to edit skipped question, then confirms
+        mock_select.return_value.ask.side_effect = [
+            "✎ Edit an answer",  # First menu choice
+            "2. What are its responsibilities?",  # Select second (skipped) question
+            "✓ Confirm and continue",  # Confirm after editing
+        ]
+        # New answer for the previously skipped question
+        mock_text.return_value.ask.return_value = "New responsibility"
+
+        confirmed, result_responses, result_edited = confirm_or_edit_answers(
+            responses, questions, edited_keys
+        )
+
+        assert confirmed is True
+        assert result_responses["q2"] == "New responsibility"
+        assert "q2" in result_edited
+
+
+def test_confirm_or_edit_answers_cancel_during_edit():
+    """Test cancelling (Ctrl+C) while editing an answer."""
+    questions = [
+        {"key": "q1", "question": "What does this do?"},
+    ]
+    responses = {"q1": "Original answer"}
+    edited_keys: set[str] = set()
+
+    with (
+        patch("src.input.human_in_the_loop.display_answer_summary"),
+        patch("src.input.human_in_the_loop.questionary.select") as mock_select,
+        patch("src.input.human_in_the_loop.questionary.text") as mock_text,
+        patch("src.input.human_in_the_loop.console.print"),
+    ):
+        # User chooses to edit, starts editing, then cancels, then confirms
+        mock_select.return_value.ask.side_effect = [
+            "✎ Edit an answer",  # Choose to edit
+            "1. What does this do?",  # Select question
+            "✓ Confirm and continue",  # Confirm after cancelling edit
+        ]
+        # User presses Ctrl+C while editing (returns None)
+        mock_text.return_value.ask.return_value = None
+
+        confirmed, result_responses, result_edited = confirm_or_edit_answers(
+            responses, questions, edited_keys
+        )
+
+        # Answer should remain unchanged
+        assert confirmed is True
+        assert result_responses["q1"] == "Original answer"
+        assert "q1" not in result_edited
+
+
+def test_collect_answers_skip_later_question():
+    """Test _collect_answers when user skips a later question with Ctrl+C."""
+    questions = [
+        {"key": "q1", "question": "First question?"},
+        {"key": "q2", "question": "Second question?"},
+        {"key": "q3", "question": "Third question?"},
+    ]
+
+    with (
+        patch("src.input.human_in_the_loop.questionary.text") as mock_text,
+        patch("src.input.human_in_the_loop.console.print"),
+    ):
+        # Answer first, skip second (None), answer third
+        mock_text.return_value.ask.side_effect = [
+            "First answer",
+            None,  # Skip second question
+            "Third answer",
+        ]
+
+        result = _collect_answers(questions)
+
+        assert result is not None
+        assert result["q1"] == "First answer"
+        assert result["q2"] is None  # Skipped
+        assert result["q3"] == "Third answer"
