@@ -13,7 +13,7 @@ dependencies = [
     "llama-index>=0.14.12",
     "llama-index-llms-anthropic>=0.10.5",
     "llama-index-llms-google-genai>=0.8.3",
-    "llama-index-llms-openai>=0.6.12",
+    "llama-index-llms-openai>=0.6.13",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
     "questionary>=2.1.1",
@@ -121,7 +121,7 @@ unresolved-reference = "ignore"
 
 [dependency-groups]
 dev = [
-    "hypothesis>=6.150.0",
+    "hypothesis>=6.150.2",
     "mccabe >= 0.7.0, <1",
     "mdformat>=0.7.22",
     "mdformat-gfm>=1.0.0",
@@ -130,6 +130,6 @@ dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "pytest-mock>=3.15.1",
-    "ruff>=0.14.11",
+    "ruff>=0.14.13",
 ]
 
