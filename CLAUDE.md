@@ -35,6 +35,16 @@ These checks ensure code quality and will be automatically verified by pre-commi
 
 **All commits to `main` MUST use [Conventional Commits](https://www.conventionalcommits.org/)** (e.g., `feat:`, `fix:`, `docs:`). See [docs/style-guide.md](docs/style-guide.md#git-workflow) for details
 
+## Documentation Style
+
+**Write documentation in a timeless manner:**
+
+- Describe features as they currently exist, not how they changed
+- NEVER use temporal language like "now includes", "new feature", "recently added", "updated to"
+- Documentation describes the present state of the system
+- Historical changes belong in commit messages and changelogs, not in READMEs or guides
+- Example: Write "The questionnaire shows a preview" not "The questionnaire now includes a preview"
+
 ## Key Design Patterns
 
 1. **Structured Output**: All LLM operations return validated Pydantic models
