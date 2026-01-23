@@ -52,7 +52,7 @@ jobs:
           - name: Type
             run: uvx ty check
           - name: Markdown Format
-            run: uvx mdformat --check *.md docs/ src/
+            run: uvx mdformat --check *.md docs/ src/ --exclude CHANGELOG.md
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
