@@ -20,7 +20,7 @@ Dokken is an AI-powered documentation generation and drift detection tool. Comma
 uv run ruff format
 uv run ruff check --fix
 uvx ty check
-uvx mdformat *.md docs/ src/
+uv run mdformat CLAUDE.md CONTRIBUTING.md README.md docs/ src/
 ```
 
 **Then run tests:**

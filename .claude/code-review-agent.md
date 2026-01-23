@@ -496,7 +496,7 @@ uv run pytest tests/ --cov=src --cov-report=term-missing
 **Documentation:**
 
 ```bash
-uvx mdformat *.md docs/ src/  # Format markdown
+uv run mdformat CLAUDE.md CONTRIBUTING.md README.md docs/ src/  # Format markdown
 ```
 
 ## Success Criteria

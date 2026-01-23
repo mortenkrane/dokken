@@ -217,13 +217,13 @@ def analyze_module(module_path: str) -> str:
 
 ### Decision Matrix
 
-| Scenario | Pattern | Example |
-| ----------------------------------- | -------------------------- | ------------------------------------------- |
-| CLI command fails (invalid args) | `sys.exit(1)` | User provides non-existent module path |
-| Missing required configuration | Raise `ValueError` | Missing API key in library function |
-| File not found in library function | Raise `FileNotFoundError` | Config file doesn't exist |
-| Permission denied | Raise `PermissionError` | Can't write to protected directory |
-| Skippable issue (can continue) | Print warning + safe value | No Python files in module (return "") |
+| Scenario                           | Pattern                    | Example                                |
+| ---------------------------------- | -------------------------- | -------------------------------------- |
+| CLI command fails (invalid args)   | `sys.exit(1)`              | User provides non-existent module path |
+| Missing required configuration     | Raise `ValueError`         | Missing API key in library function    |
+| File not found in library function | Raise `FileNotFoundError`  | Config file doesn't exist              |
+| Permission denied                  | Raise `PermissionError`    | Can't write to protected directory     |
+| Skippable issue (can continue)     | Print warning + safe value | No Python files in module (return "")  |
 
 ### Testing Error Handling
 
@@ -299,18 +299,18 @@ Uses [release-please](https://github.com/googleapis/release-please) for automate
 
 **Commit Types:**
 
-| Type | Version Bump | Changelog | Example |
-| ----------- | --------------------- | --------- | -------------------------------------------- |
-| `feat:` | Minor (0.1.0 → 0.2.0) | ✅ | `feat: add PDF export` |
-| `fix:` | Patch (0.1.0 → 0.1.1) | ✅ | `fix: correct drift detection logic` |
-| `docs:` | None | ✅ | `docs: update API documentation` |
-| `refactor:` | None | ✅ | `refactor: simplify code analyzer` |
-| `perf:` | None | ✅ | `perf: optimize LLM token usage` |
-| `test:` | None | ❌ | `test: add coverage for formatters` |
-| `chore:` | None | ❌ | `chore: update dependencies` |
-| `ci:` | None | ❌ | `ci: add GitHub Actions workflow` |
-| `build:` | None | ❌ | `build: configure pyproject.toml` |
-| `style:` | None | ❌ | `style: format code with ruff` |
+| Type        | Version Bump          | Changelog | Example                              |
+| ----------- | --------------------- | --------- | ------------------------------------ |
+| `feat:`     | Minor (0.1.0 → 0.2.0) | ✅        | `feat: add PDF export`               |
+| `fix:`      | Patch (0.1.0 → 0.1.1) | ✅        | `fix: correct drift detection logic` |
+| `docs:`     | None                  | ✅        | `docs: update API documentation`     |
+| `refactor:` | None                  | ✅        | `refactor: simplify code analyzer`   |
+| `perf:`     | None                  | ✅        | `perf: optimize LLM token usage`     |
+| `test:`     | None                  | ❌        | `test: add coverage for formatters`  |
+| `chore:`    | None                  | ❌        | `chore: update dependencies`         |
+| `ci:`       | None                  | ❌        | `ci: add GitHub Actions workflow`    |
+| `build:`    | None                  | ❌        | `build: configure pyproject.toml`    |
+| `style:`    | None                  | ❌        | `style: format code with ruff`       |
 
 **Breaking Changes (triggers major version 0.1.0 → 1.0.0):**
 
