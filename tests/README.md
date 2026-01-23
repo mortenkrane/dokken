@@ -629,7 +629,7 @@ def test_partial_failure_in_multi_module_check(
 uv run ruff format
 uv run ruff check --fix
 uvx ty check
-uvx mdformat CLAUDE.md CONTRIBUTING.md README.md docs/ src/
+uv run mdformat CLAUDE.md CONTRIBUTING.md README.md docs/ src/
 
 # Run tests with coverage
 uv run pytest tests/ --cov=src --cov-report=term-missing

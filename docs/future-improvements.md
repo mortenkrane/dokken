@@ -244,13 +244,13 @@ ______________________________________________________________________
 
 ## Priority Matrix
 
-| Improvement | Effort | Impact | Priority | Category |
-|-------------|--------|--------|----------|----------|
-| Preserved sections display test | Low | Low | **LOW** | Testing |
-| Python version compatibility test | Low | Low | **LOW** | Testing |
-| Resource exhaustion scenarios | Medium | Low | **LOW** | Testing |
-| Cross-platform testing | Medium | Low | **LOW** | Testing |
-| Performance benchmarking | Medium | Low | **LOW** | Testing |
-| Add runtime type validation | Low | Low | **OPTIONAL** | Type Safety |
-| Question thread safety | Low | Low | **OPTIONAL** | Performance |
-| Plugin architecture | High | Low | **FUTURE** | Architecture |
+| Improvement                       | Effort | Impact | Priority     | Category     |
+| --------------------------------- | ------ | ------ | ------------ | ------------ |
+| Preserved sections display test   | Low    | Low    | **LOW**      | Testing      |
+| Python version compatibility test | Low    | Low    | **LOW**      | Testing      |
+| Resource exhaustion scenarios     | Medium | Low    | **LOW**      | Testing      |
+| Cross-platform testing            | Medium | Low    | **LOW**      | Testing      |
+| Performance benchmarking          | Medium | Low    | **LOW**      | Testing      |
+| Add runtime type validation       | Low    | Low    | **OPTIONAL** | Type Safety  |
+| Question thread safety            | Low    | Low    | **OPTIONAL** | Performance  |
+| Plugin architecture               | High   | Low    | **FUTURE**   | Architecture |
