@@ -43,11 +43,11 @@ run = "uvx ty check"
 
 [tasks.mdformat]
 description = "Format markdown files"
-run = "uvx mdformat *.md docs/ src/"
+run = "uvx mdformat $(ls *.md 2>/dev/null | grep -v CHANGELOG.md || true) docs/ src/"
 
 [tasks.mdformat-check]
 description = "Check markdown formatting without modifying files"
-run = "uvx mdformat --check *.md docs/ src/"
+run = "uvx mdformat --check $(ls *.md 2>/dev/null | grep -v CHANGELOG.md || true) docs/ src/"
 
 [tasks.fix]
 description = "Auto-fix all formatting and linting issues"

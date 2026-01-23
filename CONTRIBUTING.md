@@ -46,7 +46,7 @@ uv run ruff format && uv run ruff check --fix
 uvx ty check
 
 # Format markdown
-uvx mdformat *.md docs/ src/
+uvx mdformat $(ls *.md 2>/dev/null | grep -v CHANGELOG.md || true) docs/ src/
 
 # Run tests with coverage
 uv run pytest tests/ --cov=src --cov-report=term-missing

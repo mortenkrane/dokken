@@ -19,7 +19,7 @@ Execute the following commands in sequence and report the results:
 # Run formatters and linters with auto-fix
 uv run ruff format
 uv run ruff check --fix
-uvx mdformat *.md docs/ src/
+uvx mdformat $(ls *.md 2>/dev/null | grep -v CHANGELOG.md || true) docs/ src/
 
 # Run type checking
 uvx ty check

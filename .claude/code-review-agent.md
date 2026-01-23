@@ -496,7 +496,7 @@ uv run pytest tests/ --cov=src --cov-report=term-missing
 **Documentation:**
 
 ```bash
-uvx mdformat *.md docs/ src/  # Format markdown
+uvx mdformat $(ls *.md 2>/dev/null | grep -v CHANGELOG.md || true) docs/ src/  # Format markdown
 ```
 
 ## Success Criteria
