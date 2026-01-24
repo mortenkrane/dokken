@@ -196,7 +196,12 @@ file_types = [".py"]           # Python (default)
 
 ```toml
 [exclusions]
+# Exclude files by pattern (matched against filenames)
 files = ["__init__.py", "*_test.py", "conftest.py"]
+
+# Exclude directories by name/pattern (prevents traversal)
+# Sensible defaults include: venv, node_modules, dist, build, __pycache__, etc.
+dirs = [".venv", "build"]  # Override defaults, or omit to use defaults
 ```
 
 **Custom Prompts:**

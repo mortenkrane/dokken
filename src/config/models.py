@@ -6,11 +6,37 @@ from src.constants import DEFAULT_CACHE_FILE, DRIFT_CACHE_SIZE
 
 
 class ExclusionConfig(BaseModel):
-    """Configuration for excluding files from documentation."""
+    """Configuration for excluding files and directories from documentation."""
 
     files: list[str] = Field(
         default_factory=list,
         description="List of file patterns to exclude (supports glob patterns)",
+    )
+    dirs: list[str] = Field(
+        default_factory=lambda: [
+            ".venv",
+            "venv",
+            ".env",
+            "env",
+            "virtualenv",
+            ".git",
+            ".svn",
+            ".hg",
+            "node_modules",
+            "dist",
+            "build",
+            ".pytest_cache",
+            ".hypothesis",
+            "__pycache__",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".tox",
+            "htmlcov",
+            "coverage_html_report",
+            ".eggs",
+            "*.egg-info",
+        ],
+        description="List of directory names/patterns to exclude from traversal",
     )
 
 

@@ -44,6 +44,7 @@ file_depth = 2
 # ==============================================================================
 [exclusions]
 # Files to exclude from documentation (glob patterns supported)
+# Patterns are matched against filenames only, not full paths
 # Module-level exclusions extend (not replace) repo-level exclusions
 files = [
     # Test files
@@ -68,6 +69,25 @@ files = [
     "*.min.js",
     "*.d.ts"
 ]
+
+# Directories to exclude from traversal (name/pattern matching)
+# Excludes these directories from being scanned for source files
+# Module-level exclusions extend (not replace) repo-level exclusions
+#
+# Sensible defaults are automatically applied for Python/JS projects:
+# - Virtual environments: .venv, venv, .env, env, virtualenv
+# - Version control: .git, .svn, .hg
+# - Node.js: node_modules
+# - Build/dist: dist, build
+# - Test/coverage caches: .pytest_cache, .hypothesis, htmlcov, coverage_html_report
+# - Python caches: __pycache__, .mypy_cache, .ruff_cache, .tox
+# - Eggs: .eggs, *.egg-info
+#
+# Uncomment to override defaults with custom list:
+# dirs = [".venv", "custom_build"]
+#
+# Or to add to defaults (in module-level config):
+# dirs = ["legacy", "deprecated"]
 
 # ==============================================================================
 # CUSTOM PROMPTS CONFIGURATION

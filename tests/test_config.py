@@ -12,6 +12,13 @@ def test_exclusion_config_defaults() -> None:
     config = ExclusionConfig()
 
     assert config.files == []
+    # dirs should have sensible defaults for Python/JS projects
+    assert isinstance(config.dirs, list)
+    assert len(config.dirs) > 0
+    # Check some common exclusions are present
+    assert ".venv" in config.dirs
+    assert "node_modules" in config.dirs
+    assert "__pycache__" in config.dirs
 
 
 def test_dokken_config_defaults() -> None:
@@ -54,13 +61,19 @@ def test_dokken_config_with_modules() -> None:
 @pytest.mark.parametrize(
     "config_toml,field_path,expected_value",
     [
-        # Exclusions
+        # Exclusions - files
         (
             '[exclusions]\nfiles = ["__init__.py", "*_test.py"]',
             "exclusions.files",
             ["__init__.py", "*_test.py"],
         ),
         ("[exclusions]", "exclusions.files", []),
+        # Exclusions - dirs
+        (
+            '[exclusions]\ndirs = [".venv", "build"]',
+            "exclusions.dirs",
+            [".venv", "build"],
+        ),
         # Custom prompts - global
         (
             '[custom_prompts]\nglobal_prompt = "Always use British spelling."',
@@ -326,6 +339,69 @@ files = ["__init__.py"]
     # Check no duplicates
     assert config.exclusions.files.count("__init__.py") == 1
     assert set(config.exclusions.files) == {"__init__.py", "conftest.py"}
+
+
+def test_load_config_merge_directory_exclusions(tmp_path: Path) -> None:
+    """Test directory exclusions are merged from repo and module configs."""
+    # Create repo structure
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / ".git").mkdir()
+
+    module_dir = repo_root / "src" / "module"
+    module_dir.mkdir(parents=True)
+
+    # Create repo-level config with directory exclusions
+    repo_config = """
+[exclusions]
+dirs = [".venv", "node_modules"]
+"""
+    (repo_root / ".dokken.toml").write_text(repo_config)
+
+    # Create module-level config with additional directory exclusions
+    module_config = """
+[exclusions]
+dirs = ["build", "dist"]
+"""
+    (module_dir / ".dokken.toml").write_text(module_config)
+
+    config = load_config(module_path=str(module_dir))
+
+    # Both configs should be merged (no duplicates)
+    assert ".venv" in config.exclusions.dirs
+    assert "node_modules" in config.exclusions.dirs
+    assert "build" in config.exclusions.dirs
+    assert "dist" in config.exclusions.dirs
+
+
+def test_load_config_directory_exclusions_no_duplicates(tmp_path: Path) -> None:
+    """Test that merged directory exclusion configs don't create duplicates."""
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / ".git").mkdir()
+
+    module_dir = repo_root / "src" / "module"
+    module_dir.mkdir(parents=True)
+
+    # Both configs have overlapping directory exclusions
+    repo_config = """
+[exclusions]
+dirs = [".venv", "build"]
+"""
+    (repo_root / ".dokken.toml").write_text(repo_config)
+
+    module_config = """
+[exclusions]
+dirs = [".venv", "dist"]
+"""
+    (module_dir / ".dokken.toml").write_text(module_config)
+
+    config = load_config(module_path=str(module_dir))
+
+    # Check no duplicates
+    assert config.exclusions.dirs.count(".venv") == 1
+    assert "build" in config.exclusions.dirs
+    assert "dist" in config.exclusions.dirs
 
 
 def test_load_config_merge_custom_prompts(tmp_path: Path) -> None:

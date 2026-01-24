@@ -261,7 +261,9 @@ def test_find_python_files_depth_zero(tmp_path: Path) -> None:
     subdir.mkdir()
     (subdir / "nested.py").write_text("nested")
 
-    files = _find_source_files(module_path=str(module_dir), depth=0, file_types=[".py"])
+    files = _find_source_files(
+        module_path=str(module_dir), depth=0, file_types=[".py"], excluded_dirs=[]
+    )
 
     assert len(files) == 1
     assert any("root.py" in f for f in files)
@@ -284,7 +286,9 @@ def test_find_python_files_depth_one(tmp_path: Path) -> None:
     subsubdir.mkdir()
     (subsubdir / "level2.py").write_text("level2")
 
-    files = _find_source_files(module_path=str(module_dir), depth=1, file_types=[".py"])
+    files = _find_source_files(
+        module_path=str(module_dir), depth=1, file_types=[".py"], excluded_dirs=[]
+    )
 
     assert len(files) == 2
     assert any("root.py" in f for f in files)
@@ -308,7 +312,7 @@ def test_find_python_files_depth_infinite(tmp_path: Path) -> None:
     (subsubdir / "level2.py").write_text("level2")
 
     files = _find_source_files(
-        module_path=str(module_dir), depth=-1, file_types=[".py"]
+        module_path=str(module_dir), depth=-1, file_types=[".py"], excluded_dirs=[]
     )
 
     assert len(files) == 3
@@ -338,6 +342,215 @@ def test_get_module_context_with_depth(tmp_path: Path, mocker: MockerFixture) ->
     context = get_module_context(module_path=str(module_dir), depth=-1)
     assert "root content" in context
     assert "nested content" in context
+
+
+# Tests for directory exclusion functionality
+
+
+def test_find_source_files_excludes_single_directory(tmp_path: Path) -> None:
+    """Test _find_source_files excludes specified directories."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "root.py").write_text("root")
+
+    # Create directories to exclude
+    venv_dir = module_dir / ".venv"
+    venv_dir.mkdir()
+    (venv_dir / "lib.py").write_text("venv lib")
+
+    # Create directory to include
+    src_dir = module_dir / "src"
+    src_dir.mkdir()
+    (src_dir / "main.py").write_text("main")
+
+    files = _find_source_files(
+        module_path=str(module_dir),
+        depth=-1,
+        file_types=[".py"],
+        excluded_dirs=[".venv"],
+    )
+
+    assert len(files) == 2
+    assert any("root.py" in f for f in files)
+    assert any("main.py" in f for f in files)
+    assert not any("lib.py" in f for f in files)
+
+
+def test_find_source_files_excludes_multiple_directories(tmp_path: Path) -> None:
+    """Test _find_source_files excludes multiple directories."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "root.py").write_text("root")
+
+    # Create excluded directories
+    for dirname in [".venv", "node_modules", "build", "__pycache__"]:
+        dir_path = module_dir / dirname
+        dir_path.mkdir()
+        (dir_path / "file.py").write_text(f"{dirname} file")
+
+    # Create included directory
+    src_dir = module_dir / "src"
+    src_dir.mkdir()
+    (src_dir / "main.py").write_text("main")
+
+    files = _find_source_files(
+        module_path=str(module_dir),
+        depth=-1,
+        file_types=[".py"],
+        excluded_dirs=[".venv", "node_modules", "build", "__pycache__"],
+    )
+
+    assert len(files) == 2
+    assert any("root.py" in f for f in files)
+    assert any("main.py" in f for f in files)
+    # None of the excluded directories should be present
+    for dirname in [".venv", "node_modules", "build", "__pycache__"]:
+        assert not any(dirname in f for f in files)
+
+
+def test_find_source_files_excludes_nested_directories(tmp_path: Path) -> None:
+    """Test _find_source_files excludes directories at any depth."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+
+    # Create nested structure with excluded dirs at different levels
+    src = module_dir / "src"
+    src.mkdir()
+    (src / "main.py").write_text("main")
+
+    # Excluded dir at level 1
+    cache1 = module_dir / "__pycache__"
+    cache1.mkdir()
+    (cache1 / "compiled.py").write_text("compiled1")
+
+    # Excluded dir at level 2
+    cache2 = src / "__pycache__"
+    cache2.mkdir()
+    (cache2 / "compiled.py").write_text("compiled2")
+
+    files = _find_source_files(
+        module_path=str(module_dir),
+        depth=-1,
+        file_types=[".py"],
+        excluded_dirs=["__pycache__"],
+    )
+
+    assert len(files) == 1
+    assert any("main.py" in f for f in files)
+    assert not any("compiled.py" in f for f in files)
+
+
+def test_find_source_files_directory_exclusion_with_glob_pattern(
+    tmp_path: Path,
+) -> None:
+    """Test _find_source_files supports glob patterns for directory exclusion."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "main.py").write_text("main")
+
+    # Create directories matching pattern
+    for dirname in ["test.egg-info", "mylib.egg-info", "another.egg-info"]:
+        dir_path = module_dir / dirname
+        dir_path.mkdir()
+        (dir_path / "file.py").write_text(f"{dirname} file")
+
+    # Create regular directory
+    src = module_dir / "src"
+    src.mkdir()
+    (src / "code.py").write_text("code")
+
+    files = _find_source_files(
+        module_path=str(module_dir),
+        depth=-1,
+        file_types=[".py"],
+        excluded_dirs=["*.egg-info"],
+    )
+
+    assert len(files) == 2
+    assert any("main.py" in f for f in files)
+    assert any("code.py" in f for f in files)
+    # None of the .egg-info directories should be present
+    assert not any(".egg-info" in f for f in files)
+
+
+def test_get_module_context_with_directory_exclusions(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Test get_module_context respects directory exclusions from config."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "main.py").write_text("# main")
+
+    # Create excluded directories
+    venv = module_dir / ".venv"
+    venv.mkdir()
+    (venv / "lib.py").write_text("# venv lib")
+
+    build = module_dir / "build"
+    build.mkdir()
+    (build / "output.py").write_text("# build output")
+
+    # Create included directory
+    src = module_dir / "src"
+    src.mkdir()
+    (src / "code.py").write_text("# source code")
+
+    # Create config with directory exclusions
+    config_content = """
+[exclusions]
+dirs = [".venv", "build"]
+"""
+    (module_dir / ".dokken.toml").write_text(config_content)
+
+    mocker.patch("src.input.code_analyzer.console")
+
+    context = get_module_context(module_path=str(module_dir), depth=-1)
+
+    # Should include main.py and src/code.py
+    assert "main.py" in context
+    assert "# main" in context
+    assert "code.py" in context
+    assert "# source code" in context
+
+    # Should not include files from excluded directories
+    assert "lib.py" not in context
+    assert "# venv lib" not in context
+    assert "output.py" not in context
+    assert "# build output" not in context
+
+
+def test_get_module_context_default_directory_exclusions(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Test get_module_context applies sensible default directory exclusions."""
+    module_dir = tmp_path / "test_module"
+    module_dir.mkdir()
+    (module_dir / "main.py").write_text("# main")
+
+    # Create directories that should be excluded by default
+    for dirname in [".venv", "node_modules", "__pycache__", "dist", ".git"]:
+        dir_path = module_dir / dirname
+        dir_path.mkdir()
+        (dir_path / "file.py").write_text(f"# {dirname} file")
+
+    # Create included directory
+    src = module_dir / "src"
+    src.mkdir()
+    (src / "code.py").write_text("# source code")
+
+    # No config file - should use defaults
+    mocker.patch("src.input.code_analyzer.console")
+
+    context = get_module_context(module_path=str(module_dir), depth=-1)
+
+    # Should include only main.py and src/code.py
+    assert "main.py" in context
+    assert "code.py" in context
+    assert "# source code" in context
+
+    # None of the default excluded directories should be present
+    for dirname in [".venv", "node_modules", "__pycache__", "dist", ".git"]:
+        assert f"# {dirname} file" not in context
 
 
 def test_get_module_context_oserror_on_module_path(mocker: MockerFixture) -> None:
@@ -372,7 +585,10 @@ def test_find_source_files_multiple_extensions(tmp_path: Path) -> None:
     (module_dir / "file4.txt").write_text("text")
 
     files = _find_source_files(
-        module_path=str(module_dir), depth=0, file_types=[".py", ".js", ".ts"]
+        module_path=str(module_dir),
+        depth=0,
+        file_types=[".py", ".js", ".ts"],
+        excluded_dirs=[],
     )
 
     assert len(files) == 3
@@ -391,7 +607,7 @@ def test_find_source_files_extension_normalization(tmp_path: Path) -> None:
 
     # Test with and without leading dots
     files = _find_source_files(
-        module_path=str(module_dir), depth=0, file_types=["py", ".js"]
+        module_path=str(module_dir), depth=0, file_types=["py", ".js"], excluded_dirs=[]
     )
 
     assert len(files) == 2

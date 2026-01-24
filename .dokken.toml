@@ -28,6 +28,7 @@ file_depth = 2
 # EXCLUSIONS CONFIGURATION
 # ==============================================================================
 [exclusions]
+# File patterns to exclude (matched against filenames)
 files = [
     # Test files
     "test_*.py",
@@ -36,19 +37,13 @@ files = [
     # Boilerplate
     "__init__.py",
     "conftest.py",
-
-    # NOTE: Current limitation - dokken only matches filenames, not paths
-    # These patterns document intent but won't exclude directories until
-    # path-based exclusion is implemented
-    # See: https://github.com/mortenkrane/dokken/issues/XXX
-    ".venv/*",
-    "venv/*",
-    "dist/*",
-    "build/*",
-    ".pytest_cache/*",
-    ".hypothesis/*",
-    "__pycache__/*",
 ]
+
+# Directory names/patterns to exclude from traversal
+# These are sensible defaults for Python/JS projects and can be overridden
+# Default exclusions include: .venv, venv, node_modules, dist, build,
+# __pycache__, .pytest_cache, .git, and other common cache/build directories
+# dirs = []  # Uncomment to override defaults with custom list
 
 # ==============================================================================
 # CUSTOM PROMPTS CONFIGURATION

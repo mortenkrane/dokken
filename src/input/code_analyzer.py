@@ -31,7 +31,10 @@ def get_module_context(*, module_path: str, depth: int = 0) -> str:
 
         # Find all source files in the module directory
         source_files = _find_source_files(
-            module_path=module_path, depth=depth, file_types=config.file_types
+            module_path=module_path,
+            depth=depth,
+            file_types=config.file_types,
+            excluded_dirs=config.exclusions.dirs,
         )
 
         if not source_files:
@@ -89,51 +92,101 @@ def _read_file(file_path: str) -> tuple[str, str] | tuple[str, None]:
         return file_path, None
 
 
+def _should_exclude_dir(dir_path: Path, excluded_dirs: list[str]) -> bool:
+    """Check if a directory should be excluded based on patterns."""
+    dir_name = dir_path.name
+    return any(fnmatch.fnmatch(dir_name, pattern) for pattern in excluded_dirs)
+
+
+def _should_recurse_into_dir(current_depth: int, depth: int) -> bool:
+    """Check if we should recurse into a directory based on depth limit."""
+    return depth == -1 or current_depth < depth
+
+
+def _is_matching_file(file_path: Path, normalized_extensions: list[str]) -> bool:
+    """Check if a file matches any of the specified extensions."""
+    return any(file_path.suffix == ext for ext in normalized_extensions)
+
+
+def _process_directory(
+    item: Path,
+    current_depth: int,
+    depth: int,
+    normalized_extensions: list[str],
+    excluded_dirs: list[str],
+) -> list[Path]:
+    """Process a directory item during recursive file search."""
+    # Skip excluded directories
+    if _should_exclude_dir(item, excluded_dirs):
+        return []
+    # Recurse if within depth limit
+    if _should_recurse_into_dir(current_depth, depth):
+        return _find_files_recursive(
+            item, current_depth + 1, depth, normalized_extensions, excluded_dirs
+        )
+    return []
+
+
+def _find_files_recursive(
+    current_path: Path,
+    current_depth: int,
+    depth: int,
+    normalized_extensions: list[str],
+    excluded_dirs: list[str],
+) -> list[Path]:
+    """Recursively find files while respecting depth and exclusions."""
+    files = []
+
+    try:
+        for item in current_path.iterdir():
+            if item.is_dir():
+                files.extend(
+                    _process_directory(
+                        item, current_depth, depth, normalized_extensions, excluded_dirs
+                    )
+                )
+            elif item.is_file() and _is_matching_file(item, normalized_extensions):
+                files.append(item)
+    except (PermissionError, OSError):
+        # Skip directories we can't access
+        pass
+
+    return files
+
+
 def _find_source_files(
-    *, module_path: str, depth: int, file_types: list[str]
+    *,
+    module_path: str,
+    depth: int,
+    file_types: list[str],
+    excluded_dirs: list[str],
 ) -> list[str]:
     """
     Find source files with specified extensions in a directory up to a specified depth.
+
+    Excludes directories matching patterns in excluded_dirs from traversal.
 
     Args:
         module_path: The root directory to search.
         depth: Directory depth to traverse. 0=root only, 1=root+1 level, -1=infinite.
         file_types: List of file extensions to include (e.g., ['.py', '.js', '.ts']).
+        excluded_dirs: List of directory name patterns to exclude from traversal.
 
     Returns:
         List of absolute paths to matching source files.
     """
     root = Path(module_path)
-    source_files = []
 
     # Normalize extensions to ensure they start with a dot
     normalized_extensions = [
         ext if ext.startswith(".") else f".{ext}" for ext in file_types
     ]
 
-    for extension in normalized_extensions:
-        # Convert extension to glob pattern (e.g., '.py' -> '*.py')
-        glob_pattern = f"*{extension}"
-
-        if depth == -1:
-            # Infinite recursion using rglob (recursive glob)
-            source_files.extend([str(p) for p in root.rglob(glob_pattern)])
-        elif depth == 0:
-            # Root level only - direct children
-            source_files.extend([str(p) for p in root.glob(glob_pattern)])
-        else:
-            # Limited depth recursion
-            # Start with root level files
-            source_files.extend([str(p) for p in root.glob(glob_pattern)])
-
-            # Add files from deeper levels
-            # depth=1 adds */*.ext, depth=2 adds */*.ext and */*/*.ext, etc.
-            for current_depth in range(1, depth + 1):
-                # Build pattern: depth=1 → "*/*.ext", depth=2 → "*/*/*.ext"
-                pattern = "/".join(["*"] * current_depth) + f"/{glob_pattern}"
-                source_files.extend([str(p) for p in root.glob(pattern)])
-
-    return source_files
+    # Use recursive approach for all depths to properly handle exclusions
+    found_paths = _find_files_recursive(
+        root, 0, depth, normalized_extensions, excluded_dirs
+    )
+    return [str(p) for p in found_paths]
 
 
 def _filter_excluded_files(

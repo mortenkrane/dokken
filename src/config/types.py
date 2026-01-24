@@ -7,6 +7,7 @@ class ExclusionsDict(TypedDict, total=False):
     """Structure of the exclusions section in .dokken.toml."""
 
     files: list[str]
+    dirs: list[str]
 
 
 class CustomPromptsDict(TypedDict, total=False):
