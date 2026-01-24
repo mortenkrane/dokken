@@ -121,6 +121,7 @@ unresolved-reference = "ignore"
 
 [dependency-groups]
 dev = [
+    "dokken>=0.1.1",
     "hypothesis>=6.150.2",
     "mccabe >= 0.7.0, <1",
     "mdformat>=0.7.22",
