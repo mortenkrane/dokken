@@ -1,31 +1,56 @@
-# Dokken - Documentation Drift Detection
+# Dokken - Architectural Drift Detection
 
 ## Why Dokken?
 
-In the era of AI coding assistants and agents, documentation matters more than ever, just not for the reasons you might think.
+**Dokken prevents architectural drift by enforcing your architecture decisions.**
 
-Here's the paradox: your AI pair programmer can read every line of code in milliseconds, but it still needs docs to understand _why_ your system works the way it does. The architectural decisions. The boundaries between modules. The things you can't grep for. Without that context, even the best AI will suggest changes that technically work but architecturally regress your codebase.
+In the era of AI coding assistants and agents, your codebase faces a new threat: technically correct changes that architecturally regress your system. Your AI pair programmer can read every line of code in milliseconds, but without understanding _why_ your system works the way it does—the architectural decisions, module boundaries, and design constraints—even the best AI will suggest changes that break your carefully considered architecture.
 
-And let's be honest: documentation has always sucked at its job. Not because developers can't write, but because docs have a shelf life measured in commits. They rot. They lie. Nobody updates them because nobody trusts them, and nobody trusts them because nobody updates them. It's the software equivalent of heat death.
+**Here's the problem:** Code can tell you WHAT exists (functions, classes, imports), but it can't tell you WHY it exists that way. Why does the auth module handle sessions but not password resets? Why is the API layer thin? Why do we avoid circular dependencies between specific modules? These decisions live in your head, in old Slack threads, in PRs from six months ago. Your AI agent has no access to this context.
 
-**Dokken breaks this cycle.** It detects when your docs drift from reality and regenerates them automatically. No more archaeological digs through git history to figure out if that README is from 2019 or 2023. No more "the code is the documentation" excuses (we both know that's a cop-out).
+**Dokken solves this with human intent capture.** When you run `dokken generate`, it asks you targeted questions about your architectural decisions:
 
-Here's how it works: Dokken captures the stuff code can't express through an **interactive questionnaire**, asking you about architectural decisions, design trade-offs, and why things are the way they are. Then it generates docs optimized for how both humans and AI agents actually consume them: **through grep and search**. Because let's face it, nobody reads docs cover-to-cover. We all jump straight to the section we need. Dokken's docs are structured so you (or your AI) can find what you're looking for in seconds.
+- What problems does this module solve?
+- What are its core responsibilities?
+- What are its boundaries with other modules?
+- What architectural constraints must be respected?
 
-And here's the best part: **Dokken preserves manually written sections.** Write an intro by hand (like this one), add custom examples, or craft specific sections yourself. Dokken will leave them untouched and only regenerate the parts it manages. You get the control of manual documentation with the freshness of automated generation.
+Your answers become the baseline. Now when code changes, Dokken's drift detection doesn't just check if the code changed—it checks if the code _violates your documented architectural intent_. New function in the wrong module? That's not just drift, that's a boundary violation. API getting fat? That contradicts your documented thin-layer decision. Someone added the circular dependency you explicitly avoided? Build fails.
 
-But here's what matters: **Dokken writes documentation for humans, not just machines.** Because at the end of the day, humans are the ones who need to understand the overall system architecture to make good decisions, whether they're coding manually or instructing an AI to do it for them. Your AI assistant might be able to implement a feature, but you need to decide if that feature belongs in the auth module or the API layer. That's a human judgment call, and it requires human-level understanding.
+**Dokken catches these regressions in CI.** The combination of human intent and automated detection is what makes it work.
 
-**What Dokken does:**
+Here's the workflow:
 
-- Generates documentation from scratch when you don't have any (or when you're starting fresh)
-- Detects documentation drift automatically (new functions, changed signatures, architectural shifts)
-- Regenerates docs that are actually useful (architectural patterns, design decisions, module boundaries)
-- Works in CI/CD pipelines (exit code 1 if docs are stale)
-- Captures human intent through interactive questionnaires (the "why" that code can't express)
-- Generates search-optimized docs (because grep is how we all find things anyway)
+1. **Bootstrap**: Run `dokken generate` and answer questions about your architectural decisions—the interactive questionnaire captures the "why" that code can't express, creating a baseline of your intent
+1. **Enforce**: Add `dokken check --all` to your CI pipeline—either fail PRs on drift (strict enforcement) or run on a schedule to auto-create fix PRs (cost-efficient for frequently changing repos)
+1. **Protect**: Your architecture stays consistent, and docs stay synchronized with your documented intent
 
-**The result?** Documentation you can trust. Documentation your AI can use. Documentation that doesn't make you cringe when you read it six months later.
+**The power is in capturing human intent.** Documentation has always failed because it rots. Dokken inverts this: instead of docs getting out of sync with code, your CI pipeline prevents code from getting out of sync with your architectural decisions. You document your architecture once—including the reasoning that only you know—and Dokken makes sure every change respects it.
+
+**What makes Dokken's drift detection work:**
+
+- **Human intent capture**: Interactive questionnaires capture the "why" behind your architecture—decisions, constraints, and reasoning that code can't express
+- **Intent-based drift detection**: Detects when code violates your documented architectural decisions, not just when it changes (new functions in wrong modules, boundary violations, constraint violations)
+- **AI-readable documentation**: Generates search-optimized docs structured for both humans and AI agents to understand your architecture
+- **Flexible CI/CD integration**: Fail PRs on drift (strict enforcement), or scheduled auto-fix PRs (cost-efficient for frequently changing repos)
+- **Preserves manual sections**: You control the intro and custom content, Dokken manages the technical details
+- **Intelligent caching**: 80-95% token reduction for unchanged code (minimal API costs)
+
+**The workflow in practice:**
+
+```bash
+# 1. Bootstrap - capture your architecture decisions
+dokken generate src/auth
+dokken generate src/api
+
+# 2. Enforce - add to CI (GitHub Actions, etc.)
+dokken check --all  # Fails build if drift detected
+
+# 3. Maintain - regenerate when architecture intentionally changes
+dokken check --all --fix  # Update docs to match new architecture
+```
+
+**The result?** Architecture decisions that stick. PRs that respect your design constraints. A codebase that doesn't regress when you're not looking.
 
 ______________________________________________________________________
 
@@ -37,6 +62,20 @@ ______________________________________________________________________
 
 ## Quick Start
 
+**First time setup (bootstrap your architecture docs):**
+
+```bash
+# Generate module documentation (captures architecture decisions)
+dokken generate src/module_name
+
+# Or generate for all modules in .dokken.toml
+dokken generate src/auth
+dokken generate src/api
+dokken generate src/database
+```
+
+**Drift detection (run in CI to enforce architecture):**
+
 ```bash
 # Check for drift in a module
 dokken check src/module_name
@@ -44,9 +83,13 @@ dokken check src/module_name
 # Check all modules configured in .dokken.toml
 dokken check --all
 
-# Generate module documentation
-dokken generate src/module_name
+# Check and auto-fix drift (updates docs to match code)
+dokken check --all --fix
+```
 
+**Other documentation types:**
+
+```bash
 # Generate project README
 dokken generate . --doc-type project-readme
 
@@ -123,31 +166,44 @@ dokken generate src/auth --depth 2         # Custom depth
 
 ## Key Concepts
 
-**Drift**: Documentation out of sync with code. Detected when:
+**Drift Detection**: Dokken's primary purpose is catching when code changes violate your documented architecture. Drift is detected when:
 
-- New/removed functions or classes
-- Changed function signatures
-- Modified exports
-- Major architectural changes
+- New/removed functions or classes (did a module grow beyond its boundaries?)
+- Changed function signatures (breaking a documented API contract?)
+- Modified exports (changing module interfaces?)
+- Major architectural changes (violating design decisions?)
 - See `DRIFT_CHECK_PROMPT` in `src/llm/prompts.py` for full criteria
 
-**Documentation Types**: Dokken generates three types of documentation:
+**Module**: Python package or directory. The unit of architecture you document and protect from drift.
 
-- **module-readme**: Architectural docs for a specific module (depth=0 by default)
-- **project-readme**: Top-level project README (depth=1, analyzes entire repo)
-- **style-guide**: Code conventions and patterns guide (depth=-1, full recursion)
+**Documentation Types**: Dokken generates three types of architecture documentation:
 
-**Module**: Python package or directory. Target for `dokken check/generate`.
+- **module-readme**: Architectural decisions for a specific module (depth=0 by default)
+- **project-readme**: Top-level project architecture (depth=1, analyzes entire repo)
+- **style-guide**: Code conventions and patterns (depth=-1, full recursion)
 
-**Human Intent Questions**: Interactive questionnaire during generation (questions vary by doc type):
+**Human Intent Questions**: The interactive questionnaire during `dokken generate` is where the magic happens—it captures the architecture decisions that code can't express. This is what makes Dokken's drift detection meaningful: instead of just detecting code changes, it detects violations of your documented architectural intent.
 
-- **Module**: Problems solved, core responsibilities, boundaries, system context
-- **Project**: Project type, target audience, key problem, setup notes
-- **Style Guide**: Unique conventions, organization, patterns to follow/avoid
+Questions vary by doc type:
+
+- **Module**: Problems solved, core responsibilities, boundaries with other modules, system context, architectural constraints
+- **Project**: Project type, target audience, key problem being solved, setup notes, architectural overview
+- **Style Guide**: Unique conventions, code organization principles, patterns to follow/avoid, team decisions
+
+**Why this matters:** Your answers to "What problems does this module solve?" or "What are its boundaries with other modules?" become the baseline for drift detection. When someone adds a function that crosses those boundaries or solves a problem that belongs elsewhere, Dokken catches it. The AI can analyze code structure, but only you can provide the architectural reasoning.
 
 ## Interactive Questionnaire
 
 The questionnaire shows a preview of all questions before starting, displays questions on separate lines for readability, and supports multiline answers (press `Enter` for new lines).
+
+**Example questions for a module:**
+
+- What specific problems does this module solve?
+- What are the core responsibilities of this module?
+- What are the boundaries between this module and others?
+- Are there any architectural constraints or design decisions that must be maintained?
+
+Your answers are preserved in the generated documentation and become the reference point for detecting drift.
 
 **Keyboard shortcuts:**
 
@@ -221,21 +277,63 @@ Cache automatically saves drift detection results to avoid redundant LLM API cal
 
 ## CI/CD Integration
 
-Use `dokken check --all` in CI pipelines to enforce documentation hygiene:
+Dokken can live in your CI pipeline in two ways:
 
-- Exit code 0: Documentation is up-to-date
-- Exit code 1: Drift detected (fails the build)
+### Pattern 1: PR Validation (Strict Enforcement)
 
-**Minimal GitHub Actions workflow:**
+**Fail the build if drift detected.** This prevents any PR from merging if it violates your documented architecture.
 
 ```yaml
+# .github/workflows/pr-check.yml
 - name: Check documentation drift
   run: dokken check --all
   env:
     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-**With caching (recommended):**
+**Exit codes:**
+
+- Exit code 0: Code respects documented architecture
+- Exit code 1: Drift detected (fails the build to prevent architectural regression)
+
+**Best for:** Teams with stable architectures, strict architectural governance, or when architectural changes should be explicit and reviewed.
+
+### Pattern 2: Scheduled Drift Detection (Cost-Efficient)
+
+**Run on a cron schedule to detect drift and automatically create PRs that update docs.** This is more cost-efficient for repos that change frequently, as it batches drift checks instead of running on every PR.
+
+```yaml
+# .github/workflows/drift-check.yml
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Monday 9am
+
+jobs:
+  drift-check:
+    steps:
+      - name: Check and fix drift
+        run: dokken check --all --fix
+
+      - name: Create PR if changes
+        if: git diff --quiet
+        run: |
+          git config user.name "dokken-bot"
+          git config user.email "bot@example.com"
+          git checkout -b dokken/drift-fix-$(date +%s)
+          git add .
+          git commit -m "docs: update documentation to reflect code changes"
+          git push origin HEAD
+          gh pr create --title "Update docs to match code changes" \
+                       --body "Automated drift detection found changes"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**Best for:** Rapidly changing codebases, large teams with frequent commits, or when you want to reduce LLM API costs by batching checks.
+
+### Caching (Recommended for Both Patterns)
+
+Add caching to reduce LLM token consumption by 80-95% for unchanged code:
 
 ```yaml
 - name: Restore drift cache
@@ -244,28 +342,23 @@ Use `dokken check --all` in CI pipelines to enforce documentation hygiene:
     path: .dokken-cache.json
     key: dokken-drift-${{ hashFiles('src/**/*.py', '.dokken.toml') }}
     restore-keys: dokken-drift-
-
-- name: Check documentation drift
-  run: dokken check --all
-  env:
-    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-Caching reduces LLM token consumption by 80-95% for unchanged code.
-
-**See [examples/dokken-drift-check.yml](examples/dokken-drift-check.yml) for a complete workflow with setup instructions, auto-fix options, and multi-platform support.**
+**See [examples/dokken-drift-check.yml](examples/dokken-drift-check.yml) for complete workflows with setup instructions and multi-platform support.**
 
 ## Features
 
-- **Three Documentation Types**: Module READMEs, project READMEs, and style guides
-- **Configurable Depth**: Control code analysis depth (0=root only, -1=infinite recursion)
-- **Drift Detection**: Criteria-based detection (see `src/llm/prompts.py`)
+- **Human Intent Capture**: Interactive questionnaire captures the "why" behind your architecture—decisions, boundaries, constraints that code can't express (this is what makes drift detection meaningful)
+- **Intent-Based Drift Detection**: Detects when code violates your documented architectural intent, not just when it changes (criteria-based detection prevents regression)
+- **CI/CD Integration**: Exit code 1 if drift detected, with flexible deployment patterns (strict PR validation or scheduled auto-fix)
+- **Intelligent Caching**: 80-95% token reduction for unchanged code (minimal API costs)
 - **Multi-Module Check**: Check all modules with `--all` flag
+- **Three Documentation Types**: Bootstrap with module READMEs, project READMEs, or style guides
+- **AI-Readable Output**: Search-optimized documentation structured for both humans and AI agents
+- **Configurable Depth**: Control code analysis depth (0=root only, -1=infinite recursion)
 - **Custom Prompts**: Inject preferences into generation (see Configuration)
 - **Exclusion Rules**: Filter files via `.dokken.toml`
 - **Multi-Provider LLM**: Claude (Haiku), OpenAI (GPT-4o-mini), Google (Gemini Flash)
-- **Cost-Optimized**: Fast, budget-friendly models
-- **Human-in-the-Loop**: Interactive questionnaire for context AI can't infer
 - **Deterministic**: Temperature=0.0 for reproducible output
 
 ## Development

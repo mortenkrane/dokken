@@ -6,11 +6,18 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-Dokken is an AI-powered documentation generation and drift detection tool. Commands:
+Dokken is an AI-powered drift detection tool that prevents architectural regression by enforcing architecture decisions in CI/CD pipelines. Documentation generation is the bootstrapping mechanism that captures the architecture baseline.
 
-- `dokken check <module>` - Detects documentation drift
-- `dokken check --all` - Check all modules configured in `.dokken.toml`
-- `dokken generate <module>` - Generates/updates documentation
+**Primary workflow:**
+
+1. Bootstrap: `dokken generate <module>` - Captures architecture decisions via interactive questionnaire
+1. Enforce: `dokken check --all` - Detects drift, fails CI build if code violates documented architecture
+
+**Commands:**
+
+- `dokken check <module>` - Detects architectural drift (primary use case)
+- `dokken check --all` - Check all modules configured in `.dokken.toml` (for CI/CD)
+- `dokken generate <module>` - Generates/updates architecture documentation (bootstrapping)
 
 ## CRITICAL: Pre-Commit Requirements
 
