@@ -1,0 +1,75 @@
+# Dokken Configuration for Dogfooding
+# This configures dokken to maintain its own documentation
+
+# ==============================================================================
+# MODULES CONFIGURATION
+# ==============================================================================
+# Module READMEs to check with 'dokken check --all'
+modules = [
+    "src"
+]
+
+# ==============================================================================
+# FILE TYPES CONFIGURATION
+# ==============================================================================
+file_types = [".py"]
+
+# ==============================================================================
+# FILE DEPTH CONFIGURATION
+# ==============================================================================
+# Use defaults for each doc type:
+# - module=0 (root directory only)
+# - project=1 (root + 1 level deep)
+# - style-guide=-1 (infinite recursion)
+
+# ==============================================================================
+# EXCLUSIONS CONFIGURATION
+# ==============================================================================
+[exclusions]
+files = [
+    # Test files
+    "test_*.py",
+    "*_test.py",
+
+    # Boilerplate
+    "__init__.py",
+    "conftest.py",
+]
+
+# ==============================================================================
+# CUSTOM PROMPTS CONFIGURATION
+# ==============================================================================
+[custom_prompts]
+global_prompt = """
+Use American spelling.
+Prefer active voice and present tense.
+Write in a timeless manner - describe features as they exist, not how they changed.
+Never use temporal language like "now includes", "new feature", "recently added", "updated to".
+Keep sentences concise and direct.
+"""
+
+module_readme = """
+Focus on the module's responsibilities and design patterns.
+Explain what problems this module solves.
+Keep it practical and search-optimized for grep/code navigation.
+"""
+
+project_readme = """
+Highlight key features and commands clearly.
+Include practical examples that users can copy and run.
+Keep installation instructions current.
+Focus on getting users productive quickly.
+"""
+
+style_guide = """
+Reference specific files as examples where applicable.
+Include code snippets demonstrating conventions.
+Explain the rationale behind conventions.
+"""
+
+# ==============================================================================
+# CACHE CONFIGURATION
+# ==============================================================================
+[cache]
+file = ".dokken-cache.json"
+max_size = 100
