@@ -36,6 +36,18 @@ files = [
     # Boilerplate
     "__init__.py",
     "conftest.py",
+
+    # NOTE: Current limitation - dokken only matches filenames, not paths
+    # These patterns document intent but won't exclude directories until
+    # path-based exclusion is implemented
+    # See: https://github.com/mortenkrane/dokken/issues/XXX
+    ".venv/*",
+    "venv/*",
+    "dist/*",
+    "build/*",
+    ".pytest_cache/*",
+    ".hypothesis/*",
+    "__pycache__/*",
 ]
 
 # ==============================================================================
