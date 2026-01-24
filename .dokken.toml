@@ -17,10 +17,12 @@ file_types = [".py"]
 # ==============================================================================
 # FILE DEPTH CONFIGURATION
 # ==============================================================================
-# Use defaults for each doc type:
-# - module=0 (root directory only)
-# - project=1 (root + 1 level deep)
-# - style-guide=-1 (infinite recursion)
+# How deep to traverse directories when analyzing code
+# - 0 = root directory only (no subdirectories)
+# - 1 = root + 1 level deep
+# - 2 = root + 2 levels deep
+# - -1 = infinite recursion (all subdirectories)
+file_depth = 2
 
 # ==============================================================================
 # EXCLUSIONS CONFIGURATION
