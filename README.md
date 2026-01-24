@@ -6,13 +6,13 @@
 
 In the era of AI coding assistants and agents, your codebase faces a new threat: technically correct changes that architecturally regress your system. Your AI pair programmer can read every line of code in milliseconds, but without understanding _why_ your system works the way it does—the architectural decisions, module boundaries, and design constraints—even the best AI will suggest changes that break your carefully considered architecture.
 
-**Dokken catches these regressions before they merge.** Run `dokken check --all` in your CI pipeline, and it will fail the build if code changes violate your documented architecture. New function in the wrong module? Drift detected. Breaking a module boundary? Build fails. Changed a core design decision without updating docs? You'll know immediately.
+**Dokken catches these regressions in CI.** New function in the wrong module? Drift detected. Breaking a module boundary? Dokken knows. Changed a core design decision without updating docs? You'll get notified.
 
 Here's the workflow:
 
 1. **Bootstrap**: Run `dokken generate` to capture your architecture decisions through an interactive questionnaire and generate baseline documentation
-1. **Enforce**: Add `dokken check --all` to your CI pipeline
-1. **Protect**: Every PR gets validated against your architectural decisions—if code drifts from the documented architecture, the build fails
+1. **Enforce**: Add `dokken check --all` to your CI pipeline—either fail PRs on drift (strict enforcement) or run on a schedule to auto-create fix PRs (cost-efficient for frequently changing repos)
+1. **Protect**: Your architecture stays consistent, and docs stay synchronized with code
 
 **The power is in the enforcement.** Documentation has always failed because it rots. Dokken inverts this: instead of docs getting out of sync with code, your CI pipeline prevents code from getting out of sync with your architectural decisions. You document your architecture once, and Dokken makes sure every change respects it.
 
@@ -21,7 +21,7 @@ Here's the workflow:
 - Detects architectural drift automatically (new functions, changed signatures, module boundary violations)
 - Captures human intent through interactive questionnaires (the "why" that code can't express)
 - Generates search-optimized docs (structured for both humans and AI agents)
-- Works in CI/CD pipelines (exit code 1 if drift detected)
+- Flexible CI/CD integration (fail PRs on drift, or scheduled auto-fix PRs for cost efficiency)
 - Preserves manually written sections (you control the intro, Dokken manages the technical details)
 - Intelligent caching (80-95% token reduction, minimal API costs)
 
@@ -253,21 +253,63 @@ Cache automatically saves drift detection results to avoid redundant LLM API cal
 
 ## CI/CD Integration
 
-Use `dokken check --all` in CI pipelines to enforce your architecture decisions:
+Dokken can live in your CI pipeline in two ways:
 
-- Exit code 0: Code respects documented architecture
-- Exit code 1: Drift detected (fails the build to prevent architectural regression)
+### Pattern 1: PR Validation (Strict Enforcement)
 
-**Minimal GitHub Actions workflow:**
+**Fail the build if drift detected.** This prevents any PR from merging if it violates your documented architecture.
 
 ```yaml
+# .github/workflows/pr-check.yml
 - name: Check documentation drift
   run: dokken check --all
   env:
     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-**With caching (recommended):**
+**Exit codes:**
+
+- Exit code 0: Code respects documented architecture
+- Exit code 1: Drift detected (fails the build to prevent architectural regression)
+
+**Best for:** Teams with stable architectures, strict architectural governance, or when architectural changes should be explicit and reviewed.
+
+### Pattern 2: Scheduled Drift Detection (Cost-Efficient)
+
+**Run on a cron schedule to detect drift and automatically create PRs that update docs.** This is more cost-efficient for repos that change frequently, as it batches drift checks instead of running on every PR.
+
+```yaml
+# .github/workflows/drift-check.yml
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Monday 9am
+
+jobs:
+  drift-check:
+    steps:
+      - name: Check and fix drift
+        run: dokken check --all --fix
+
+      - name: Create PR if changes
+        if: git diff --quiet
+        run: |
+          git config user.name "dokken-bot"
+          git config user.email "bot@example.com"
+          git checkout -b dokken/drift-fix-$(date +%s)
+          git add .
+          git commit -m "docs: update documentation to reflect code changes"
+          git push origin HEAD
+          gh pr create --title "Update docs to match code changes" \
+                       --body "Automated drift detection found changes"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**Best for:** Rapidly changing codebases, large teams with frequent commits, or when you want to reduce LLM API costs by batching checks.
+
+### Caching (Recommended for Both Patterns)
+
+Add caching to reduce LLM token consumption by 80-95% for unchanged code:
 
 ```yaml
 - name: Restore drift cache
@@ -276,16 +318,9 @@ Use `dokken check --all` in CI pipelines to enforce your architecture decisions:
     path: .dokken-cache.json
     key: dokken-drift-${{ hashFiles('src/**/*.py', '.dokken.toml') }}
     restore-keys: dokken-drift-
-
-- name: Check documentation drift
-  run: dokken check --all
-  env:
-    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-Caching reduces LLM token consumption by 80-95% for unchanged code.
-
-**See [examples/dokken-drift-check.yml](examples/dokken-drift-check.yml) for a complete workflow with setup instructions, auto-fix options, and multi-platform support.**
+**See [examples/dokken-drift-check.yml](examples/dokken-drift-check.yml) for complete workflows with setup instructions and multi-platform support.**
 
 ## Features
 
