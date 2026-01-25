@@ -1,15 +1,17 @@
-# Architectural Rules Implementation Plan
+# Architectural Documentation Implementation Plan
 
 ## Executive Summary
 
-This document outlines the design and implementation plan for adding **architectural rules documentation** to dokken. This feature introduces a second documentation mode where rules define constraints that code must follow, complementing the existing descriptive documentation that reflects what code currently does.
+This document outlines the design and implementation plan for adding **architectural documentation** to dokken. This feature introduces a complementary documentation mode where architecture is documented first as "what is" (LLM extracts essence from code), then refined by users to "what should be" (prescriptive constraints), and finally enforced against the codebase.
 
 **Core Distinction:**
 
-- **Technical Documentation** (current): Code is truth, docs describe "what is"
-- **Architectural Rules** (new): Rules are truth, code must conform to "what should be"
+- **Technical Documentation** (current): Code is truth, docs describe implementation details
+- **Architectural Documentation** (new): User-refined architecture is truth, code must comply
 
----
+**Key Insight:** We don't prescribe which architectural rules to support. Users define their own architecture in free-form markdown sections, and the LLM interprets those sections to check compliance.
+
+______________________________________________________________________
 
 ## Motivation
 
@@ -17,86 +19,113 @@ This document outlines the design and implementation plan for adding **architect
 
 Dokken currently excels at keeping documentation synchronized with code changes. However, it lacks a mechanism to:
 
+1. **Capture architectural intent** that isn't obvious from reading code
 1. **Enforce architectural constraints** before they are violated
-2. **Prevent regression** of intentional design decisions
-3. **Gate CI/CD pipelines** based on architectural compliance
-4. **Document architectural boundaries** as enforceable rules rather than descriptive prose
+1. **Prevent regression** of intentional design decisions
+1. **Document high-level architecture** separately from implementation details
 
 ### Use Cases
 
-**Use Case 1: Module Dependency Enforcement**
+**Use Case 1: Layered Architecture**
 
 ```
-Rule: "The data layer must not import from the presentation layer"
-Violation: data/repository.py imports from ui/components.py
-Result: CI fails with architectural drift error
+ARCHITECTURE.md:
+"The system MUST maintain three distinct layers:
+API layer (api/) handles HTTP only, Domain layer (domain/)
+contains business logic, Data layer (data/) handles persistence.
+Domain MUST NOT import from API or Data layers."
+
+Violation: domain/payment.py imports from data/repository.py
+Result: CI fails - layer boundary violated
 ```
 
-**Use Case 2: Pattern Enforcement**
+**Use Case 2: Transaction Boundaries**
 
 ```
-Rule: "All database access must go through the Repository pattern"
-Violation: Service layer directly instantiates SQLAlchemy models
-Result: CI fails, suggests moving logic to repository
+ARCHITECTURE.md:
+"All payment operations MUST be atomic. Any operation touching
+both Payment and Ledger tables MUST run in a single transaction."
+
+Violation: New payment flow commits Payment before updating Ledger
+Result: CI fails - transaction boundary violated
 ```
 
-**Use Case 3: Security Constraint**
+**Use Case 3: Abstraction Enforcement**
 
 ```
-Rule: "Authentication logic must only exist in auth/ module"
-Violation: New authentication code added to api/routes.py
-Result: CI fails, enforces security boundary
+ARCHITECTURE.md:
+"External service communication MUST go through the PaymentGateway
+abstraction. Direct HTTP calls to the processor are forbidden."
+
+Violation: New feature makes direct requests.post() to processor
+Result: CI fails - abstraction bypassed
 ```
 
-**Use Case 4: Performance Requirement**
+**Note:** These are architectural concepts that AST-based linters can't check. We focus on high-level patterns, not syntax.
 
-```
-Rule: "Cache layer must intercept all external API calls"
-Violation: New external API client bypasses cache
-Result: CI fails, ensures performance constraints
-```
-
----
+______________________________________________________________________
 
 ## Conceptual Model
 
 ### Two Documentation Types
 
-| Aspect | Technical Docs | Architectural Rules |
-|--------|---------------|---------------------|
-| **Truth Source** | Code | Rules document |
-| **Purpose** | Describe current state | Define constraints |
-| **Drift Direction** | Code changes → Docs update | Rules fixed → Code must comply |
-| **Location** | `README.md` | `ARCHITECTURE.md` |
-| **Tone** | Descriptive ("The system uses...") | Prescriptive ("The system MUST...") |
-| **Update Frequency** | Often (follows code) | Rarely (deliberate decisions) |
-| **CI Behavior on Drift** | Optional (can defer fixes) | Blocking (must fix to merge) |
+| Aspect                   | Technical Docs                     | Architectural Docs                       |
+| ------------------------ | ---------------------------------- | ---------------------------------------- |
+| **Truth Source**         | Code                               | User-refined ARCHITECTURE.md             |
+| **Purpose**              | Describe implementation            | Define architectural constraints         |
+| **Content**              | Entry points, APIs, dependencies   | Layers, boundaries, patterns, invariants |
+| **Drift Direction**      | Code changes → Docs update         | Code must comply → Docs rarely change    |
+| **Location**             | `README.md`                        | `ARCHITECTURE.md`                        |
+| **Tone**                 | Descriptive ("The system uses...") | Prescriptive ("The system MUST...")      |
+| **Update Frequency**     | Often (follows code)               | Rarely (deliberate decisions)            |
+| **CI Behavior on Drift** | Optional (can defer fixes)         | Blocking (must fix to merge)             |
+| **Structure**            | Predefined sections                | User-defined sections                    |
 
-### Relationship Between Documentation Types
+### Three-Phase Workflow
 
 ```
-ARCHITECTURE.md (rules)
-    ↓
-  enforces
-    ↓
-Code Implementation
-    ↓
-  describes
-    ↓
-README.md (tech docs)
+Phase 1: GENERATE (LLM extracts architecture)
+├─ LLM analyzes code
+├─ Identifies architectural patterns
+└─ Generates ARCHITECTURE.md describing "what is"
+
+Phase 2: REFINE (User makes prescriptive)
+├─ User manually edits ARCHITECTURE.md
+├─ Changes "uses" → "MUST use"
+├─ Adds constraints not evident in code
+├─ Organizes into sections that matter
+└─ Removes implementation details
+
+Phase 3: ENFORCE (LLM checks compliance)
+├─ LLM reads user-refined ARCHITECTURE.md
+├─ Checks if code violates any sections
+└─ Reports violations (fails CI if found)
 ```
 
-**Example Workflow:**
+**Example Evolution:**
 
-1. Team decides: "We must enforce clean architecture layers"
-2. Run: `dokken generate src --arch-rules`
-3. Answer questionnaire about architectural constraints
-4. Generates: `src/ARCHITECTURE.md` with enforceable rules
-5. CI runs: `dokken check src --arch-rules`
-6. If code violates rules: **Build fails**
-7. If code changes (but follows rules): Tech docs update, build passes
+```markdown
+# Generated (Phase 1 - Descriptive)
+## Layering
+The codebase uses a three-layer architecture with API,
+domain, and data modules. The domain layer imports from
+both API and data layers.
 
----
+# Refined (Phase 2 - Prescriptive)
+## Layering
+The system MUST maintain three distinct layers:
+- API layer (api/) - HTTP handling only
+- Domain layer (domain/) - Business logic
+- Data layer (data/) - Database access
+
+The domain layer MUST NOT import from API or data layers.
+
+# Enforced (Phase 3)
+dokken check src --arch-docs
+→ ❌ Violation: domain/service.py imports from data/repository.py
+```
+
+______________________________________________________________________
 
 ## Architecture Design
 
@@ -105,27 +134,45 @@ README.md (tech docs)
 #### New Commands
 
 ```bash
-# Generate architectural rules document
-dokken generate <module> --arch-rules
+# Generate initial architectural documentation (descriptive)
+dokken generate <module> --arch-docs
 
-# Check code compliance with architectural rules
-dokken check <module> --arch-rules
+# Check code compliance with architectural documentation
+dokken check <module> --arch-docs
 
-# Check all modules' architectural rules (CI mode)
-dokken check --all --arch-rules
+# Check all modules (CI mode)
+dokken check --all --arch-docs
 
-# Fix architectural violations interactively
-dokken check <module> --arch-rules --fix
+# Show what would be checked without failing
+dokken check <module> --arch-docs --dry-run
 ```
 
-#### Existing Commands (unchanged)
+#### User Workflow
 
 ```bash
-# Generate/update technical documentation
-dokken generate <module>
+# 1. Generate initial ARCHITECTURE.md
+dokken generate src --arch-docs
 
-# Check technical documentation drift
-dokken check <module>
+# 2. User manually refines ARCHITECTURE.md:
+#    - Change descriptive → prescriptive
+#    - Add constraints not in code
+#    - Remove implementation details
+#    - Organize into meaningful sections
+
+# 3. Configure enforcement in .dokken.toml
+cat >> .dokken.toml <<EOF
+[architectural_docs]
+enabled = true
+sections = ["Layering", "Boundaries"]  # or ["*"] for all
+severity = "blocking"
+EOF
+
+# 4. Check compliance (fails if violations found)
+dokken check src --arch-docs
+
+# 5. Add to CI
+# .github/workflows/ci.yml
+- run: dokken check --all --arch-docs
 ```
 
 ### Configuration (`.dokken.toml`)
@@ -135,346 +182,219 @@ dokken check <module>
 modules = ["src/auth", "src/api", "src/data"]
 file_types = [".py"]
 
-# New architectural rules configuration
-[architectural_rules]
+# Architectural documentation configuration
+[architectural_docs]
+# Enable architectural documentation checking
 enabled = true
+
+# Output filename (default: ARCHITECTURE.md)
 output_filename = "ARCHITECTURE.md"
 
-# Strictness levels: "advisory", "warning", "blocking"
-enforcement_level = "blocking"
+# Sections to enforce (default: all sections)
+# Use ["*"] for all, or list specific section names
+sections = ["*"]  # or ["Layering", "Boundaries", "Patterns"]
 
-# Rule categories to enable
-enabled_categories = [
-    "module_dependencies",
-    "pattern_enforcement",
-    "security_constraints",
-    "performance_requirements",
-]
+# Severity: "blocking" (fail CI), "warning" (log only), "advisory" (info)
+severity = "blocking"
+
+# Skip sections matching these patterns
+skip_sections = ["Future Plans", "Historical Context"]
 
 # Module-specific overrides
-[modules.src_auth.architectural_rules]
-enforcement_level = "blocking"  # Auth must always pass
+[modules.src_auth.architectural_docs]
+severity = "blocking"  # Auth must always pass
 
-[modules.src_experimental.architectural_rules]
-enforcement_level = "advisory"  # Experimental code gets warnings
+[modules.src_experimental.architectural_docs]
+severity = "advisory"  # Experimental code gets warnings only
+
+[modules.src_legacy.architectural_docs]
+enabled = false  # Don't check legacy code
 ```
 
 ### Data Models
 
-#### Architectural Rules Document Structure
+#### Simple Violation Report Model
 
 ```python
 # src/records.py
 
 from pydantic import BaseModel, Field
 
-class ArchitecturalRule(BaseModel):
-    """A single enforceable architectural constraint."""
 
-    rule_id: str = Field(
-        description="Unique identifier (e.g., 'DEP-001')"
-    )
-    category: str = Field(
-        description="Rule category: dependency, pattern, security, performance"
-    )
-    title: str = Field(
-        description="Short rule description"
-    )
-    constraint: str = Field(
-        description="Prescriptive statement of what MUST/MUST NOT happen"
-    )
-    rationale: str = Field(
-        description="Why this rule exists"
-    )
-    examples: list[str] = Field(
-        description="Example violations and compliant code patterns"
+class ArchitecturalViolation(BaseModel):
+    """A detected violation of architectural documentation."""
+
+    section_name: str = Field(
+        description="Name of the section violated (e.g., 'Layering')"
     )
     severity: str = Field(
         description="blocking, warning, advisory"
     )
-
-
-class ModuleDependencyRule(BaseModel):
-    """Rules about what modules can depend on."""
-
-    allowed_dependencies: list[str] = Field(
-        description="Modules/packages this module MAY import"
+    violation_description: str = Field(
+        description="What constraint was violated"
     )
-    forbidden_dependencies: list[str] = Field(
-        description="Modules/packages this module MUST NOT import"
+    affected_files: list[str] = Field(
+        description="Files that violate the constraint"
     )
-    dependency_direction: str | None = Field(
-        description="E.g., 'Data layer must not depend on presentation layer'"
+    suggested_fix: str = Field(
+        description="How to fix the violation"
     )
-
-
-class PatternEnforcementRule(BaseModel):
-    """Rules about required/forbidden patterns."""
-
-    required_patterns: list[str] = Field(
-        description="Patterns that MUST be used (e.g., 'Repository for DB access')"
+    code_excerpts: list[str] = Field(
+        default_factory=list,
+        description="Relevant code snippets"
     )
-    forbidden_patterns: list[str] = Field(
-        description="Anti-patterns that MUST NOT appear"
-    )
-    pattern_locations: dict[str, str] = Field(
-        description="Where specific patterns must be implemented"
-    )
-
-
-class SecurityConstraintRule(BaseModel):
-    """Security-focused architectural rules."""
-
-    sensitive_operations: list[str] = Field(
-        description="Operations that require special handling"
-    )
-    required_validations: list[str] = Field(
-        description="Security validations that must occur"
-    )
-    forbidden_operations: list[str] = Field(
-        description="Security-sensitive operations that must not happen"
-    )
-
-
-class ArchitecturalRulesDocumentation(BaseModel):
-    """Complete architectural rules document."""
-
-    module_name: str
-    architecture_vision: str = Field(
-        description="High-level architectural intent"
-    )
-    core_principles: list[str] = Field(
-        description="Foundational architectural principles"
-    )
-
-    # Rule categories
-    dependency_rules: ModuleDependencyRule | None = None
-    pattern_rules: PatternEnforcementRule | None = None
-    security_rules: SecurityConstraintRule | None = None
-
-    # Detailed rules
-    detailed_rules: list[ArchitecturalRule] = Field(
-        description="Specific enforceable rules"
-    )
-
-    # Metadata
-    architectural_diagram: str | None = Field(
-        description="Mermaid diagram showing architectural constraints"
-    )
-    enforcement_notes: str | None = Field(
-        description="Notes about how rules are enforced"
-    )
-```
-
-#### Architectural Rules Violation Report
-
-```python
-class ArchitecturalViolation(BaseModel):
-    """A detected violation of architectural rules."""
-
-    rule_id: str
-    rule_title: str
-    severity: str
-    violation_description: str
-    affected_files: list[str]
-    suggested_fix: str
-    code_excerpt: str | None = None
 
 
 class ArchitecturalComplianceCheck(BaseModel):
-    """Result of checking code against architectural rules."""
+    """Result of checking code against architectural documentation."""
 
     compliant: bool
     violations: list[ArchitecturalViolation]
     summary: str
-    timestamp: str
+    sections_checked: list[str]
 ```
 
----
+**Note:** No predefined rule structures. The LLM interprets free-form markdown sections.
+
+______________________________________________________________________
 
 ## LLM Prompts
 
-### New Prompt: Architectural Rules Generation
+### Prompt 1: Extract Architectural Essence (Generation)
 
 ```python
 # src/llm/prompts.py
 
-ARCHITECTURAL_RULES_GENERATION_PROMPT = """
-You are generating architectural rules documentation for a software module.
+ARCHITECTURAL_EXTRACTION_PROMPT = """
+You are analyzing a codebase to extract its high-level architecture.
 
-CRITICAL: You are defining CONSTRAINTS that code MUST follow, not describing what currently exists.
+Your task is to identify and document ARCHITECTURAL PATTERNS, not implementation details.
 
-Your task:
-1. Analyze the codebase to understand architectural patterns and boundaries
-2. Capture human intent about architectural constraints (from questionnaire)
-3. Generate PRESCRIPTIVE rules that code must follow
+Focus on:
+- **Layering**: What layers/modules exist? How do they relate?
+- **Boundaries**: What are the major component boundaries?
+- **Patterns**: What architectural patterns are used? (Repository, Factory, Strategy, etc.)
+- **Data Flow**: How does data flow through the system?
+- **External Dependencies**: What external systems/services are used?
+- **Invariants**: What architectural invariants exist? (e.g., "all DB access goes through repositories")
 
-Documentation Philosophy:
-- Write in PRESCRIPTIVE tone: "MUST", "MUST NOT", "SHALL", "SHALL NOT"
-- Define enforceable constraints, not descriptions
-- Focus on architectural boundaries, not implementation details
-- Each rule should be verifiable by analyzing code
+Do NOT document:
+- Implementation details (specific functions, classes)
+- Code style or naming conventions
+- Low-level logic or algorithms
+- Anything checkable by AST-based linters (imports, syntax)
 
-Rule Categories:
-1. Module Dependencies: What can/cannot import what
-2. Pattern Enforcement: Required architectural patterns
-3. Security Constraints: Security boundaries and requirements
-4. Performance Requirements: Performance-critical architectural decisions
+Write in DESCRIPTIVE tone (not prescriptive yet - user will refine):
+- "The system uses..." (not "The system MUST use...")
+- "Components communicate via..." (not "Components MUST communicate via...")
 
-Output Requirements:
-- Each rule must have: ID, category, constraint, rationale, examples
-- Rules must be specific enough to verify programmatically
-- Include both positive (MUST) and negative (MUST NOT) constraints
-- Provide clear examples of violations and compliant code
+Output Format:
+- Free-form markdown with section headings
+- Organize into logical sections (user will refine these)
+- Include Mermaid diagrams where helpful
+- Keep it concise - focus on essence, not details
 
 <code_context>
 {code_context}
 </code_context>
-
-<user_intent>
-{user_intent}
-</user_intent>
 
 <custom_prompts>
 {custom_prompts}
 </custom_prompts>
 
-Generate structured architectural rules following the ArchitecturalRulesDocumentation schema.
+Generate architectural documentation as markdown text (not a structured schema).
 """
 ```
 
-### New Prompt: Architectural Compliance Check
+### Prompt 2: Check Architectural Compliance (Enforcement)
 
 ```python
 ARCHITECTURAL_COMPLIANCE_CHECK_PROMPT = """
-You are checking if code complies with documented architectural rules.
+You are checking if code complies with documented architectural constraints.
+
+CRITICAL: The architectural documentation is TRUTH. Code must comply with it.
+
+You will receive:
+1. Current codebase
+2. User-refined ARCHITECTURE.md (contains prescriptive constraints)
+3. Configuration specifying which sections to check
 
 Your task:
-1. Analyze the current codebase
-2. Compare it against documented architectural rules
-3. Identify violations where code does not follow the rules
+1. Parse the architectural documentation sections
+2. For each section configured for checking:
+   - Understand the architectural constraint it describes
+   - Check if current code violates that constraint
+3. Report violations with specific details
 
-CRITICAL: Rules are truth, code must comply. Do NOT suggest changing rules to match code.
-
-For each violation, identify:
-- Which rule is violated
-- Which files/code sections violate it
-- Specific description of the violation
-- Suggested fix to make code compliant
-
-Violation Detection Guidelines:
+Focus on HIGH-LEVEL ARCHITECTURAL violations:
 ✅ Check for:
-- Import statements violating dependency rules
-- Missing required patterns in critical operations
-- Security-sensitive operations in wrong locations
-- Performance patterns bypassed
+- Layer boundary violations (e.g., domain importing from data)
+- Pattern violations (e.g., DB access bypassing repository)
+- Abstraction bypasses (e.g., direct external API calls)
+- Transaction boundary violations
+- Security boundary violations
+- Architectural invariants broken
 
 ❌ Do NOT flag:
-- Implementation details within allowed patterns
-- Naming conventions (unless architecturally significant)
-- Code style or formatting
-- Minor refactoring that preserves architectural intent
+- Import statements of allowed dependencies (leave to AST linters)
+- Code style, formatting, naming conventions
+- Implementation details within allowed boundaries
+- Refactoring that preserves architectural intent
+- Minor changes that don't violate documented constraints
+
+For each violation:
+- Identify which section is violated
+- Explain what constraint was violated
+- List specific files/code that violate it
+- Suggest how to fix it
 
 <code_context>
 {code_context}
 </code_context>
 
-<architectural_rules>
-{architectural_rules}
-</architectural_rules>
+<architectural_documentation>
+{architectural_documentation}
+</architectural_documentation>
+
+<sections_to_check>
+{sections_to_check}
+</sections_to_check>
 
 <custom_prompts>
 {custom_prompts}
 </custom_prompts>
 
 Output violations using the ArchitecturalComplianceCheck schema.
+If code is compliant, return compliant=true with empty violations list.
 """
 ```
 
-### New Questionnaire: Architectural Rules Intent
-
-```python
-# src/input/human_in_the_loop.py
-
-class ArchitecturalRulesIntent(BaseModel):
-    """Captures human intent for architectural rules."""
-
-    architecture_vision: str
-    core_principles: list[str]
-    critical_boundaries: str
-    required_patterns: str
-    forbidden_patterns: str
-    security_requirements: str
-    performance_requirements: str
-    future_constraints: str
-
-
-ARCHITECTURAL_RULES_QUESTIONS = [
-    Question(
-        id="architecture_vision",
-        text="What is the high-level architectural vision for this module?",
-        help_text="Example: 'Clean architecture with strict layer separation'",
-    ),
-    Question(
-        id="core_principles",
-        text="What are the foundational architectural principles? (comma-separated)",
-        help_text="Example: 'Dependency inversion, Single responsibility, Fail fast'",
-    ),
-    Question(
-        id="critical_boundaries",
-        text="What architectural boundaries must never be crossed?",
-        help_text="Example: 'Data layer cannot import from UI layer'",
-    ),
-    Question(
-        id="required_patterns",
-        text="What patterns MUST be used for specific operations?",
-        help_text="Example: 'All DB access via Repository pattern'",
-    ),
-    Question(
-        id="forbidden_patterns",
-        text="What patterns or practices are explicitly forbidden?",
-        help_text="Example: 'No direct database queries in controllers'",
-    ),
-    Question(
-        id="security_requirements",
-        text="What security constraints must the architecture enforce?",
-        help_text="Example: 'All auth logic confined to auth/ module'",
-    ),
-    Question(
-        id="performance_requirements",
-        text="What performance-critical architectural decisions exist?",
-        help_text="Example: 'All external API calls must go through cache layer'",
-    ),
-    Question(
-        id="future_constraints",
-        text="What future architectural evolution must be supported?",
-        help_text="Example: 'Must support swapping database backends'",
-    ),
-]
-```
-
----
+______________________________________________________________________
 
 ## Workflow Implementation
 
-### Generate Architectural Rules Workflow
+### Generate Architectural Documentation Workflow
 
 ```python
 # src/workflows.py
 
-async def generate_architectural_rules(
+async def generate_architectural_docs(
     module_path: Path,
     config: DokkenConfig,
     llm_client: LLMClient,
-) -> ArchitecturalRulesDocumentation:
+) -> str:
     """
-    Generate architectural rules documentation for a module.
+    Generate initial architectural documentation (descriptive).
 
     Steps:
-    1. Analyze codebase to understand current architecture
-    2. Capture human intent via questionnaire
-    3. Generate structured architectural rules
-    4. Format and save to ARCHITECTURE.md
+    1. Analyze codebase
+    2. LLM extracts architectural essence
+    3. Format as markdown
+    4. Save to ARCHITECTURE.md
+    5. Prompt user to refine manually
+
+    Returns:
+        Generated markdown content
     """
 
     # Step 1: Analyze code
@@ -485,28 +405,35 @@ async def generate_architectural_rules(
         depth=config.file_depth,
     )
 
-    # Step 2: Capture architectural intent
-    intent = capture_architectural_rules_intent()
-
-    # Step 3: Build prompt
-    prompt = build_architectural_rules_prompt(
+    # Step 2: Build prompt
+    prompt = build_architectural_extraction_prompt(
         code_context=code_context,
-        user_intent=intent,
         custom_prompts=config.custom_prompts,
     )
 
-    # Step 4: Generate rules
-    rules = await llm_client.generate_structured_output(
+    # Step 3: Generate markdown (free-form, no schema)
+    # Note: Returns plain text, not structured output
+    architectural_docs = await llm_client.generate_text(
         prompt=prompt,
-        output_model=ArchitecturalRulesDocumentation,
+        temperature=0.0,
     )
 
-    # Step 5: Format and save
-    formatted = format_architectural_rules(rules)
-    output_path = module_path / "ARCHITECTURE.md"
-    output_path.write_text(formatted)
+    # Step 4: Save to ARCHITECTURE.md
+    output_filename = config.architectural_docs.output_filename or "ARCHITECTURE.md"
+    output_path = module_path / output_filename
+    output_path.write_text(architectural_docs)
 
-    return rules
+    # Step 5: Prompt user to refine
+    console.print("\n[green]✓ Generated ARCHITECTURE.md[/green]")
+    console.print("\n[yellow]Next steps:[/yellow]")
+    console.print("1. Review ARCHITECTURE.md")
+    console.print("2. Change descriptive language → prescriptive (MUST, MUST NOT)")
+    console.print("3. Add constraints not evident from code")
+    console.print("4. Remove implementation details")
+    console.print("5. Configure enforcement in .dokken.toml")
+    console.print(f"6. Run: dokken check {module_path} --arch-docs")
+
+    return architectural_docs
 ```
 
 ### Check Architectural Compliance Workflow
@@ -516,30 +443,34 @@ async def check_architectural_compliance(
     module_path: Path,
     config: DokkenConfig,
     llm_client: LLMClient,
-    fix: bool = False,
+    dry_run: bool = False,
 ) -> ArchitecturalComplianceCheck:
     """
-    Check if code complies with architectural rules.
+    Check if code complies with architectural documentation.
 
     Steps:
-    1. Load existing architectural rules from ARCHITECTURE.md
+    1. Load ARCHITECTURE.md
     2. Analyze current codebase
-    3. Check for violations
-    4. If violations found and --fix: suggest fixes
-    5. Return compliance report
+    3. Check for violations in configured sections
+    4. Report violations (fail build if severity=blocking)
+
+    Args:
+        dry_run: If True, show what would be checked without failing
     """
 
-    # Step 1: Load rules
-    rules_path = module_path / "ARCHITECTURE.md"
-    if not rules_path.exists():
+    # Step 1: Load architectural documentation
+    output_filename = config.architectural_docs.output_filename or "ARCHITECTURE.md"
+    arch_docs_path = module_path / output_filename
+
+    if not arch_docs_path.exists():
         raise FileNotFoundError(
-            f"No architectural rules found at {rules_path}. "
-            f"Run 'dokken generate {module_path} --arch-rules' first."
+            f"No architectural documentation found at {arch_docs_path}. "
+            f"Run 'dokken generate {module_path} --arch-docs' first."
         )
 
-    existing_rules = rules_path.read_text()
+    architectural_docs = arch_docs_path.read_text()
 
-    # Step 2: Analyze code
+    # Step 2: Analyze current code
     code_context = analyze_code_context(
         path=module_path,
         file_types=config.file_types,
@@ -547,118 +478,197 @@ async def check_architectural_compliance(
         depth=config.file_depth,
     )
 
-    # Step 3: Check compliance
-    compliance = await llm_client.check_architectural_compliance(
-        code_context=code_context,
-        architectural_rules=existing_rules,
+    # Step 3: Determine which sections to check
+    sections_to_check = _extract_sections_to_check(
+        architectural_docs=architectural_docs,
+        config=config.architectural_docs,
     )
 
-    # Step 4: Handle violations
+    # Step 4: Build compliance check prompt
+    prompt = build_architectural_compliance_prompt(
+        code_context=code_context,
+        architectural_docs=architectural_docs,
+        sections_to_check=sections_to_check,
+        custom_prompts=config.custom_prompts,
+    )
+
+    # Step 5: Check compliance
+    compliance = await llm_client.generate_structured_output(
+        prompt=prompt,
+        output_model=ArchitecturalComplianceCheck,
+    )
+
+    # Step 6: Handle result
+    if dry_run:
+        _print_dry_run_report(compliance, sections_to_check)
+        return compliance
+
     if not compliance.compliant:
-        if fix:
-            # Interactive fix mode
-            await fix_architectural_violations(
-                violations=compliance.violations,
-                module_path=module_path,
-            )
-        else:
-            # Fail build
+        severity = config.architectural_docs.severity
+        if severity == "blocking":
             raise ArchitecturalComplianceError(
                 f"Architectural violations detected in {module_path}:\n"
                 + format_violations_report(compliance.violations)
             )
+        elif severity == "warning":
+            console.print(f"[yellow]⚠ Architectural warnings in {module_path}[/yellow]")
+            console.print(format_violations_report(compliance.violations))
+        else:  # advisory
+            console.print(f"[blue]ℹ Architectural suggestions for {module_path}[/blue]")
+            console.print(format_violations_report(compliance.violations))
 
     return compliance
+
+
+def _extract_sections_to_check(
+    architectural_docs: str,
+    config: ArchitecturalDocsConfig,
+) -> list[str]:
+    """
+    Extract section names from ARCHITECTURE.md based on config.
+
+    Returns list of section names to check.
+    """
+    # Parse markdown to find all section headings
+    all_sections = _parse_markdown_sections(architectural_docs)
+
+    # Filter based on config
+    if config.sections == ["*"]:
+        # Check all sections except skipped ones
+        return [
+            s for s in all_sections
+            if not any(skip in s for skip in config.skip_sections)
+        ]
+    else:
+        # Check only configured sections
+        return [
+            s for s in all_sections
+            if s in config.sections
+        ]
+
+
+def _parse_markdown_sections(markdown: str) -> list[str]:
+    """Parse markdown and extract section headings (## Level 2 headings)."""
+    import re
+    # Match ## Heading (but not ### or #)
+    pattern = r"^## (.+)$"
+    matches = re.findall(pattern, markdown, re.MULTILINE)
+    return [m.strip() for m in matches]
 ```
 
----
+______________________________________________________________________
 
 ## Output Format
 
-### ARCHITECTURE.md Structure
+### ARCHITECTURE.md Structure (Generated - Phase 1)
 
-```markdown
-# Architecture: <Module Name>
+````markdown
+# Architecture: Payment Service
 
-## Vision
+## Overview
 
-<High-level architectural intent>
+The payment service handles payment processing, order fulfillment,
+and ledger management. It communicates with external payment processors
+and maintains transactional consistency.
 
-## Core Principles
+## Layering
 
-1. <Principle 1>
-2. <Principle 2>
-3. <Principle 3>
+The codebase uses a three-layer architecture:
+- **API Layer** (`api/`) - FastAPI routes and HTTP handling
+- **Domain Layer** (`domain/`) - Business logic and orchestration
+- **Data Layer** (`data/`) - Database access via SQLAlchemy
 
-## Architectural Constraints
+The domain layer imports from the data layer for persistence operations.
 
-### Module Dependencies
+## Data Flow
 
-**Allowed Dependencies:**
-- `<module/package>` - <reason>
+Payment requests flow from API → Domain → Data. The domain layer
+orchestrates transactions across Payment and Ledger tables.
 
-**Forbidden Dependencies:**
-- `<module/package>` - <reason>
+## External Dependencies
 
-**Dependency Direction:**
-<Description of allowed dependency flow>
+- Stripe API for payment processing (via `stripe` library)
+- PostgreSQL database (via SQLAlchemy ORM)
+- Redis for caching (via `redis-py`)
 
-### Required Patterns
+## Patterns
 
-1. **<Pattern Name>**: <When it must be used>
-2. **<Pattern Name>**: <When it must be used>
+The codebase uses the Repository pattern for database access.
+Most domain operations use repositories, though some direct
+ORM usage exists in newer code.
 
-### Security Constraints
-
-1. **<Constraint>**: <Details>
-
-### Performance Requirements
-
-1. **<Requirement>**: <Details>
-
-## Detailed Rules
-
-### Rule DEP-001: <Rule Title>
-
-- **Category:** Module Dependencies
-- **Severity:** blocking
-- **Constraint:** <Prescriptive statement>
-- **Rationale:** <Why this rule exists>
-
-**Examples:**
-
-❌ **Violation:**
-```python
-# data/repository.py
-from ui.components import UserWidget  # FORBIDDEN: Data layer importing from UI
-```
-
-✅ **Compliant:**
-```python
-# data/repository.py
-from data.models import User  # OK: Within same layer
-```
-
-### Rule PAT-001: <Rule Title>
-
-...
-
-## Architectural Diagram
+## Diagram
 
 ```mermaid
 graph TD
-    A[Presentation Layer] -->|allowed| B[Business Logic]
-    B -->|allowed| C[Data Layer]
-    C -.forbidden.-> A
-```
+    API[API Layer] --> Domain[Domain Layer]
+    Domain --> Data[Data Layer]
+    Domain --> Stripe[Stripe API]
+    Data --> DB[(PostgreSQL)]
+````
 
-## Enforcement
+````
 
-These rules are enforced via `dokken check --arch-rules` in CI/CD.
+### ARCHITECTURE.md Structure (Refined - Phase 2)
 
-**Enforcement Level:** blocking (build fails on violations)
+```markdown
+# Architecture: Payment Service
 
----
+## Overview
+
+The payment service handles payment processing with strict
+transactional guarantees and well-defined architectural boundaries.
+
+## Layering
+
+The system MUST maintain three distinct layers:
+
+- **API Layer** (`api/`) - HTTP handling ONLY. No business logic.
+- **Domain Layer** (`domain/`) - Business logic and orchestration.
+- **Data Layer** (`data/`) - Database access via Repository pattern.
+
+**Constraints:**
+- Domain layer MUST NOT import from API layer
+- Domain layer MUST NOT import from Data layer (use dependency injection)
+- API layer MUST only call Domain layer, never Data layer directly
+
+## Transaction Boundaries
+
+All payment operations MUST be atomic:
+- Any operation touching both Payment and Ledger tables MUST run in a single transaction
+- Commits MUST happen after all validation passes
+- Rollback MUST occur on any failure
+
+## External Service Communication
+
+All communication with Stripe MUST go through the `PaymentGateway` abstraction:
+- Direct usage of `stripe` library is FORBIDDEN outside `gateway/stripe_gateway.py`
+- New payment providers MUST implement `PaymentGateway` interface
+- Domain layer MUST depend on `PaymentGateway` interface, not concrete implementations
+
+## Data Access Patterns
+
+All database access MUST use the Repository pattern:
+- Direct SQLAlchemy ORM usage is FORBIDDEN outside `data/repositories/`
+- Domain layer MUST receive repository instances via dependency injection
+- Repositories MUST return domain models, not ORM entities
+
+## Diagram
+
+```mermaid
+graph TD
+    API[API Layer] -->|allowed| Domain[Domain Layer]
+    Domain -->|allowed via DI| Gateway[Payment Gateway]
+    Domain -->|allowed via DI| Repo[Repositories]
+    Repo --> Data[Data Layer]
+    Gateway --> Stripe[Stripe API]
+    Data --> DB[(PostgreSQL)]
+
+    Domain -.forbidden.-> Data
+    Domain -.forbidden.-> Stripe
+    API -.forbidden.-> Data
+````
+
 ```
 
 ### Violation Report Output
@@ -666,278 +676,282 @@ These rules are enforced via `dokken check --arch-rules` in CI/CD.
 When violations are detected:
 
 ```
+
 ❌ Architectural Compliance Check Failed
 
-Module: src/api
+Module: src/payment
 Violations: 3
+Sections checked: Layering, Transaction Boundaries, Data Access Patterns
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[DEP-001] Forbidden dependency violation
+Section: Layering
 Severity: blocking
 
-Constraint: Data layer must not import from presentation layer
+Constraint: Domain layer MUST NOT import from Data layer
 
-Violation: src/data/repository.py imports from src/ui/components.py
+Violation:
+The domain layer directly imports Repository classes from the data
+layer, violating the dependency inversion principle. Domain should
+receive repositories via dependency injection.
 
 Files:
-  • src/data/repository.py:15
+• src/domain/payment_service.py:5
+• src/domain/order_service.py:3
 
 Suggested Fix:
-Remove the import of UserWidget. Move shared data structures to
-a common models module that both layers can import.
+Remove direct imports of repositories. Instead, accept repository
+instances as constructor parameters in service classes. Use a
+dependency injection container to wire dependencies.
 
 Code:
-  13 | from src.data.models import User
-  14 | from src.utils import format_date
-> 15 | from src.ui.components import UserWidget  # ← VIOLATION
-  16 |
-  17 | class UserRepository:
+src/domain/payment_service.py:
+3 | from src.domain.models import Payment
+4 | from src.domain.events import PaymentProcessed
+
+> 5 | from src.data.repositories import PaymentRepository # ← VIOLATION
+> 6 |
+> 7 | class PaymentService:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[PAT-001] Required pattern missing
-Severity: warning
+Section: External Service Communication
+Severity: blocking
 
-Constraint: All database operations must use Repository pattern
+Constraint: Direct usage of stripe library is FORBIDDEN outside gateway/stripe_gateway.py
 
-Violation: Direct SQLAlchemy query in src/api/routes.py
+Violation:
+New refund functionality directly uses the stripe library instead of
+going through the PaymentGateway abstraction.
 
 Files:
-  • src/api/routes.py:45
+• src/domain/refund_service.py:23
 
 Suggested Fix:
-Move database query to UserRepository and call repository method
-from the route handler instead.
+Add a `process_refund()` method to the PaymentGateway interface and
+implement it in StripeGateway. Update RefundService to use the gateway
+instead of direct stripe calls.
 
 Code:
-  43 | @app.get("/users/{user_id}")
-  44 | def get_user(user_id: int):
-> 45 |     user = db.query(User).filter_by(id=user_id).first()  # ← VIOLATION
-  46 |     return user
-  47 |
+src/domain/refund_service.py:
+21 | def process_refund(self, payment_id: str, amount: Decimal):
+22 | payment = self.payment_repo.get(payment_id)
+
+> 23 | stripe.Refund.create(charge=payment.stripe_id, amount=amount) # ← VIOLATION
+> 24 | self.payment_repo.mark_refunded(payment_id)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Section: Data Access Patterns
+Severity: blocking
+
+Constraint: Direct SQLAlchemy ORM usage is FORBIDDEN outside data/repositories/
+
+Violation:
+API route directly queries database using SQLAlchemy instead of using
+a repository.
+
+Files:
+• src/api/routes/stats.py:18
+
+Suggested Fix:
+Create a StatsRepository with a method for fetching payment statistics.
+Update the route handler to use the repository instead of direct queries.
+
+Code:
+src/api/routes/stats.py:
+16 | @router.get("/stats")
+17 | def get_stats(session: Session = Depends(get_session)):
+
+> 18 | return session.query(Payment).filter(...).all() # ← VIOLATION
+> 19 |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Summary:
-- 2 blocking violations (build must fail)
-- 1 warning (should be fixed soon)
+✗ 3 blocking violations must be fixed before merge
 
-Fix with: dokken check src/api --arch-rules --fix
+- Layering: 2 violations
+- External Service Communication: 1 violation
+- Data Access Patterns: 1 violation
+
+To fix these violations, update code to comply with ARCHITECTURE.md
+or update ARCHITECTURE.md if constraints should change.
+
 ```
 
 ---
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure (Week 1-2)
+### Phase 1: Core Infrastructure (2-3 weeks)
 
-**Goal:** Basic architectural rules generation and checking
+**Goal:** Basic architectural docs generation and checking
 
 **Tasks:**
 
 1. **Data Models**
-   - Add `ArchitecturalRulesDocumentation` model
-   - Add `ArchitecturalComplianceCheck` model
    - Add `ArchitecturalViolation` model
+   - Add `ArchitecturalComplianceCheck` model
+   - Add `ArchitecturalDocsConfig` to configuration models
 
-2. **New Doc Type Configuration**
-   - Add `architecture-rules` to `DOC_TYPE_REGISTRY`
-   - Create `ArchitecturalRulesConfig` in `src/doctypes/configs.py`
-
-3. **LLM Prompts**
-   - Implement `ARCHITECTURAL_RULES_GENERATION_PROMPT`
+2. **LLM Prompts**
+   - Implement `ARCHITECTURAL_EXTRACTION_PROMPT`
    - Implement `ARCHITECTURAL_COMPLIANCE_CHECK_PROMPT`
 
-4. **CLI Commands**
-   - Add `--arch-rules` flag to `generate` command
-   - Add `--arch-rules` flag to `check` command
+3. **CLI Commands**
+   - Add `--arch-docs` flag to `generate` command
+   - Add `--arch-docs` flag to `check` command
+   - Add `--dry-run` flag for compliance checking
 
-5. **Basic Workflows**
-   - Implement `generate_architectural_rules()`
+4. **Basic Workflows**
+   - Implement `generate_architectural_docs()`
    - Implement `check_architectural_compliance()`
+   - Implement `_extract_sections_to_check()`
+   - Implement `_parse_markdown_sections()`
 
-**Deliverable:** `dokken generate <module> --arch-rules` creates ARCHITECTURE.md
-
-**Tests:**
-- Test architectural rules generation
-- Test compliance checking with mock violations
-- Test CLI flag handling
-
----
-
-### Phase 2: Human-in-the-Loop & Formatting (Week 3)
-
-**Goal:** Capture architectural intent, format readable output
-
-**Tasks:**
-
-1. **Questionnaire**
-   - Implement `ArchitecturalRulesIntent` model
-   - Add `ARCHITECTURAL_RULES_QUESTIONS`
-   - Integrate questionnaire into generation workflow
-
-2. **Markdown Formatter**
-   - Implement `format_architectural_rules()` in `src/output/formatters.py`
-   - Support rule categories (dependencies, patterns, security)
-   - Generate violation examples section
-
-3. **Prompt Builder**
-   - Add `build_architectural_rules_prompt()` to `src/llm/prompt_builder.py`
-   - Integrate user intent into prompt
-
-**Deliverable:** Interactive generation with well-formatted ARCHITECTURE.md
-
-**Tests:**
-- Test questionnaire flow
-- Test markdown formatting for all rule types
-- Test prompt building with user intent
-
----
-
-### Phase 3: Violation Detection & Reporting (Week 4)
-
-**Goal:** Accurate violation detection with helpful reports
-
-**Tasks:**
-
-1. **Compliance Checker**
-   - Implement `check_architectural_compliance()` in `src/llm/llm.py`
-   - Parse violations from LLM response
-   - Categorize by severity
-
-2. **Violation Reporter**
-   - Implement `format_violations_report()` in `src/output/formatters.py`
-   - Color-coded output (red for blocking, yellow for warnings)
-   - Code excerpts with line numbers
-
-3. **Error Handling**
-   - Add `ArchitecturalComplianceError` exception
-   - Set appropriate exit codes for CI
-
-**Deliverable:** `dokken check --arch-rules` detects and reports violations
-
-**Tests:**
-- Test violation detection for each rule category
-- Test report formatting
-- Test CI exit codes
-
----
-
-### Phase 4: Configuration & Multi-Module Support (Week 5)
-
-**Goal:** Configure enforcement levels, support multiple modules
-
-**Tasks:**
-
-1. **Configuration Schema**
-   - Add `architectural_rules` section to config model
-   - Support `enforcement_level` (blocking/warning/advisory)
+5. **Configuration Loading**
+   - Add `[architectural_docs]` section to TOML schema
+   - Support `sections`, `severity`, `skip_sections` config
    - Support per-module overrides
 
-2. **Multi-Module Checking**
-   - Extend `check_multiple_modules_drift()` to support `--arch-rules`
+**Deliverable:**
+- `dokken generate <module> --arch-docs` creates ARCHITECTURE.md
+- `dokken check <module> --arch-docs` detects violations
+
+**Tests:**
+- Test architectural docs generation
+- Test section parsing from markdown
+- Test compliance checking with mock violations
+- Test configuration loading
+
+---
+
+### Phase 2: Output Formatting & Reporting (1 week)
+
+**Goal:** Clear, actionable violation reports
+
+**Tasks:**
+
+1. **Violation Reporter**
+   - Implement `format_violations_report()` in `src/output/formatters.py`
+   - Group violations by section
+   - Color-coded output (red=blocking, yellow=warning, blue=advisory)
+   - Code excerpts with line numbers
+   - Summary statistics
+
+2. **Dry Run Mode**
+   - Implement `_print_dry_run_report()`
+   - Show which sections would be checked
+   - Preview violations without failing
+
+3. **Error Messages**
+   - Add `ArchitecturalComplianceError` exception
+   - Helpful error messages with next steps
+   - Suggest fixes in error output
+
+**Deliverable:**
+- Clear, actionable violation reports
+- `--dry-run` mode for testing
+
+**Tests:**
+- Test report formatting
+- Test dry-run mode
+- Test error messages
+
+---
+
+### Phase 3: Multi-Module Support (1 week)
+
+**Goal:** Check multiple modules in CI
+
+**Tasks:**
+
+1. **Multi-Module Checking**
+   - Extend `check_multiple_modules_drift()` to support `--arch-docs`
    - Aggregate violations across modules
    - Report per-module compliance
 
-3. **Configuration Loading**
-   - Load `architectural_rules` config from `.dokken.toml`
-   - Merge repo-level and module-level configs
-   - Validate configuration schema
+2. **Severity Handling**
+   - Respect per-module severity overrides
+   - Allow mixing blocking/warning/advisory across modules
+   - Fail build only if any module has blocking violations
 
-**Deliverable:** `dokken check --all --arch-rules` checks all modules
+3. **Configuration Validation**
+   - Validate `sections` reference existing sections
+   - Warn if configured sections don't exist in ARCHITECTURE.md
+   - Validate severity levels
+
+**Deliverable:**
+- `dokken check --all --arch-docs` checks all modules
+- Per-module severity configuration
 
 **Tests:**
-- Test configuration loading
-- Test enforcement level handling
-- Test multi-module aggregation
+- Test multi-module checking
+- Test severity overrides
+- Test configuration validation
 
 ---
 
-### Phase 5: Interactive Fix Mode (Week 6)
-
-**Goal:** Help developers fix violations interactively
-
-**Tasks:**
-
-1. **Fix Suggestions**
-   - Enhance compliance check to include fix suggestions
-   - Generate code snippets for fixes
-
-2. **Interactive Fix Flow**
-   - Implement `fix_architectural_violations()` workflow
-   - Present violations one-by-one
-   - Offer to apply suggested fixes or skip
-
-3. **Fix Application**
-   - Reuse/extend `apply_incremental_fixes()` from merger.py
-   - Apply code changes safely
-   - Re-run compliance check after fixes
-
-**Deliverable:** `dokken check --arch-rules --fix` helps fix violations
-
-**Tests:**
-- Test fix suggestion generation
-- Test interactive fix flow
-- Test safe fix application
-
----
-
-### Phase 6: Caching & Performance (Week 7)
+### Phase 4: Caching & Performance (1 week)
 
 **Goal:** Fast compliance checks via caching
 
 **Tasks:**
 
 1. **Cache Key Generation**
-   - Generate cache keys from (code_context + architectural_rules)
-   - Support separate cache namespace for arch rules
+   - Generate cache keys from (code_context_hash + arch_docs_hash)
+   - Separate cache namespace for architectural docs
 
 2. **Compliance Result Caching**
    - Cache compliant results (no violations)
-   - Invalidate cache when code or rules change
+   - Invalidate cache when code or ARCHITECTURE.md changes
+   - Cache per-section results for partial invalidation
 
 3. **Performance Optimization**
    - Benchmark compliance check performance
-   - Optimize code context extraction for large codebases
+   - Optimize section extraction and parsing
+   - Parallel checking of multiple sections if possible
 
-**Deliverable:** Fast repeated compliance checks
+**Deliverable:**
+- Fast repeated compliance checks (<2s for cached results)
 
 **Tests:**
 - Test cache hit/miss behavior
 - Test cache invalidation
-- Benchmark performance improvements
+- Benchmark performance
 
 ---
 
-### Phase 7: Advanced Rule Types (Week 8+)
+### Phase 5: Polish & Documentation (1 week)
 
-**Goal:** Support sophisticated architectural rules
+**Goal:** Production-ready feature
 
 **Tasks:**
 
-1. **Dependency Graph Analysis**
-   - Build module dependency graph
-   - Detect circular dependencies
-   - Verify layered architecture
+1. **User Documentation**
+   - Add architectural docs section to README
+   - Create example ARCHITECTURE.md files
+   - Document best practices for refining docs
+   - Update CLAUDE.md with architectural docs workflow
 
-2. **Pattern Detection**
-   - Detect specific code patterns (e.g., Repository usage)
-   - Verify pattern consistency
+2. **Error Handling**
+   - Handle malformed ARCHITECTURE.md gracefully
+   - Handle missing sections
+   - Handle LLM errors
 
-3. **Security Rule Checking**
-   - Detect security-sensitive operations
-   - Verify they occur in designated modules
+3. **User Feedback**
+   - Improve prompts based on testing
+   - Refine violation messages
+   - Add helpful hints to output
 
-4. **Performance Rule Checking**
-   - Detect operations that bypass performance constraints
-   - Verify cache/optimization usage
-
-**Deliverable:** Advanced rule categories beyond simple dependency checks
+**Deliverable:**
+- Complete user documentation
+- Robust error handling
 
 **Tests:**
-- Test each advanced rule category
-- Test complex violation scenarios
+- Test error cases
+- Integration tests end-to-end
 
 ---
 
@@ -945,245 +959,395 @@ Fix with: dokken check src/api --arch-rules --fix
 
 ### Integration with Existing Systems
 
-1. **Doc Type Registry**
-   - Add `architecture-rules` doc type to registry
-   - Configure output path: `ARCHITECTURE.md`
-
-2. **Configuration System**
+1. **Configuration System**
+   - Add `architectural_docs` section to `DokkenConfig`
    - Extend `.dokken.toml` schema
    - Support per-module overrides
 
-3. **CLI Commands**
-   - Add `--arch-rules` flag to existing commands
+2. **CLI Commands**
+   - Add `--arch-docs` flag alongside existing flags
+   - Share code analyzer, LLM client
    - Preserve backward compatibility
 
-4. **LLM Client**
+3. **LLM Client**
    - Reuse existing `LLMClient` class
-   - Add new methods: `generate_architectural_rules()`, `check_compliance()`
+   - Add new method: `generate_text()` for free-form markdown
+   - Use existing `generate_structured_output()` for compliance checks
 
-5. **Cache System**
-   - Extend cache to support architectural rules
-   - Separate cache namespace to avoid collisions
+4. **Cache System**
+   - Extend cache to support architectural docs
+   - Separate cache namespace (`arch-docs:`) to avoid collisions
 
-6. **Error Handling**
-   - Add new exception types
-   - Set distinct exit codes for architectural violations
+5. **Error Handling**
+   - Add new exception: `ArchitecturalComplianceError`
+   - Set exit code 2 for architectural violations (vs 1 for drift)
+
+6. **Multi-Module Workflow**
+   - Extend `check_multiple_modules_drift()` to handle `--arch-docs`
+   - Aggregate results across modules
 
 ---
+
+## Avoiding AST Linter Overlap
+
+### What We DON'T Check
+
+We explicitly avoid checks that AST-based linters can handle better:
+
+**Ruff/Flake8/Pylint already check:**
+- Import statements (unused, ordering, grouping)
+- Cyclomatic complexity
+- Naming conventions
+- Code style and formatting
+- Type annotations
+- Common code smells
+
+**What we DO check:**
+- High-level architectural patterns (e.g., "all DB access via repositories")
+- Layer boundary violations (requires understanding intent, not just imports)
+- Abstraction violations (e.g., "bypass gateway abstraction")
+- Transaction boundaries (requires semantic understanding)
+- Architectural invariants (e.g., "authentication only in auth module")
+
+**Example Distinction:**
+
+❌ **Bad (AST can check):**
+```
+
+Rule: "Do not import from ui module"
+This is just an import pattern - use Ruff with banned-imports
+
+```
+
+✅ **Good (Requires LLM):**
+```
+
+Rule: "Domain layer must not depend on infrastructure layer.
+Use dependency injection to invert dependencies."
+
+This requires understanding:
+
+- What constitutes "domain" vs "infrastructure"
+- Whether dependency injection is properly used
+- Whether the architectural intent is preserved
+
+````
+
+### Prompt Instructions to Avoid Overlap
+
+We include this in compliance check prompt:
+
+```python
+AVOID_AST_OVERLAP_INSTRUCTIONS = """
+Focus ONLY on architectural violations that require semantic understanding:
+
+✅ Check:
+- Layer/boundary violations (requires understanding layer boundaries)
+- Pattern violations (requires recognizing architectural patterns)
+- Abstraction bypasses (requires understanding what abstraction provides)
+- Transaction boundary violations (requires understanding transactional semantics)
+
+❌ Do NOT check (leave to AST linters):
+- Import statements of forbidden modules (use ruff/flake8 with banned-imports)
+- Cyclomatic complexity (use ruff with mccabe)
+- Naming conventions (use ruff/pylint)
+- Type annotations (use mypy/pyright)
+- Code formatting (use ruff format/black)
+
+If a constraint can be expressed as a simple pattern match or AST rule,
+do NOT flag it. Only flag violations that require understanding
+architectural intent and relationships.
+"""
+````
+
+______________________________________________________________________
 
 ## Testing Strategy
 
 ### Unit Tests
 
-- **Models**: Test Pydantic validation for architectural rules models
-- **Prompts**: Test prompt templates render correctly
-- **Formatters**: Test markdown formatting for all rule types
-- **Workflows**: Test each workflow step in isolation
+- **Section Parsing**: Test extracting sections from markdown
+- **Configuration**: Test TOML parsing, validation, overrides
+- **Violation Models**: Test Pydantic validation
 
 ### Integration Tests
 
-- **End-to-End Generation**: Generate ARCHITECTURE.md from sample code
-- **End-to-End Compliance**: Check compliance with sample violations
-- **Multi-Module**: Test `--all` flag with multiple modules
-- **Interactive Flow**: Test questionnaire and fix modes
+```python
+def test_generate_architectural_docs(tmp_path, mock_llm):
+    """Test generating initial ARCHITECTURE.md."""
+    module_path = tmp_path / "src"
+    module_path.mkdir()
+    (module_path / "api.py").write_text("# API code")
+    (module_path / "domain.py").write_text("# Domain code")
+
+    result = generate_architectural_docs(
+        module_path=module_path,
+        config=default_config(),
+        llm_client=mock_llm,
+    )
+
+    arch_docs = (module_path / "ARCHITECTURE.md").read_text()
+    assert "## Layering" in arch_docs  # Contains sections
+    assert "must" not in arch_docs.lower()  # Descriptive, not prescriptive
+
+
+def test_check_compliance_with_violations(tmp_path, mock_llm):
+    """Test detecting architectural violations."""
+    module_path = tmp_path / "src"
+    module_path.mkdir()
+
+    # Create ARCHITECTURE.md with prescriptive constraint
+    (module_path / "ARCHITECTURE.md").write_text("""
+# Architecture
+
+## Layering
+Domain layer MUST NOT import from data layer.
+Use dependency injection instead.
+    """)
+
+    # Create code that violates constraint
+    (module_path / "domain.py").write_text(
+        "from data.repositories import UserRepo"
+    )
+
+    with pytest.raises(ArchitecturalComplianceError) as exc:
+        check_architectural_compliance(
+            module_path=module_path,
+            config=default_config(),
+            llm_client=mock_llm,
+        )
+
+    assert "Layering" in str(exc.value)
+    assert "domain.py" in str(exc.value)
+
+
+def test_check_compliance_passes(tmp_path, mock_llm):
+    """Test compliant code passes check."""
+    module_path = tmp_path / "src"
+    module_path.mkdir()
+
+    (module_path / "ARCHITECTURE.md").write_text("""
+# Architecture
+
+## Layering
+Domain layer MUST NOT import from data layer.
+    """)
+
+    (module_path / "domain.py").write_text(
+        "from domain.models import User"  # OK - within same layer
+    )
+
+    result = check_architectural_compliance(
+        module_path=module_path,
+        config=default_config(),
+        llm_client=mock_llm,
+    )
+
+    assert result.compliant
+    assert len(result.violations) == 0
+
+
+def test_section_filtering(tmp_path, mock_llm):
+    """Test checking only configured sections."""
+    module_path = tmp_path / "src"
+    module_path.mkdir()
+
+    (module_path / "ARCHITECTURE.md").write_text("""
+# Architecture
+
+## Layering
+Domain MUST NOT import from data.
+
+## Future Plans
+We plan to add caching later.
+    """)
+
+    config = default_config()
+    config.architectural_docs.sections = ["Layering"]  # Only check Layering
+    config.architectural_docs.skip_sections = ["Future Plans"]
+
+    result = check_architectural_compliance(
+        module_path=module_path,
+        config=config,
+        llm_client=mock_llm,
+    )
+
+    assert "Future Plans" not in result.sections_checked
+    assert "Layering" in result.sections_checked
+```
 
 ### Regression Tests
 
-- **Backward Compatibility**: Ensure existing `generate`/`check` still work
-- **Configuration**: Test old `.dokken.toml` files still parse
-- **Caching**: Test architectural rules don't break existing cache
+- **Backward Compatibility**: Existing `generate`/`check` unchanged
+- **Configuration**: Old `.dokken.toml` files still parse
+- **Caching**: Architectural docs don't break existing cache
 
-### Example Test Cases
-
-```python
-# tests/test_architectural_rules.py
-
-def test_generate_architectural_rules(tmp_path, mock_llm):
-    """Test generating architectural rules documentation."""
-    # Arrange
-    module_path = tmp_path / "src"
-    module_path.mkdir()
-    (module_path / "main.py").write_text("from ui import Widget")
-
-    # Act
-    result = generate_architectural_rules(
-        module_path=module_path,
-        config=default_config(),
-        llm_client=mock_llm,
-    )
-
-    # Assert
-    assert (module_path / "ARCHITECTURE.md").exists()
-    assert result.module_name == "src"
-    assert len(result.detailed_rules) > 0
-
-
-def test_detect_dependency_violation(tmp_path, mock_llm):
-    """Test detecting forbidden dependency violation."""
-    # Arrange
-    module_path = tmp_path / "src"
-    create_architectural_rules(module_path, forbidden_deps=["ui"])
-    (module_path / "data.py").write_text("from ui import Widget")
-
-    # Act
-    result = check_architectural_compliance(
-        module_path=module_path,
-        config=default_config(),
-        llm_client=mock_llm,
-    )
-
-    # Assert
-    assert not result.compliant
-    assert len(result.violations) == 1
-    assert result.violations[0].rule_id == "DEP-001"
-    assert "data.py" in result.violations[0].affected_files
-
-
-def test_compliance_check_passes(tmp_path, mock_llm):
-    """Test compliant code passes architectural check."""
-    # Arrange
-    module_path = tmp_path / "src"
-    create_architectural_rules(module_path, forbidden_deps=["ui"])
-    (module_path / "data.py").write_text("from models import User")
-
-    # Act
-    result = check_architectural_compliance(
-        module_path=module_path,
-        config=default_config(),
-        llm_client=mock_llm,
-    )
-
-    # Assert
-    assert result.compliant
-    assert len(result.violations) == 0
-```
-
----
+______________________________________________________________________
 
 ## Migration Path
 
 ### For Existing Dokken Users
 
-1. **Opt-in Feature**: Architectural rules are optional, existing workflows unchanged
+**Opt-in Feature:** Architectural documentation is completely optional.
 
-2. **Gradual Adoption**:
-   ```bash
-   # Step 1: Continue using existing tech docs
-   dokken check --all
+**Gradual Adoption:**
 
-   # Step 2: Generate arch rules for critical modules
-   dokken generate src/auth --arch-rules
+```bash
+# Step 1: Continue using existing tech docs
+dokken check --all
 
-   # Step 3: Add arch rules check to CI (warning mode)
-   dokken check src/auth --arch-rules || echo "Warning: violations found"
+# Step 2: Generate architectural docs for one module
+dokken generate src/core --arch-docs
 
-   # Step 4: Enforce arch rules (blocking mode)
-   dokken check src/auth --arch-rules
-   ```
+# Step 3: Review and refine ARCHITECTURE.md manually
+# (change descriptive → prescriptive, add constraints)
 
-3. **Documentation**: Update README with architectural rules section
+# Step 4: Configure enforcement (warning mode first)
+# .dokken.toml:
+# [modules.src_core.architectural_docs]
+# severity = "warning"
 
-4. **Examples**: Provide sample ARCHITECTURE.md in docs/
+# Step 5: Test in CI (warnings only, doesn't fail build)
+dokken check src/core --arch-docs
+
+# Step 6: Fix violations, then switch to blocking
+# [modules.src_core.architectural_docs]
+# severity = "blocking"
+
+# Step 7: Expand to more modules gradually
+```
 
 ### For New Users
 
-1. **Recommended Workflow**:
-   - Start with tech docs: `dokken generate src`
-   - Add arch rules for critical modules: `dokken generate src/core --arch-rules`
-   - Enforce in CI: `dokken check --all && dokken check --all --arch-rules`
+**Recommended Workflow:**
 
-2. **Onboarding Guide**: Add architectural rules to getting started docs
+1. Start with tech docs: `dokken generate src`
+1. Once architecture stabilizes, add architectural docs: `dokken generate src --arch-docs`
+1. Refine ARCHITECTURE.md to be prescriptive
+1. Enforce in CI: `dokken check --all --arch-docs`
 
----
+______________________________________________________________________
 
 ## Open Questions
 
 ### Design Decisions Needed
 
-1. **Should architectural rules be versioned?**
-   - Track rule evolution over time?
-   - Allow different rule versions for different branches?
+1. **Should we support sub-sections?**
 
-2. **How to handle rule evolution?**
-   - When rules change, how to migrate existing code?
-   - Support "deprecated rules" that warn but don't block?
+   - Allow checking specific sub-sections (### Level 3 headings)?
+   - Or only top-level sections (## Level 2 headings)?
 
-3. **Should rules support exceptions?**
-   - Allow specific files to opt-out of rules?
-   - Support time-boxed exceptions (tech debt tracking)?
+1. **How to handle rule evolution?**
 
-4. **How to compose rules across modules?**
-   - Global rules in repo root + module-specific rules?
-   - Rule inheritance/override semantics?
+   - When ARCHITECTURE.md changes, how to handle existing violations?
+   - Support "grandfathering" existing violations temporarily?
 
-5. **Should rules be machine-verifiable only via LLM?**
-   - Or add static analysis for common rules (imports, patterns)?
-   - Hybrid approach: static analysis + LLM for complex rules?
+1. **Should we support inline exceptions?**
 
-6. **How to handle false positives?**
-   - Allow marking violations as "accepted" with rationale?
-   - Support suppression comments in code?
+   - Allow code comments like `# arch-docs: ignore-section Layering`?
+   - Or force all exceptions to be documented in ARCHITECTURE.md?
 
----
+1. **How to compose rules across modules?**
+
+   - Support repo-level ARCHITECTURE.md + module-level?
+   - How do they merge/override?
+
+1. **Should we provide ARCHITECTURE.md templates?**
+
+   - Pre-built templates for common architectures (clean, hexagonal, etc.)?
+   - Risk: Encourages copy-paste instead of thoughtful architecture
+
+1. **Mermaid diagram enforcement?**
+
+   - Should we parse and validate Mermaid diagrams?
+   - Or treat them as documentation-only?
+
+______________________________________________________________________
 
 ## Success Metrics
 
 ### Technical Metrics
 
-- **Violation Detection Accuracy**: >90% precision, >85% recall
-- **Performance**: Compliance check <10s for 10k LOC module
-- **Cache Hit Rate**: >80% for unchanged code/rules
-- **False Positive Rate**: <5% of flagged violations
+- **Violation Detection Accuracy**: >85% precision (few false positives)
+- **Performance**: Compliance check \<5s for 10k LOC module (with caching)
+- **Cache Hit Rate**: >70% for unchanged code/docs
 
 ### User Metrics
 
 - **Adoption**: % of modules with ARCHITECTURE.md
-- **CI Integration**: % of projects using `--arch-rules` in CI
-- **Violation Fix Time**: Time from detection to fix (ideally <1 day)
+- **CI Integration**: % of projects using `--arch-docs` in CI
+- **Refinement Rate**: % of generated docs that get manually refined
 
 ### Quality Metrics
 
-- **Architecture Drift Prevention**: Reduction in architectural violations over time
-- **Documentation Quality**: Architectural rules remain up-to-date (rarely drift)
+- **Architecture Stability**: ARCHITECTURE.md changes infrequently (\<1x/month)
+- **Violation Prevention**: Reduction in architectural violations over time
 
----
+______________________________________________________________________
 
 ## Future Enhancements
 
 ### Potential Follow-ups
 
-1. **Visual Architecture Editor**: GUI for defining rules graphically
+1. **Interactive Refinement Assistant**
 
-2. **Rule Templates**: Pre-built rules for common architectures (clean architecture, hexagonal, microservices)
+   - Help user refine generated docs interactively
+   - Suggest prescriptive language transformations
 
-3. **Rule Testing**: Write test cases for rules to verify detection works
+1. **Architecture Templates**
 
-4. **Architecture Evolution Tracking**: Track how architecture changes over time
+   - Pre-built templates for common patterns (carefully designed)
+   - Customizable starting points
 
-5. **Multi-Repo Rules**: Share architectural rules across microservices
+1. **Visual Diagram Validation**
 
-6. **Auto-Fix**: Automatically refactor code to fix violations (risky, needs careful design)
+   - Parse Mermaid diagrams
+   - Validate code matches diagram structure
 
-7. **Rule Analytics**: Dashboard showing compliance trends over time
+1. **Architecture Evolution Tracking**
 
----
+   - Track how architecture changes over time
+   - Visualize architectural drift trends
+
+1. **Multi-Repo Architectural Constraints**
+
+   - Share architectural rules across microservices
+   - Enforce cross-service boundaries
+
+1. **Custom Violation Severity**
+
+   - Per-section severity overrides
+   - Different enforcement levels for different constraints
+
+______________________________________________________________________
 
 ## Conclusion
 
-Adding architectural rules documentation transforms dokken from a documentation synchronization tool into an architectural governance platform. By enforcing "what should be" rather than just describing "what is," dokken becomes a critical tool for preventing architectural regression and maintaining long-term code health.
+This implementation plan provides a flexible, user-driven approach to architectural documentation that:
 
-**Key Benefits:**
+**Leverages LLM strengths:**
 
-- **Proactive Prevention**: Catch architectural violations before merge
-- **Living Documentation**: Rules stay relevant because they're enforced
-- **Team Alignment**: Shared understanding of architectural constraints
-- **CI/CD Integration**: Automated architectural governance
+- Extract high-level architectural essence from code
+- Interpret free-form architectural constraints
+- Detect semantic violations (not just syntax)
 
-**Implementation Risk Mitigation:**
+**Avoids LLM weaknesses:**
 
-- Phased rollout minimizes disruption
-- Opt-in design ensures backward compatibility
-- Clear separation from tech docs prevents confusion
-- Extensive testing ensures reliability
+- No prescriptive rule schemas
+- No predefined architecture categories
+- User refines generated docs (LLM as assistant, not decision-maker)
 
-The implementation plan provides a clear path from concept to production-ready feature over 8 weeks, with each phase delivering incremental value.
+**Complements existing tools:**
+
+- Focuses on architecture, not implementation
+- Avoids overlap with AST linters
+- Integrates with existing dokken workflows
+
+**Empowers users:**
+
+- User defines architectural sections
+- User decides what to enforce
+- User refines generated docs
+- Flexible configuration per module
+
+The three-phase workflow (Generate → Refine → Enforce) ensures that architectural documentation starts from reality (code) but converges to intent (user-refined constraints), creating a living architectural governance system.
