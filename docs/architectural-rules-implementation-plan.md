@@ -85,8 +85,9 @@ ______________________________________________________________________
 
 ```
 Phase 1: GENERATE (LLM extracts architecture)
-├─ LLM analyzes code
-├─ Identifies architectural patterns
+├─ Analyze code structure
+├─ Ask user about architectural intent (questionnaire)
+├─ LLM combines code analysis + user intent
 └─ Generates ARCHITECTURE.md describing "what is"
 
 Phase 2: REFINE (User makes prescriptive)
@@ -270,6 +271,10 @@ You are analyzing a codebase to extract its high-level architecture.
 
 Your task is to identify and document ARCHITECTURAL PATTERNS, not implementation details.
 
+You will receive:
+1. Code analysis showing current structure
+2. User intent describing architectural goals and constraints
+
 Focus on:
 - **Layering**: What layers/modules exist? How do they relate?
 - **Boundaries**: What are the major component boundaries?
@@ -288,15 +293,27 @@ Write in DESCRIPTIVE tone (not prescriptive yet - user will refine):
 - "The system uses..." (not "The system MUST use...")
 - "Components communicate via..." (not "Components MUST communicate via...")
 
+However, when user intent mentions constraints or boundaries:
+- Document them clearly as architectural decisions
+- Explain both what currently exists AND what is intended
+- This helps user see what needs to be refined to prescriptive language
+
 Output Format:
 - Free-form markdown with section headings
-- Organize into logical sections (user will refine these)
+- Organize into logical sections matching user's architectural vision
 - Include Mermaid diagrams where helpful
 - Keep it concise - focus on essence, not details
 
 <code_context>
 {code_context}
 </code_context>
+
+<user_intent>
+Architecture Vision: {architecture_vision}
+Critical Boundaries: {critical_boundaries}
+Required Patterns: {required_patterns}
+Non-Obvious Constraints: {non_obvious_constraints}
+</user_intent>
 
 <custom_prompts>
 {custom_prompts}
@@ -371,6 +388,83 @@ If code is compliant, return compliant=true with empty violations list.
 
 ______________________________________________________________________
 
+## Human-in-the-Loop: Architectural Intent Questionnaire
+
+### Purpose
+
+The questionnaire captures architectural intent that cannot be inferred from code alone. This ensures the generated ARCHITECTURE.md reflects both observable patterns (from code) and intended constraints (from architects/developers).
+
+### Questions
+
+```python
+# src/input/human_in_the_loop.py
+
+class ArchitecturalIntent(BaseModel):
+    """Captures human intent for architectural documentation."""
+
+    architecture_vision: str
+    critical_boundaries: str
+    required_patterns: str
+    non_obvious_constraints: str
+
+
+ARCHITECTURAL_INTENT_QUESTIONS = [
+    Question(
+        id="architecture_vision",
+        text="What architectural style or approach does this module follow?",
+        help_text=(
+            "Examples: 'Layered architecture with API/Domain/Data layers', "
+            "'Hexagonal architecture with ports and adapters', "
+            "'Clean architecture with dependency inversion', "
+            "'Microservices with event-driven communication'"
+        ),
+    ),
+    Question(
+        id="critical_boundaries",
+        text="What architectural boundaries must never be crossed?",
+        help_text=(
+            "Examples: 'Domain layer cannot depend on infrastructure layer', "
+            "'UI components cannot directly access database', "
+            "'Business logic must not depend on framework code'"
+        ),
+    ),
+    Question(
+        id="required_patterns",
+        text="What patterns or practices MUST be followed for specific operations?",
+        help_text=(
+            "Examples: 'All database access must go through Repository pattern', "
+            "'External API calls must use Gateway abstraction', "
+            "'All operations must use Command pattern'"
+        ),
+    ),
+    Question(
+        id="non_obvious_constraints",
+        text="What architectural decisions or constraints aren't obvious from reading the code?",
+        help_text=(
+            "Examples: 'Payment operations must be atomic', "
+            "'Authentication logic only in auth module', "
+            "'All external communication must be cached', "
+            "'Module must support swapping database backends'"
+        ),
+    ),
+]
+```
+
+### Integration into Generation Workflow
+
+The questionnaire runs **after** code analysis but **before** LLM generation:
+
+1. Analyze code → understand current structure
+1. **Ask user questions** → capture intent and constraints
+1. Generate docs → combine code analysis + user intent
+
+This ensures the LLM generates documentation that reflects both:
+
+- What the code currently does (descriptive)
+- What the architecture is intended to enforce (constraints to make prescriptive during refinement)
+
+______________________________________________________________________
+
 ## Workflow Implementation
 
 ### Generate Architectural Documentation Workflow
@@ -388,10 +482,11 @@ async def generate_architectural_docs(
 
     Steps:
     1. Analyze codebase
-    2. LLM extracts architectural essence
-    3. Format as markdown
-    4. Save to ARCHITECTURE.md
-    5. Prompt user to refine manually
+    2. Capture human intent via questionnaire
+    3. LLM extracts architectural essence
+    4. Format as markdown
+    5. Save to ARCHITECTURE.md
+    6. Prompt user to refine manually
 
     Returns:
         Generated markdown content
@@ -405,25 +500,29 @@ async def generate_architectural_docs(
         depth=config.file_depth,
     )
 
-    # Step 2: Build prompt
+    # Step 2: Capture architectural intent
+    intent = capture_architectural_intent()
+
+    # Step 3: Build prompt
     prompt = build_architectural_extraction_prompt(
         code_context=code_context,
+        user_intent=intent,
         custom_prompts=config.custom_prompts,
     )
 
-    # Step 3: Generate markdown (free-form, no schema)
+    # Step 4: Generate markdown (free-form, no schema)
     # Note: Returns plain text, not structured output
     architectural_docs = await llm_client.generate_text(
         prompt=prompt,
         temperature=0.0,
     )
 
-    # Step 4: Save to ARCHITECTURE.md
+    # Step 5: Save to ARCHITECTURE.md
     output_filename = config.architectural_docs.output_filename or "ARCHITECTURE.md"
     output_path = module_path / output_filename
     output_path.write_text(architectural_docs)
 
-    # Step 5: Prompt user to refine
+    # Step 6: Prompt user to refine
     console.print("\n[green]✓ Generated ARCHITECTURE.md[/green]")
     console.print("\n[yellow]Next steps:[/yellow]")
     console.print("1. Review ARCHITECTURE.md")
@@ -793,24 +892,30 @@ or update ARCHITECTURE.md if constraints should change.
 1. **Data Models**
    - Add `ArchitecturalViolation` model
    - Add `ArchitecturalComplianceCheck` model
+   - Add `ArchitecturalIntent` model
    - Add `ArchitecturalDocsConfig` to configuration models
 
-2. **LLM Prompts**
-   - Implement `ARCHITECTURAL_EXTRACTION_PROMPT`
+2. **Questionnaire**
+   - Implement `ArchitecturalIntent` model
+   - Add `ARCHITECTURAL_INTENT_QUESTIONS`
+   - Implement `capture_architectural_intent()` function
+
+3. **LLM Prompts**
+   - Implement `ARCHITECTURAL_EXTRACTION_PROMPT` (with user intent)
    - Implement `ARCHITECTURAL_COMPLIANCE_CHECK_PROMPT`
 
-3. **CLI Commands**
+4. **CLI Commands**
    - Add `--arch-docs` flag to `generate` command
    - Add `--arch-docs` flag to `check` command
    - Add `--dry-run` flag for compliance checking
 
-4. **Basic Workflows**
-   - Implement `generate_architectural_docs()`
+5. **Basic Workflows**
+   - Implement `generate_architectural_docs()` (with questionnaire step)
    - Implement `check_architectural_compliance()`
    - Implement `_extract_sections_to_check()`
    - Implement `_parse_markdown_sections()`
 
-5. **Configuration Loading**
+6. **Configuration Loading**
    - Add `[architectural_docs]` section to TOML schema
    - Support `sections`, `severity`, `skip_sections` config
    - Support per-module overrides
@@ -820,10 +925,11 @@ or update ARCHITECTURE.md if constraints should change.
 - `dokken check <module> --arch-docs` detects violations
 
 **Tests:**
-- Test architectural docs generation
+- Test architectural docs generation with questionnaire
 - Test section parsing from markdown
 - Test compliance checking with mock violations
 - Test configuration loading
+- Test questionnaire flow and intent capture
 
 ---
 
