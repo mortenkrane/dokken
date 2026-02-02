@@ -622,20 +622,20 @@ dev = [
 requires-dist = [
     { name = "click", specifier = ">=8.3.1" },
     { name = "llama-index", specifier = ">=0.14.13" },
-    { name = "llama-index-llms-anthropic", specifier = ">=0.10.6" },
-    { name = "llama-index-llms-google-genai", specifier = ">=0.8.4" },
+    { name = "llama-index-llms-anthropic", specifier = ">=0.10.7" },
+    { name = "llama-index-llms-google-genai", specifier = ">=0.8.5" },
     { name = "llama-index-llms-openai", specifier = ">=0.6.15" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "questionary", specifier = ">=2.1.1" },
-    { name = "rich", specifier = ">=14.3.1" },
+    { name = "rich", specifier = ">=14.3.2" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.4.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "dokken", specifier = ">=0.1.1" },
-    { name = "hypothesis", specifier = ">=6.151.2" },
+    { name = "hypothesis", specifier = ">=6.151.4" },
     { name = "mccabe", specifier = ">=0.7.0,<1" },
     { name = "mdformat", specifier = ">=0.7.22" },
     { name = "mdformat-gfm", specifier = ">=1.0.0" },
@@ -957,15 +957,15 @@ wheels = [
 
 [[package]]
 name = "hypothesis"
-version = "6.151.2"
+version = "6.151.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
     { name = "sortedcontainers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/05/13/69648b6f8c41600ce922386f084f5921fef55912dc980ded8ff4948ea626/hypothesis-6.151.2.tar.gz", hash = "sha256:fc91f88a77074b31c7ab871eebab3d2e0210fd3095f1d1ecbd9440c1c6bc06d9", size = 475491, upload-time = "2026-01-26T06:45:41.447Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/03/9fd03d5db09029250e69745c1600edab16fe90947636f77a12ba92d79939/hypothesis-6.151.4.tar.gz", hash = "sha256:658a62da1c3ccb36746ac2f7dc4bb1a6e76bd314e0dc54c4e1aaba2503d5545c", size = 475706, upload-time = "2026-01-29T01:30:14.985Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cb/3b/a6b9ecf082dd4d736bb553f7d9ad907a64373f41d0b57eb0be21acf157ee/hypothesis-6.151.2-py3-none-any.whl", hash = "sha256:909d2b5f0dc80640561bb2c3859f3c56a52ed8d1cc589e5e6450362ced8c31a0", size = 542937, upload-time = "2026-01-26T06:45:39.133Z" },
+    { url = "https://files.pythonhosted.org/packages/9b/6d/01ad1b6c3b8cb2bb47eeaa9765dabc27cbe68e3b59f6cff83d5668f57780/hypothesis-6.151.4-py3-none-any.whl", hash = "sha256:a1cf7e0fdaa296d697a68ff3c0b3912c0050f07aa37e7d2ff33a966749d1d9b4", size = 543146, upload-time = "2026-01-29T01:30:12.805Z" },
 ]
 
 [[package]]
@@ -1269,29 +1269,29 @@ wheels = [
 
 [[package]]
 name = "llama-index-llms-anthropic"
-version = "0.10.6"
+version = "0.10.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anthropic", extra = ["bedrock", "vertex"] },
     { name = "llama-index-core" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/ec/556d2c64aae8707609247ce71802d329eccfd2a55768ea0f7ad54d273def/llama_index_llms_anthropic-0.10.6.tar.gz", hash = "sha256:93d4f6a62471df8146f27c5f84f2f432942bed3b9c82adbfda75bc75591dfdd5", size = 15784, upload-time = "2026-01-21T15:08:27.284Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/f8/9217268d02a834f280e0eaf90c493e7c99c5486ee0b233adfb85bd22a625/llama_index_llms_anthropic-0.10.7.tar.gz", hash = "sha256:68862fb5609745dcbf317d2c548b631878650cb26469387008827af95cb6fa72", size = 15800, upload-time = "2026-01-30T10:59:02.644Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/4d/60e4d4290958bde79ef7301bf54fa47641866e45ad45d72160c6588fb50c/llama_index_llms_anthropic-0.10.6-py3-none-any.whl", hash = "sha256:02058c26143de865a9198d904e6d2a955d8c6b437d72499767637e392287c897", size = 16220, upload-time = "2026-01-21T15:08:26.429Z" },
+    { url = "https://files.pythonhosted.org/packages/9b/67/678dc6b46a42b3d85236b8fc94fe763b96b0c92d3ab49b6ab72f338b6595/llama_index_llms_anthropic-0.10.7-py3-none-any.whl", hash = "sha256:bb72d2a8cf384674494325ff01c78368cbc30205e62641f100faf17e4a5d3791", size = 16238, upload-time = "2026-01-30T10:59:03.83Z" },
 ]
 
 [[package]]
 name = "llama-index-llms-google-genai"
-version = "0.8.4"
+version = "0.8.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-genai" },
     { name = "llama-index-core" },
     { name = "pillow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/c9/e7d84e28485003515b632b8dd49a97cba175eee6be4b4a1bbed0d10a5ebc/llama_index_llms_google_genai-0.8.4.tar.gz", hash = "sha256:bcc8cf5b43b1b3235db71e4565b7aff6f568d96a7f65687e7c79fdd673c32d5e", size = 13408, upload-time = "2026-01-22T11:30:44.439Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/7d/107f3a256dd2ada09fed58b9ea8588eaf9b355746089eedab5e207b6c078/llama_index_llms_google_genai-0.8.5.tar.gz", hash = "sha256:64c319a5a288881161806929a7a3bc06eb90b4d085d4f5a6eddda9375376785c", size = 13457, upload-time = "2026-01-30T11:08:33.424Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/36/08/75863b4948ba5d9bdcb829a2fff4a336c4ce6d4fa17431af1a88ef4f5f9a/llama_index_llms_google_genai-0.8.4-py3-none-any.whl", hash = "sha256:afbce176ab82caf3aaedd82aabb87720f09b6887b0331ecfd7c06e5cfc5878a3", size = 13992, upload-time = "2026-01-22T11:30:43.693Z" },
+    { url = "https://files.pythonhosted.org/packages/42/5a/2cf8b4fb860f239a9913e4deb4c8ea07c1760abfaa27c9abd7a505ca4e58/llama_index_llms_google_genai-0.8.5-py3-none-any.whl", hash = "sha256:5a28436eb338fc47654811cae3f3d75e467d3def900a2f1dd0454a88e77d550a", size = 14046, upload-time = "2026-01-30T11:08:34.561Z" },
 ]
 
 [[package]]
@@ -2707,15 +2707,15 @@ wheels = [
 
 [[package]]
 name = "rich"
-version = "14.3.1"
+version = "14.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a1/84/4831f881aa6ff3c976f6d6809b58cdfa350593ffc0dc3c58f5f6586780fb/rich-14.3.1.tar.gz", hash = "sha256:b8c5f568a3a749f9290ec6bddedf835cec33696bfc1e48bcfecb276c7386e4b8", size = 230125, upload-time = "2026-01-24T21:40:44.847Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/74/99/a4cab2acbb884f80e558b0771e97e21e939c5dfb460f488d19df485e8298/rich-14.3.2.tar.gz", hash = "sha256:e712f11c1a562a11843306f5ed999475f09ac31ffb64281f73ab29ffdda8b3b8", size = 230143, upload-time = "2026-02-01T16:20:47.908Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/2a/a1810c8627b9ec8c57ec5ec325d306701ae7be50235e8fd81266e002a3cc/rich-14.3.1-py3-none-any.whl", hash = "sha256:da750b1aebbff0b372557426fb3f35ba56de8ef954b3190315eb64076d6fb54e", size = 309952, upload-time = "2026-01-24T21:40:42.969Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/45/615f5babd880b4bd7d405cc0dc348234c5ffb6ed1ea33e152ede08b2072d/rich-14.3.2-py3-none-any.whl", hash = "sha256:08e67c3e90884651da3239ea668222d19bea7b589149d8014a21c633420dbb69", size = 309963, upload-time = "2026-02-01T16:20:46.078Z" },
 ]
 
 [[package]]
