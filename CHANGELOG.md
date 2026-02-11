@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.2...dokken-v0.1.3) (2026-02-11)
+
+
+### Bug Fixes
+
+* remove environment from PyPI publish workflow ([#152](https://github.com/mortenkrane/dokken/issues/152)) ([62f501a](https://github.com/mortenkrane/dokken/commit/62f501a246d9e2b6c6364b01e93ba1dfaa5b8ce5))
+
 ## [0.1.2](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.1...dokken-v0.1.2) (2026-02-11)
 
 
