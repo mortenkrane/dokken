@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.2](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.1...dokken-v0.1.2) (2026-02-11)
+
+
+### Features
+
+* add dokken dogfooding setup with monthly drift checks ([#133](https://github.com/mortenkrane/dokken/issues/133)) ([035cd5f](https://github.com/mortenkrane/dokken/commit/035cd5fb029bdc694b5fbab8892ff989ad788572))
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([#139](https://github.com/mortenkrane/dokken/issues/139)) ([f7ada70](https://github.com/mortenkrane/dokken/commit/f7ada708285e200b280e7df033f012e90f3d9dba))
+* **deps:** update all non-major dependencies ([#142](https://github.com/mortenkrane/dokken/issues/142)) ([2be4ddd](https://github.com/mortenkrane/dokken/commit/2be4ddd5db215739881a78c0b8c04b8f553e309a))
+* **deps:** update all non-major dependencies ([#145](https://github.com/mortenkrane/dokken/issues/145)) ([07ef6d7](https://github.com/mortenkrane/dokken/commit/07ef6d7f7507894ec9d622950ac96368b8254b22))
+
+
+### Documentation
+
+* add architectural rules implementation plan ([#136](https://github.com/mortenkrane/dokken/issues/136)) ([33b9ffc](https://github.com/mortenkrane/dokken/commit/33b9ffc2a920a3d34074f3d71a537a14aa8cc9da))
+* refocus project messaging on drift detection over docs generation ([#135](https://github.com/mortenkrane/dokken/issues/135)) ([7dba362](https://github.com/mortenkrane/dokken/commit/7dba362cb6ed8e35a4ce4710b68ebe0bad767feb))
+
 ## [0.1.1](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.0...dokken-v0.1.1) (2026-01-23)
 
 
