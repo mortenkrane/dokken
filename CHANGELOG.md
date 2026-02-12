@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.3...dokken-v0.1.4) (2026-02-12)
+
+
+### Bug Fixes
+
+* clean up PyPI publish workflow and pin action hash ([#155](https://github.com/mortenkrane/dokken/issues/155)) ([290df66](https://github.com/mortenkrane/dokken/commit/290df6629693b53af2f3210def61681a0a845865))
+* Update publish-pypi.yml ([a7c9899](https://github.com/mortenkrane/dokken/commit/a7c98993a1252e46676fbe3acfc5ce4808506687))
+
 ## [0.1.3](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.2...dokken-v0.1.3) (2026-02-11)
 
 
