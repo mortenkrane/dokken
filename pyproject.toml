@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=80.10.2", "wheel"]
+requires = ["setuptools>=82.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "click>=8.3.1",
-    "llama-index>=0.14.13",
+    "llama-index>=0.14.14",
     "llama-index-llms-anthropic>=0.10.8",
     "llama-index-llms-google-genai>=0.8.7",
     "llama-index-llms-openai>=0.6.18",
@@ -121,8 +121,8 @@ unresolved-reference = "ignore"
 
 [dependency-groups]
 dev = [
-    "dokken>=0.1.1",
-    "hypothesis>=6.151.5",
+    "dokken>=0.1.4",
+    "hypothesis>=6.151.6",
     "mccabe >= 0.7.0, <1",
     "mdformat>=0.7.22",
     "mdformat-gfm>=1.0.0",
@@ -131,6 +131,6 @@ dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "pytest-mock>=3.15.1",
-    "ruff>=0.15.0",
+    "ruff>=0.15.1",
 ]
 
