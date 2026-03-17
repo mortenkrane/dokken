@@ -3,7 +3,6 @@
 import os
 import sys
 from pathlib import Path
-from typing import cast
 
 from llama_index.core.llms import LLM
 from pydantic import BaseModel
@@ -105,8 +104,7 @@ def prepare_documentation_context(
                 f"{ERROR_NOT_IN_GIT_REPO}"
             )
             sys.exit(1)
-        # Type narrowing: repo_root is str here (sys.exit prevents None)
-        analysis_path = cast(str, repo_root)
+        analysis_path = repo_root
     else:
         analysis_path = target_module_path
 

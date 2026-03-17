@@ -242,7 +242,7 @@ def test_confirm_or_edit_answers_confirm():
         {"key": "q1", "question": "What does this do?"},
         {"key": "q2", "question": "What are its responsibilities?"},
     ]
-    responses = {
+    responses: dict[str, str | None] = {
         "q1": "Handles authentication",
         "q2": "User login and registration",
     }
@@ -270,7 +270,7 @@ def test_confirm_or_edit_answers_cancel():
     questions = [
         {"key": "q1", "question": "What does this do?"},
     ]
-    responses = {"q1": "Test"}
+    responses: dict[str, str | None] = {"q1": "Test"}
     edited_keys: set[str] = set()
 
     with (
@@ -294,7 +294,7 @@ def test_confirm_or_edit_answers_start_over():
     questions = [
         {"key": "q1", "question": "What does this do?"},
     ]
-    responses = {"q1": "Test"}
+    responses: dict[str, str | None] = {"q1": "Test"}
     edited_keys: set[str] = set()
 
     with (
@@ -319,7 +319,7 @@ def test_confirm_or_edit_answers_edit():
         {"key": "q1", "question": "What does this do?"},
         {"key": "q2", "question": "What are its responsibilities?"},
     ]
-    responses = {
+    responses: dict[str, str | None] = {
         "q1": "Old answer",
         "q2": "Responsibilities",
     }
@@ -355,7 +355,7 @@ def test_confirm_or_edit_answers_edit_back():
     questions = [
         {"key": "q1", "question": "What does this do?"},
     ]
-    responses = {"q1": "Test"}
+    responses: dict[str, str | None] = {"q1": "Test"}
     edited_keys: set[str] = set()
 
     with (
@@ -514,7 +514,7 @@ def test_confirm_or_edit_answers_cancel_during_edit():
     questions = [
         {"key": "q1", "question": "What does this do?"},
     ]
-    responses = {"q1": "Original answer"}
+    responses: dict[str, str | None] = {"q1": "Original answer"}
     edited_keys: set[str] = set()
 
     with (
