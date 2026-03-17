@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.5](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.4...dokken-v0.1.5) (2026-03-17)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([#156](https://github.com/mortenkrane/dokken/issues/156)) ([6ae6b00](https://github.com/mortenkrane/dokken/commit/6ae6b007c1c867918344d21c43f2defe47a30762))
+* **deps:** update all non-major dependencies ([#161](https://github.com/mortenkrane/dokken/issues/161)) ([b413c9f](https://github.com/mortenkrane/dokken/commit/b413c9f051fed3d1665c6d89fdc02f795519627a))
+* **deps:** update all non-major dependencies ([#165](https://github.com/mortenkrane/dokken/issues/165)) ([4e7ed83](https://github.com/mortenkrane/dokken/commit/4e7ed834fd780435d7056917eae8b1dd07681a96))
+* **deps:** update all non-major dependencies ([#169](https://github.com/mortenkrane/dokken/issues/169)) ([0f5e79d](https://github.com/mortenkrane/dokken/commit/0f5e79d5555713e44d95bd1d8876a72a8bd1bdcb))
+* **types:** resolve ty type checker errors in workflows and tests ([#176](https://github.com/mortenkrane/dokken/issues/176)) ([bd78c70](https://github.com/mortenkrane/dokken/commit/bd78c709545f20f4b86c071a02bc07a9e3db0bcd))
+
 ## [0.1.4](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.3...dokken-v0.1.4) (2026-02-12)
 
 
