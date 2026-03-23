@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.5...dokken-v0.1.6) (2026-03-23)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([#177](https://github.com/mortenkrane/dokken/issues/177)) ([bb099ab](https://github.com/mortenkrane/dokken/commit/bb099ab96b17bbdd9069a7978716aaee93ea6add))
+
 ## [0.1.5](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.4...dokken-v0.1.5) (2026-03-17)
 
 
