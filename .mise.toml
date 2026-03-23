@@ -3,7 +3,7 @@
 
 [tools]
 python = "3.14.3"
-uv = "0.10.11"
+uv = "0.10.12"
 
 [env]
 # Automatically activate the .venv virtual environment
