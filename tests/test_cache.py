@@ -44,7 +44,7 @@ def test_generate_cache_key_includes_llm_model(
 ) -> None:
     """Test _generate_cache_key includes LLM model in the cache key."""
     # Mock LLM with model attribute
-    mock_llm_client.model = "claude-3-5-haiku-20241022"  # type: ignore[attr-defined]
+    mock_llm_client.model = "claude-3-5-haiku-20241022"  # type: ignore
 
     key1 = _generate_cache_key("context", "doc", mock_llm_client)
 
@@ -52,7 +52,7 @@ def test_generate_cache_key_includes_llm_model(
     assert "claude-3-5-haiku-20241022" in key1
 
     # Different model should produce different key
-    mock_llm_client.model = "gpt-4o-mini"  # type: ignore[attr-defined]
+    mock_llm_client.model = "gpt-4o-mini"  # type: ignore
     key2 = _generate_cache_key("context", "doc", mock_llm_client)
 
     assert key1 != key2

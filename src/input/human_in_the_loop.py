@@ -127,7 +127,7 @@ def confirm_or_edit_answers(  # noqa: C901
         if choice is None or choice == "⊗ Cancel questionnaire":
             # User pressed Ctrl+C or chose to cancel
             # Use None to distinguish from restart which uses empty dict
-            return (False, None, None)  # type: ignore[return-value]
+            return (False, None, None)  # type: ignore
 
         if choice == "✓ Confirm and continue":
             return (True, responses, edited_keys)
