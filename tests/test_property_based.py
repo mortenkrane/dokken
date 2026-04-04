@@ -160,7 +160,7 @@ def test_generate_cache_key_format(context: str, doc: str | None, model: str) ->
             self.model = model_name
 
     llm = MockLLM(model)
-    key = _generate_cache_key(context, doc, llm)  # type: ignore[arg-type]
+    key = _generate_cache_key(context, doc, llm)  # type: ignore
 
     # Should have format "hash:hash:model"
     parts = key.split(":")
@@ -188,8 +188,8 @@ def test_generate_cache_key_different_contexts_different_keys(
 
     llm = MockLLM()
 
-    key1 = _generate_cache_key(context1, None, llm)  # type: ignore[arg-type]
-    key2 = _generate_cache_key(context2, None, llm)  # type: ignore[arg-type]
+    key1 = _generate_cache_key(context1, None, llm)  # type: ignore
+    key2 = _generate_cache_key(context2, None, llm)  # type: ignore
 
     # Different contexts should produce different keys (with high probability)
     if context1 != context2:
