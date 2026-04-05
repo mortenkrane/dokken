@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.7](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.6...dokken-v0.1.7) (2026-04-05)
+
+
+### Bug Fixes
+
+* **deps:** pin mdformat below 1.0.0 to maintain compatibility with mdformat-tables ([#190](https://github.com/mortenkrane/dokken/issues/190)) ([3374678](https://github.com/mortenkrane/dokken/commit/3374678879e4154df53697d7276c0cd42c53cc9c))
+* **deps:** update all non-major dependencies ([#183](https://github.com/mortenkrane/dokken/issues/183)) ([b9996ef](https://github.com/mortenkrane/dokken/commit/b9996ef4a1d9106e0b20832c0b7b0b0ecd4cd6b1))
+* **types:** replace mypy-specific type: ignore codes with ty-compatible bare ignores ([#188](https://github.com/mortenkrane/dokken/issues/188)) ([d6f5fa3](https://github.com/mortenkrane/dokken/commit/d6f5fa33c607e5ab63deedf3bc8343106e6a78bd))
+
 ## [0.1.6](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.5...dokken-v0.1.6) (2026-03-23)
 
 
