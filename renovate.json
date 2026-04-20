@@ -11,6 +11,7 @@
     "timezone": "UTC",
     "prConcurrentLimit": 5,
     "prHourlyLimit": 0,
+    "minimumReleaseAge": "7 days",
     "automerge": true,
     "platformAutomerge": true,
     "packageRules": [
@@ -52,15 +53,9 @@
             "rangeStrategy": "bump",
         },
         {
-            "description": "Dev dependencies can be more aggressive",
+            "description": "Dev dependencies",
             "matchDepTypes": ["dev-dependencies"],
             "automerge": true,
-            "minimumReleaseAge": "0 days",
-        },
-        {
-            "description": "Production dependencies need a bit more stability",
-            "matchDepTypes": ["dependencies"],
-            "minimumReleaseAge": "3 days",
         },
         {
             "description": "Update GitHub Actions",
@@ -79,6 +74,7 @@
         "enabled": true,
         "labels": ["security"],
         "automerge": true,
+        "minimumReleaseAge": "0 days",
         "schedule": ["at any time"],
     },
     "lockFileMaintenance": {
