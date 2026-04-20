@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.8](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.7...dokken-v0.1.8) (2026-04-20)
+
+
+### Bug Fixes
+
+* **deps:** update dependency rich to &gt;=15.0.0 ([#198](https://github.com/mortenkrane/dokken/issues/198)) ([32cc39c](https://github.com/mortenkrane/dokken/commit/32cc39cedc336b33ac1dc63acc2999ba6e2722b4))
+
 ## [0.1.7](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.6...dokken-v0.1.7) (2026-04-05)
 
 
