@@ -3,7 +3,7 @@
 
 [tools]
 python = "3.14.4"
-uv = "0.11.6"
+uv = "0.11.7"
 
 [env]
 # Automatically activate the .venv virtual environment
