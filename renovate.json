@@ -50,7 +50,7 @@
             "description": "Python dependencies - use uv",
             "matchManagers": ["pep621"],
             "enabled": true,
-            "rangeStrategy": "bump",
+            "rangeStrategy": "pin",
         },
         {
             "description": "Dev dependencies",
