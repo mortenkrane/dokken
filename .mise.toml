@@ -2,8 +2,8 @@
 # See https://mise.jdx.dev for documentation
 
 [tools]
-python = "3.14.4"
-uv = "0.11.11"
+python = "3.14.5"
+uv = "0.11.13"
 
 [env]
 # Automatically activate the .venv virtual environment
