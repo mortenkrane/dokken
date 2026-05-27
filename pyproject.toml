@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=82.0.1", "wheel"]
+requires = ["setuptools==82.0.1", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,16 +9,16 @@ description = "AI-powered documentation generation and drift detection tool"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "click>=8.3.2",
-    "llama-index>=0.14.20",
-    "llama-index-llms-anthropic>=0.11.2",
-    "llama-index-llms-google-genai>=0.9.1",
-    "llama-index-llms-openai>=0.7.5",
-    "pydantic>=2.13.2",
-    "python-dotenv>=1.2.2",
-    "questionary>=2.1.1",
-    "rich>=15.0.0",
-    "tomli>=2.4.1; python_version < '3.11'",
+    "click==8.3.3",
+    "llama-index==0.14.21",
+    "llama-index-llms-anthropic==0.11.3",
+    "llama-index-llms-google-genai==0.9.1",
+    "llama-index-llms-openai==0.7.5",
+    "pydantic==2.13.3",
+    "python-dotenv==1.2.2",
+    "questionary==2.1.1",
+    "rich==15.0.0",
+    "tomli==2.4.1; python_version < '3.11'",
 ]
 
 [project.scripts]
@@ -121,16 +121,16 @@ unresolved-reference = "ignore"
 
 [dependency-groups]
 dev = [
-    "dokken>=0.1.7",
-    "hypothesis>=6.152.1",
-    "mccabe >= 0.7.0, <1",
-    "mdformat>=0.7.22,<1.0.0",
-    "mdformat-gfm>=1.0.0",
-    "mdformat-tables>=1.0.0",
-    "pre-commit>=4.5.1",
-    "pytest>=9.0.3",
-    "pytest-cov>=7.1.0",
-    "pytest-mock>=3.15.1",
-    "ruff>=0.15.11",
+    "dokken==0.1.7",
+    "hypothesis==6.152.3",
+    "mccabe ==0.7.0",
+    "mdformat==0.7.22",
+    "mdformat-gfm==1.0.0",
+    "mdformat-tables==1.0.0",
+    "pre-commit==4.6.0",
+    "pytest==9.0.3",
+    "pytest-cov==7.1.0",
+    "pytest-mock==3.15.1",
+    "ruff==0.15.12",
 ]
 
