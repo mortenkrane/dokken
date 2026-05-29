@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.8](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.7...dokken-v0.1.8) (2026-05-27)
+
+
+### Features
+
+* require 7-day release age before dependency updates ([#203](https://github.com/mortenkrane/dokken/issues/203)) ([6b19dbd](https://github.com/mortenkrane/dokken/commit/6b19dbd4d69a3a2997762d09e4d2400719013778))
+
+
+### Bug Fixes
+
+* **deps:** pin dependencies ([#213](https://github.com/mortenkrane/dokken/issues/213)) ([16e69d0](https://github.com/mortenkrane/dokken/commit/16e69d0c12dfcab8bef2dd941f655e05b4d09427))
+* **deps:** update all non-major dependencies ([#201](https://github.com/mortenkrane/dokken/issues/201)) ([b26e5cb](https://github.com/mortenkrane/dokken/commit/b26e5cb9e0d53469aeaa842c06e5ca78749b4dd0))
+* **deps:** update dependency rich to &gt;=15.0.0 ([#198](https://github.com/mortenkrane/dokken/issues/198)) ([32cc39c](https://github.com/mortenkrane/dokken/commit/32cc39cedc336b33ac1dc63acc2999ba6e2722b4))
+* **deps:** use rangeStrategy=pin to prevent lockfile artifact failures ([#212](https://github.com/mortenkrane/dokken/issues/212)) ([848cc18](https://github.com/mortenkrane/dokken/commit/848cc184c4967346be52c283d1562d9928b28225))
+
 ## [0.1.7](https://github.com/mortenkrane/dokken/compare/dokken-v0.1.6...dokken-v0.1.7) (2026-04-05)
 
 
