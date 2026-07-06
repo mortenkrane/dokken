@@ -9,8 +9,8 @@ description = "AI-powered documentation generation and drift detection tool"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "click==8.4.1",
-    "llama-index==0.14.22",
+    "click==8.4.2",
+    "llama-index==0.14.23",
     "llama-index-llms-anthropic==0.11.6",
     "llama-index-llms-google-genai==0.9.5",
     "llama-index-llms-openai==0.7.9",
@@ -131,6 +131,6 @@ dev = [
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "pytest-mock==3.15.1",
-    "ruff==0.15.18",
+    "ruff==0.15.20",
 ]
 
