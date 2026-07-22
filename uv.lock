@@ -784,7 +784,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "dokken", specifier = ">=0.1.7" },
+    { name = "dokken", specifier = "==0.1.8" },
     { name = "hypothesis", specifier = "==6.156.6" },
     { name = "mccabe", specifier = "==0.7.0" },
     { name = "mdformat", specifier = "==0.7.22" },
