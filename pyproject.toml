@@ -9,13 +9,13 @@ description = "AI-powered documentation generation and drift detection tool"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "click==8.4.2",
-    "llama-index==0.14.23",
-    "llama-index-llms-anthropic==0.11.8",
-    "llama-index-llms-google-genai==0.9.6",
-    "llama-index-llms-openai==0.7.9",
-    "pydantic==2.13.4",
-    "python-dotenv==1.2.2",
+    "click==8.5.0",
+    "llama-index==0.14.24",
+    "llama-index-llms-anthropic==0.11.10",
+    "llama-index-llms-google-genai==0.10.0",
+    "llama-index-llms-openai==0.7.10",
+    "pydantic==2.13.5",
+    "python-dotenv==1.2.3",
     "questionary==2.1.1",
     "rich==15.0.0",
     "tomli==2.4.1; python_version < '3.11'",
@@ -122,15 +122,15 @@ unresolved-reference = "ignore"
 [dependency-groups]
 dev = [
     "dokken>=0.1.7",
-    "hypothesis==6.157.0",
+    "hypothesis==6.165.10",
     "mccabe ==0.7.0",
     "mdformat==0.7.22",
     "mdformat-gfm==1.0.0",
     "mdformat-tables==1.0.0",
-    "pre-commit==4.6.0",
+    "pre-commit==4.6.2",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "pytest-mock==3.15.1",
-    "ruff==0.15.22",
+    "ruff==0.16.5",
 ]
 
