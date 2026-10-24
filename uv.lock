@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -804,7 +804,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "dokken", specifier = ">=0.1.7" },
+    { name = "dokken", specifier = "==0.1.8" },
     { name = "hypothesis", specifier = "==6.157.0" },
     { name = "mccabe", specifier = "==0.7.0" },
     { name = "mdformat", specifier = "==0.7.22" },
