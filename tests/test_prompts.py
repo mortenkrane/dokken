@@ -13,10 +13,10 @@ def test_all_prompts_exist_and_are_valid() -> None:
     # Check all prompts exist and are strings
     assert DRIFT_CHECK_PROMPT and isinstance(DRIFT_CHECK_PROMPT, str)
     assert MODULE_GENERATION_PROMPT and isinstance(MODULE_GENERATION_PROMPT, str)
-    assert PROJECT_README_GENERATION_PROMPT and isinstance(
+    assert PROJECT_README_GENERATION_PROMPT is not None and isinstance(
         PROJECT_README_GENERATION_PROMPT, str
     )
-    assert STYLE_GUIDE_GENERATION_PROMPT and isinstance(
+    assert STYLE_GUIDE_GENERATION_PROMPT is not None and isinstance(
         STYLE_GUIDE_GENERATION_PROMPT, str
     )
 
